@@ -49,6 +49,22 @@
 }
 
 :root {
+  /* Roland Garros theme tokens */
+  --page-bg: #ffffff;
+  --card-bg: #ffffff;
+  --metric-bg: #f8fafc;
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #94a3b8;
+  --row-hover: #f8fafc;
+  --rg-accent: #E8500A;
+  --rg-accent-bg: #FEF2EC;
+  --rg-accent-border: #F8C4A4;
+  --rg-accent-text: #C04A0A;
+  --rg-green: #1D6B48;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +100,22 @@
 }
 
 .dark {
+  /* Roland Garros dark theme tokens */
+  --page-bg: #13151c;
+  --card-bg: #1c2033;
+  --metric-bg: #181b28;
+  --border-default: #3a4060;
+  --border-subtle: #262b3e;
+  --text-primary: #e8ecf4;
+  --text-secondary: #a8b4cc;
+  --text-muted: #6b7a99;
+  --row-hover: #222640;
+  --rg-accent: #E8500A;
+  --rg-accent-bg: #2d1a0d;
+  --rg-accent-border: #7a3515;
+  --rg-accent-text: #f06838;
+  --rg-green: #2d9a68;
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
