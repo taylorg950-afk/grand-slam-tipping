@@ -42,23 +42,11 @@ export default function AddMatchForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label htmlFor="draw">Draw</Label>
-          <select
-            id="draw"
-            name="draw"
-            required
-            className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
-          >
-            <option value="mens">Men&apos;s</option>
-            <option value="womens">Women&apos;s</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="scheduled_start">Start time (UTC)</Label>
-          <Input id="scheduled_start" name="scheduled_start" type="datetime-local" required />
-        </div>
+      <input type="hidden" name="draw" value="mens" />
+
+      <div className="space-y-1">
+        <Label htmlFor="scheduled_start">Start time (UTC)</Label>
+        <Input id="scheduled_start" name="scheduled_start" type="datetime-local" required />
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
