@@ -39,12 +39,14 @@ export default async function TournamentRoundsPage({
               <span className="text-sm font-medium">{round.name}</span>
               <span className="ml-2 text-xs text-zinc-400">{round.points_per_correct_tip} pts per correct tip</span>
             </div>
-            <Link
-              href={`/admin/tournaments/${slug}/rounds/${round.name}/matches`}
-              className="text-sm text-zinc-500 hover:text-zinc-900"
-            >
-              Manage matches →
-            </Link>
+            <div className="flex gap-4 text-sm">
+              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/matches`} className="text-zinc-500 hover:text-zinc-900">
+                Matches
+              </Link>
+              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/results`} className="text-zinc-500 hover:text-zinc-900">
+                Results
+              </Link>
+            </div>
           </div>
         ))}
       </div>
