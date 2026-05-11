@@ -32,6 +32,15 @@ export default async function TournamentRoundsPage({
         <p className="text-sm text-zinc-500">Rounds</p>
       </div>
 
+      <div className="flex justify-end">
+        <Link
+          href={`/admin/tournaments/${slug}/import-draw`}
+          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+        >
+          Import draw from PDF
+        </Link>
+      </div>
+
       <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
         {rounds?.map((round) => (
           <div key={round.id} className="flex items-center justify-between px-4 py-3">

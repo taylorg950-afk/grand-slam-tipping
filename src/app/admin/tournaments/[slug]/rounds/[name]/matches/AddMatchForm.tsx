@@ -44,9 +44,15 @@ export default function AddMatchForm({
 
       <input type="hidden" name="draw" value="mens" />
 
-      <div className="space-y-1">
-        <Label htmlFor="scheduled_start">Start time (UTC)</Label>
-        <Input id="scheduled_start" name="scheduled_start" type="datetime-local" required />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="scheduled_start">Start time (UTC)</Label>
+          <Input id="scheduled_start" name="scheduled_start" type="datetime-local" required />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="bracket_position">Bracket position (0-indexed)</Label>
+          <Input id="bracket_position" name="bracket_position" type="number" min="0" placeholder="e.g. 0" />
+        </div>
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

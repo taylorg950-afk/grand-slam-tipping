@@ -18,81 +18,84 @@ export default function MatchCard({
   tip,
   slug,
   roundName,
+  pointsIfCorrect,
 }: {
   match: Match
   tip: Tip
   slug: string
   roundName: string
+  pointsIfCorrect: number
 }) {
   const [pending, startTransition] = useTransition()
-  const locked = new Date(match.scheduled_start) <= new Date()
-  const resulted = match.winner !== null
+  const locked = match.winner !== null || new Date(match.scheduled_start) <= new Date()
 
-  function pick(predicted: 'player1' | 'player2') {
-    if (locked || pending) return
-    startTransition(async () => {
-      await submitTip(slug, roundName, match.id, predicted)
-    })
-  }
-
-  function playerClass(slot: 'player1' | 'player2') {
-    const picked = tip?.predicted_winner === slot
-    const isWinner = match.winner === slot
-    const isLoser = resulted && match.winner !== slot
-
-    let base = 'flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-colors text-center'
-
-    if (resulted) {
-      if (isWinner && picked) return `${base} border-green-500 bg-green-50 text-green-800`
-      if (isWinner) return `${base} border-green-300 bg-green-50 text-green-700`
-      if (isLoser && picked) return `${base} border-red-300 bg-red-50 text-red-700 line-through`
-      return `${base} border-zinc-200 bg-zinc-50 text-zinc-400`
-    }
-
-    if (locked) {
-      if (picked) return `${base} border-zinc-900 bg-zinc-900 text-white`
-      return `${base} border-zinc-200 bg-zinc-50 text-zinc-400`
-    }
-
-    if (picked) return `${base} border-zinc-900 bg-zinc-900 text-white cursor-pointer`
-    return `${base} border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 cursor-pointer`
+  function pick(p: 'player1' | 'player2') {
+    if (locked || pending || tip?.predicted_winner === p) return
+    startTransition(async () => { await submitTip(slug, roundName, match.id, p) })
   }
 
   return (
-    <div className={`space-y-2 rounded-xl border p-4 ${pending ? 'opacity-60' : ''} ${resulted ? 'border-zinc-100 bg-zinc-50' : 'border-zinc-200 bg-white'}`}>
-      <div className="flex items-center gap-2">
-        <button onClick={() => pick('player1')} className={playerClass('player1')} disabled={locked || pending}>
-          {match.player1_name}
-        </button>
-        <span className="text-xs font-medium text-zinc-400">vs</span>
-        <button onClick={() => pick('player2')} className={playerClass('player2')} disabled={locked || pending}>
-          {match.player2_name}
-        </button>
-      </div>
+    <div className={`border rounded-[2px] mb-1.5 overflow-hidden relative
+                    ${locked ? 'bg-[#F2EBDC] border-[#1B181420]' : 'bg-[#FAF6EC] border-[#1B181420]'}
+                    ${pending ? 'opacity-60' : ''}`}>
+      {(['player1', 'player2'] as const).map((key, i) => {
+        const name = i === 0 ? match.player1_name : match.player2_name
+        const picked = tip?.predicted_winner === key
+        const won = locked && match.winner === key
+        const lost = locked && match.winner !== null && match.winner !== key
+        const tint = i === 0 ? '#8E3A1F' : '#3D4F2B'
 
-      <div className="flex items-center justify-between text-xs text-zinc-400">
-        <span>{formatMatchTime(match.scheduled_start)}</span>
-        <span>
-          {resulted
-            ? `Result: ${match.winner === 'player1' ? match.player1_name : match.player2_name}`
-            : locked
-            ? 'Locked'
-            : tip
-            ? 'Picked'
-            : 'No pick yet'}
-        </span>
-      </div>
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => pick(key)}
+            disabled={locked || pending}
+            aria-pressed={picked}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left relative
+                       ${i === 1 ? 'border-t border-[#1B181420]' : ''}
+                       ${picked && !locked ? 'bg-[#B854331f]' : ''}
+                       ${lost ? 'opacity-45' : ''}
+                       ${!locked ? 'hover:bg-[#B854330f] cursor-pointer' : 'cursor-default'}
+                       disabled:cursor-default transition-colors`}
+          >
+            {picked && (
+              <span aria-hidden
+                    className={`absolute left-0 top-0 bottom-0 w-[3px]
+                                ${locked ? (won ? 'bg-[#3D4F2B]' : 'bg-[#8E3A1F]') : 'bg-[#B85433]'}`} />
+            )}
+
+            {/* Avatar circle */}
+            <div className="size-8 rounded-full text-[#FAF6EC] flex items-center justify-center
+                            font-serif text-base shrink-0"
+                 style={{ background: tint, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)' }}>
+              {name[0]}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="font-serif text-lg leading-[1.1] tracking-tight text-[#1B1814] truncate">
+                {name}
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-[#3C342C] mt-0.5">
+                {picked && !locked && <span className="text-[#B85433] font-semibold">your call</span>}
+                {picked && won && <span className="text-[#3D4F2B] font-semibold">+{pointsIfCorrect} pts</span>}
+                {picked && lost && <span className="text-[#8E3A1F] font-semibold">no points</span>}
+                {!picked && won && <span className="text-[#3D4F2B]">won</span>}
+              </div>
+            </div>
+
+            {!locked && (
+              <span className={`size-[22px] rounded-full border-[1.5px] flex items-center justify-center text-[12px] font-bold
+                               ${picked ? 'bg-[#B85433] border-[#B85433] text-[#FAF6EC]' : 'border-[#1B181420]'}`}>
+                {picked && '✓'}
+              </span>
+            )}
+            {locked && won && (
+              <span className="text-[9px] uppercase tracking-[0.14em] text-[#3D4F2B] font-bold shrink-0">Won</span>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
-}
-
-function formatMatchTime(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZoneName: 'short',
-  })
 }

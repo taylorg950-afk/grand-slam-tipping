@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { setActiveTournament, deactivateAllTournaments } from './actions'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -38,10 +39,23 @@ export default async function AdminPage() {
                 </div>
                 <p className="text-xs text-zinc-500">{t.start_date} → {t.end_date}</p>
               </div>
-              <div className="flex gap-3 text-sm">
+              <div className="flex items-center gap-4 text-sm">
                 <Link href={`/admin/tournaments/${t.slug}/rounds`} className="text-zinc-500 hover:text-zinc-900">
                   Rounds
                 </Link>
+                {t.is_active ? (
+                  <form action={deactivateAllTournaments}>
+                    <button type="submit" className="text-zinc-400 hover:text-zinc-700">
+                      Deactivate
+                    </button>
+                  </form>
+                ) : (
+                  <form action={setActiveTournament.bind(null, t.id)}>
+                    <button type="submit" className="text-green-600 hover:text-green-800">
+                      Set active
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           ))}

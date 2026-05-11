@@ -9,13 +9,15 @@ export async function addMatch(
 ): Promise<{ error: string } | null> {
   const supabase = await createClient()
 
-  const round_id        = formData.get('round_id') as string
-  const player1_name    = (formData.get('player1_name') as string).trim()
-  const player2_name    = (formData.get('player2_name') as string).trim()
-  const draw            = formData.get('draw') as string
-  const scheduled_start = formData.get('scheduled_start') as string
-  const slug            = formData.get('slug') as string
-  const roundName       = formData.get('round_name') as string
+  const round_id         = formData.get('round_id') as string
+  const player1_name     = (formData.get('player1_name') as string).trim()
+  const player2_name     = (formData.get('player2_name') as string).trim()
+  const draw             = formData.get('draw') as string
+  const scheduled_start  = formData.get('scheduled_start') as string
+  const slug             = formData.get('slug') as string
+  const roundName        = formData.get('round_name') as string
+  const bracketPosRaw    = formData.get('bracket_position') as string
+  const bracket_position = bracketPosRaw !== '' ? parseInt(bracketPosRaw, 10) : null
 
   if (!player1_name || !player2_name || !draw || !scheduled_start) {
     return { error: 'All fields are required.' }
@@ -31,6 +33,7 @@ export async function addMatch(
     player2_name,
     draw,
     scheduled_start: new Date(scheduled_start + 'Z').toISOString(),
+    bracket_position: isNaN(bracket_position as number) ? null : bracket_position,
   })
 
   if (error) return { error: error.message }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { computeScores } from '@/lib/scoring'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
+import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 
 interface Round {
@@ -59,21 +60,47 @@ function computeRoundBreakdown(
   })
 }
 
-function initials(name: string) {
-  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+function buildChartData(
+  users: Array<{ id: string; display_name: string }>,
+  rounds: Round[],
+  matches: Match[],
+  tips: Tip[]
+): CumulativePointsData[] {
+  const names = users.map(u => u.display_name)
+  const start: CumulativePointsData = { round: 'Start' }
+  names.forEach(n => { start[n] = 0 })
+
+  const rows: CumulativePointsData[] = [start]
+  const running: Record<string, number> = {}
+  names.forEach(n => { running[n] = 0 })
+
+  for (const round of [...rounds].sort((a, b) => a.sort_order - b.sort_order)) {
+    const roundMatches = matches.filter(m => m.round_id === round.id && m.winner)
+    if (roundMatches.length === 0) continue
+
+    for (const user of users) {
+      const myTips = tips.filter(t => t.user_id === user.id && roundMatches.some(m => m.id === t.match_id))
+      const correct = myTips.filter(t => {
+        const match = roundMatches.find(m => m.id === t.match_id)
+        return match && t.predicted_winner === match.winner
+      })
+      running[user.display_name] = (running[user.display_name] ?? 0) + correct.length * round.points_per_correct_tip
+    }
+
+    const row: CumulativePointsData = { round: round.name }
+    names.forEach(n => { row[n] = running[n] })
+    rows.push(row)
+  }
+
+  return rows.length > 1 ? rows : []
 }
 
-const AVATAR_COLOURS = [
-  { bg: '#e2e8f0', text: '#334155' },
-  { bg: '#fef3c7', text: '#92400e' },
-  { bg: '#fee2e2', text: '#991b1b' },
-  { bg: '#ccfbf1', text: '#115e59' },
-  { bg: '#ede9fe', text: '#5b21b6' },
-  { bg: '#ffedd5', text: '#9a3412' },
-]
-
-function avatarColour(name: string) {
-  return AVATAR_COLOURS[name.charCodeAt(0) % AVATAR_COLOURS.length]
+function fmtCountdown(ms: number) {
+  if (ms <= 0) return 'locked'
+  const h = Math.floor(ms / 3_600_000)
+  const m = Math.floor((ms % 3_600_000) / 60_000)
+  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`
+  return `${h}h ${m}m`
 }
 
 export default async function DashboardPage() {
@@ -82,20 +109,24 @@ export default async function DashboardPage() {
 
   const [{ data: profile }, { data: tournament }] = await Promise.all([
     supabase.from('users').select('display_name, is_admin').eq('id', user!.id).single(),
-    supabase.from('tournaments').select('id, name, slug').eq('is_active', true).maybeSingle(),
+    supabase.from('tournaments').select('id, name, slug, start_date').eq('is_active', true).maybeSingle(),
   ])
 
-  const firstName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'there'
+  const firstName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'mate'
 
   let scores = null
   let myScore = null
-  let myRank = null
+  let myRank: number | null = null
   let roundBreakdown: RoundBreakdown[] = []
   let rounds: Round[] = []
   let matches: Match[] = []
   let tips: Tip[] = []
   let upcomingRound: Round | null = null
   let upcomingMatches: Match[] = []
+  let chartData: CumulativePointsData[] = []
+  let tipsInRound = 0
+  let totalInRound = 0
+  let lockMs = 0
 
   if (tournament) {
     const { data: roundData } = await supabase
@@ -132,317 +163,287 @@ export default async function DashboardPage() {
     }
 
     roundBreakdown = computeRoundBreakdown(user!.id, rounds, matches, tips)
+    chartData = buildChartData(users ?? [], rounds, matches, tips)
 
-    // Find the first round with any unlocked matches
     const now = new Date()
     for (const round of [...rounds].sort((a, b) => a.sort_order - b.sort_order)) {
       const roundMatches = matches.filter(m => m.round_id === round.id)
-      const unlocked = roundMatches.filter(m => new Date(m.scheduled_start) > now)
-      if (unlocked.length > 0) {
+      const unpicked = roundMatches.filter(m =>
+        new Date(m.scheduled_start) > now &&
+        !tips.some(t => t.user_id === user!.id && t.match_id === m.id)
+      )
+      if (unpicked.length > 0) {
         upcomingRound = round
-        upcomingMatches = unlocked.sort((a, b) =>
+        upcomingMatches = unpicked.sort((a, b) =>
           new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime()
         )
         break
       }
     }
+
+    // Tips progress for the first in-progress round
+    const inProgressRound = rounds.find(round => {
+      const rm = matches.filter(m => m.round_id === round.id)
+      return rm.some(m => new Date(m.scheduled_start) <= now) && rm.some(m => !m.winner)
+    }) ?? upcomingRound
+    if (inProgressRound) {
+      const rm = matches.filter(m => m.round_id === inProgressRound.id)
+      totalInRound = rm.length
+      tipsInRound = tips.filter(t => t.user_id === user!.id && rm.some(m => m.id === t.match_id)).length
+    }
+
+    const firstUnlocked = matches.find(m => new Date(m.scheduled_start) > now)
+    lockMs = firstUnlocked ? new Date(firstUnlocked.scheduled_start).getTime() - Date.now() : 0
   }
 
-  const leaderPoints = scores?.[0]?.totalPoints ?? 0
-  const pointsGap = myScore ? myScore.totalPoints - leaderPoints : null
+  const dayNum = tournament?.start_date
+    ? Math.max(1, Math.ceil((Date.now() - new Date(tournament.start_date).getTime()) / 86_400_000))
+    : 1
 
-  const now = new Date()
-  const lockedCount = matches.filter(m => new Date(m.scheduled_start) <= now).length
-  const totalMatchCount = matches.length
+  const weekday = new Date().toLocaleDateString('en-AU', { weekday: 'short' })
+  const currentRoundName = upcomingRound?.name ?? roundBreakdown.at(-1)?.round.name ?? 'Round'
 
-  // Which round is currently in progress?
-  const inProgressRound = rounds.find(round => {
-    const rm = matches.filter(m => m.round_id === round.id)
-    return rm.some(m => new Date(m.scheduled_start) <= now) && rm.some(m => !m.winner)
-  })
+  const editorLine = !myRank ? 'Welcome to the comp. Get tipping.'
+    : myRank === 1 ? "You're top of the pile. Hold the line."
+    : myRank === 2 ? 'Second. The leader can be caught.'
+    : myRank === 3 ? "You're third. A bold afternoon could change that."
+    : `${myRank}th. Time for a bold call.`
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
+    <main className="min-h-screen flex flex-col bg-[#FAF6EC] text-[#1B1814] relative">
+      {/* Dotted texture */}
+      <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
+           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1B1814 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
 
-      {/* Header strip */}
-      <header style={{ borderBottom: '1px solid var(--border-default)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            {tournament && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{tournament.name}</p>}
-            <p style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1 }}>
-              G&apos;day, {firstName}
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {inProgressRound && (
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                {inProgressRound.name} in progress
-              </span>
-            )}
-            {profile?.is_admin && (
-              <Link href="/admin" style={{ fontSize: 13, color: 'var(--rg-accent-text)' }}>Admin</Link>
-            )}
-            <ThemeToggle />
-          </div>
+      {/* Masthead */}
+      <header className="relative z-10 px-5 py-3.5 flex items-baseline justify-between border-b border-[#1B181420]">
+        <div className="font-serif italic text-[22px] leading-none tracking-tight">
+          The Tipping Post
+        </div>
+        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[#3C342C]">
+          {tournament ? `${tournament.name} · ${weekday}` : weekday}
+          {profile?.is_admin && (
+            <Link href="/admin" className="text-[#B85433] font-semibold">Admin</Link>
+          )}
         </div>
       </header>
 
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-        {!tournament ? (
-          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No active tournament.</p>
-        ) : (
-          <>
-            {/* 4 metric cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {[
-                {
-                  label: 'Your rank',
-                  value: myRank ? `${myRank} / ${scores?.length}` : '—',
-                  sub: myRank === 1 ? 'leading' : null,
-                },
-                {
-                  label: 'Your points',
-                  value: myScore?.totalPoints ?? 0,
-                  sub: null,
-                },
-                {
-                  label: 'Behind leader',
-                  value: pointsGap === null ? '—' : pointsGap >= 0 ? 'Leading' : pointsGap,
-                  sub: pointsGap !== null && pointsGap < 0 ? 'pts' : null,
-                },
-                {
-                  label: 'Tips locked in',
-                  value: `${lockedCount} / ${totalMatchCount}`,
-                  sub: 'matches',
-                },
-              ].map(card => (
-                <div
-                  key={card.label}
-                  style={{
-                    background: 'var(--metric-bg)',
-                    borderRadius: 6,
-                    padding: '14px 16px',
-                  }}
-                >
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>{card.label}</p>
-                  <p style={{ fontSize: 24, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.5px' }}>
-                    {card.value}
-                  </p>
-                  {card.sub && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{card.sub}</p>}
-                </div>
-              ))}
+      {!tournament ? (
+        <section className="relative z-10 px-5 py-16 text-center flex-1">
+          <h1 className="font-serif text-4xl italic mb-3">Off-season.</h1>
+          <p className="text-[#3C342C] italic font-serif text-lg">
+            Nothing live right now. Check back when the next Slam fires up.
+          </p>
+        </section>
+      ) : (
+        <>
+          {/* Clay banner */}
+          <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC]"
+                   style={{ background: 'linear-gradient(180deg, #B85433 0%, #8E3A1F 100%)' }}>
+            <div aria-hidden
+                 className="absolute -right-8 -top-3 text-[140px] leading-none italic
+                            font-serif text-white/[0.06] select-none pointer-events-none">
+              {tournament.slug?.split('-')[0]?.toUpperCase() ?? 'GS'}
             </div>
+            <div className="text-[10px] uppercase tracking-[0.2em] opacity-80">
+              {tournament.name} · Day {dayNum}
+            </div>
+            <h1 className="font-serif text-3xl leading-[1.05] tracking-tight mt-1">
+              {currentRoundName}
+              <br />
+              <span className="italic text-[#F2EBDC]">
+                {lockMs > 0 ? `locks in ${fmtCountdown(lockMs)}.` : 'locked.'}
+              </span>
+            </h1>
+            <div className="mt-3 flex items-center gap-3.5 text-xs text-white/85">
+              <span><b className="text-white font-semibold">{tipsInRound}</b> of {totalInRound} picks in</span>
+              <span className="w-[3px] h-[3px] rounded-full bg-white/40" />
+              <span>{Math.max(0, totalInRound - tipsInRound)} still to call</span>
+            </div>
+          </section>
 
-            {/* 2-column: leaderboard + rounds */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, alignItems: 'start' }}>
+          {/* From the Editor */}
+          <section className="relative z-10 px-5 pt-4 pb-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] mb-1.5 font-semibold">
+              From the Editor
+            </div>
+            <p className="font-serif text-[22px] leading-[1.15] tracking-tight">
+              Morning, {firstName}.{' '}
+              <span className="italic text-[#3C342C]">{editorLine}</span>
+            </p>
+          </section>
 
-              {/* Leaderboard */}
-              <div style={{ border: '1px solid var(--border-default)', borderRadius: 8, background: 'var(--card-bg)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: 'var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>Leaderboard</span>
-                  <Link href={`/tournaments/${tournament.slug}/leaderboard`} style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    Full leaderboard
+          {/* Pick of the day — next unlocked unconfirmed match */}
+          {upcomingMatches[0] && (
+            <section className="relative z-10 px-5 pb-4">
+              <div className="border border-[#1B181420] rounded-[2px] bg-[#F2EBDC] p-4">
+                <div className="flex justify-between items-baseline text-[10px] uppercase tracking-[0.18em] font-semibold text-[#B85433]">
+                  <span>Pick of the day</span>
+                  <Link
+                    href={`/tournaments/${tournament.slug}/round/${upcomingRound!.name}`}
+                    className="text-[#3C342C] font-normal normal-case text-[11px] hover:text-[#1B1814]"
+                  >
+                    {upcomingRound!.name} · {upcomingMatches.length} to go →
+                  </Link>
+                </div>
+                <div className="font-serif text-2xl leading-[1.1] tracking-tight mt-2">
+                  {upcomingMatches[0].player1_name}{' '}
+                  <span className="italic text-[#3C342C]">v</span>{' '}
+                  {upcomingMatches[0].player2_name}
+                </div>
+                <Link
+                  href={`/tournaments/${tournament.slug}/round/${upcomingRound!.name}`}
+                  className="mt-3 inline-block bg-[#B85433] hover:bg-[#8E3A1F] text-[#FAF6EC]
+                             px-4 py-2 text-[11px] uppercase tracking-[0.18em] font-semibold
+                             rounded-[2px] transition-colors"
+                >
+                  Make your pick →
+                </Link>
+              </div>
+            </section>
+          )}
+
+          {/* Standings + Chart: stacked on mobile, side-by-side on desktop */}
+          <div className="relative z-10 md:grid md:grid-cols-2 md:gap-8 md:px-5 md:pb-4">
+
+            {/* Left col: Standings + Round breakdown */}
+            <div className="space-y-0">
+              <section className="px-5 pb-4 md:px-0 md:pb-0">
+                <div className="flex items-baseline justify-between pb-2 border-b-2 border-[#1B1814] mb-2.5">
+                  <h2 className="font-serif text-lg tracking-tight">The Standings</h2>
+                  <Link
+                    href={`/tournaments/${tournament.slug}/leaderboard`}
+                    className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] hover:text-[#1B1814]"
+                  >
+                    See all
                   </Link>
                 </div>
                 {!scores?.length ? (
-                  <p style={{ padding: '16px 20px', fontSize: 14, color: 'var(--text-muted)' }}>No scores yet.</p>
+                  <div className="text-sm text-[#3C342C] italic font-serif py-4">
+                    No tips judged yet. Wait till results land.
+                  </div>
                 ) : (
-                  <div>
-                    {scores.map((s, i) => {
+                  <>
+                    {scores.slice(0, 5).map((s, i) => {
                       const isMe = s.id === user!.id
-                      const colour = avatarColour(s.display_name)
+                      const isLast = i === Math.min(scores.length, 5) - 1
                       return (
                         <div
                           key={s.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '10px 20px',
-                            borderBottom: 'var(--border-subtle)',
-                            background: isMe ? '#FEF2EC' : undefined,
-                            ...(isMe ? { outline: '1px solid var(--rg-accent-border)', outlineOffset: -1 } : {}),
-                          }}
+                          className={`grid grid-cols-[22px_1fr_auto_36px] gap-2.5 py-2 items-baseline text-[13px]
+                                      ${isMe ? 'text-[#B85433] font-semibold' : 'text-[#1B1814]'}
+                                      ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
                         >
-                          <span style={{
-                            fontSize: 13,
-                            color: isMe ? 'var(--rg-accent-text)' : 'var(--text-muted)',
-                            fontWeight: isMe ? 500 : 400,
-                            width: 20,
-                            textAlign: 'right',
-                            fontVariantNumeric: 'tabular-nums',
-                          }}>
+                          <div className={`font-serif text-base italic ${isMe ? 'text-[#B85433]' : 'text-[#3C342C]'}`}>
                             {i + 1}
-                          </span>
-                          {/* Avatar */}
-                          <div style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 11,
-                            fontWeight: 500,
-                            flexShrink: 0,
-                            background: colour.bg,
-                            color: colour.text,
-                          }}>
-                            {initials(s.display_name)}
                           </div>
-                          <span style={{
-                            flex: 1,
-                            fontSize: 14,
-                            color: 'var(--text-primary)',
-                            fontWeight: isMe ? 500 : 400,
-                          }}>
+                          <div className="truncate">
                             {s.display_name}
-                            {isMe && <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>(you)</span>}
-                          </span>
-                          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                            {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
+                          </div>
+                          <div className="font-serif text-lg tabular-nums">{s.totalPoints}</div>
+                          <div className="text-[10px] text-[#3C342C] text-right tracking-wide tabular-nums">
                             {s.correctTips}/{s.totalTips}
-                          </span>
-                          <span style={{
-                            fontSize: 15,
-                            fontWeight: 500,
-                            color: 'var(--text-primary)',
-                            fontVariantNumeric: 'tabular-nums',
-                            width: 36,
-                            textAlign: 'right',
-                          }}>
-                            {s.totalPoints}
-                          </span>
+                          </div>
                         </div>
                       )
                     })}
-                  </div>
+                    {myRank && myRank > 5 && myScore && (
+                      <>
+                        <div className="text-center text-[10px] tracking-[0.4em] text-[#3C342C40] py-1.5">···</div>
+                        <div className="grid grid-cols-[22px_1fr_auto_36px] gap-2.5 py-2 items-baseline text-[13px] text-[#B85433] font-semibold">
+                          <div className="font-serif text-base italic text-[#B85433]">{myRank}</div>
+                          <div className="truncate">{myScore.display_name}<span className="italic font-normal text-[#3C342C]"> · you</span></div>
+                          <div className="font-serif text-lg tabular-nums">{myScore.totalPoints}</div>
+                          <div className="text-[10px] text-[#3C342C] text-right tabular-nums">{myScore.correctTips}/{myScore.totalTips}</div>
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
-              </div>
+              </section>
 
-              {/* Your rounds */}
-              <div style={{ border: '1px solid var(--border-default)', borderRadius: 8, background: 'var(--card-bg)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: 'var(--border-subtle)' }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>Your rounds</span>
-                </div>
-                {roundBreakdown.length === 0 ? (
-                  <p style={{ padding: '16px 20px', fontSize: 14, color: 'var(--text-muted)' }}>No rounds yet.</p>
-                ) : (
+              {roundBreakdown.length > 0 && (
+                <section className="px-5 pb-4 md:px-0 md:pb-0 md:mt-6">
+                  <div className="pb-2 border-b-2 border-[#1B1814] mb-2.5">
+                    <h2 className="font-serif text-lg tracking-tight">Your rounds</h2>
+                  </div>
                   <div>
-                    {roundBreakdown.map(({ round, points, correct, tipped, resulted, total }) => {
+                    {roundBreakdown.map(({ round, points, correct, tipped, resulted, total }, i) => {
                       const barPct = resulted > 0 ? Math.round((correct / resulted) * 100) : 0
                       const hasResults = resulted > 0
-                      const inProgress = resulted > 0 && resulted < total
-                      const barColour = inProgress ? 'var(--rg-accent)' : 'var(--rg-green)'
-
+                      const isLast = i === roundBreakdown.length - 1
                       return (
                         <div
                           key={round.id}
-                          style={{
-                            padding: '10px 20px 12px',
-                            borderBottom: `1px solid var(--border-subtle)`,
-                          }}
+                          className={`py-2.5 ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                          <div className="flex items-baseline justify-between mb-1.5">
+                            <div className="flex items-baseline gap-2">
                               <Link
                                 href={`/tournaments/${tournament.slug}/round/${round.name}`}
-                                style={{ fontSize: 14, color: 'var(--text-primary)', textDecoration: 'none' }}
+                                className="text-[13px] font-semibold text-[#1B1814] hover:text-[#B85433]"
                               >
                                 {round.name}
                               </Link>
-                              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#3C342C]">
                                 {round.points_per_correct_tip}pt
                               </span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                            <div className="flex items-baseline gap-3 text-[13px]">
+                              <span className="text-[#3C342C] tabular-nums">
                                 {hasResults ? `${correct}/${resulted}` : total > 0 ? `${tipped} tipped` : '—'}
                               </span>
-                              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', minWidth: 24, textAlign: 'right' }}>
+                              <span className="font-serif text-base tabular-nums text-[#1B1814]">
                                 {hasResults ? points : '—'}
                               </span>
                             </div>
                           </div>
-                          {/* Progress bar */}
-                          <div style={{ height: 4, borderRadius: 2, background: 'var(--border-subtle)', overflow: 'hidden' }}>
-                            {hasResults && (
-                              <div style={{
-                                height: '100%',
-                                width: `${barPct}%`,
-                                borderRadius: 2,
-                                background: barColour,
-                                transition: 'width 0.3s ease',
-                              }} />
-                            )}
+                          <div className="h-[3px] rounded-full bg-[#1B181415] overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-[width] duration-500"
+                              style={{
+                                width: hasResults ? `${barPct}%` : '0%',
+                                background: resulted < total ? '#B85433' : '#3D4F2B',
+                              }}
+                            />
                           </div>
                         </div>
                       )
                     })}
                   </div>
-                )}
-              </div>
+                </section>
+              )}
             </div>
 
-            {/* Upcoming round panel */}
-            {upcomingRound && upcomingMatches.length > 0 && (
-              <div style={{ border: '1px solid var(--border-default)', borderRadius: 8, background: 'var(--card-bg)', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: 'var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
-                    {upcomingRound.name} — needs your tips
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--rg-accent)', background: 'var(--rg-accent-bg)', borderRadius: 4, padding: '2px 8px' }}>
-                    Locks {new Date(upcomingMatches[0].scheduled_start).toLocaleDateString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
-                  </span>
+            {/* Right col: Chart */}
+            {chartData.length > 0 && (
+              <section className="px-5 pb-4 md:px-0 md:pb-0">
+                <div className="pb-2 border-b-2 border-[#1B1814] mb-4">
+                  <h2 className="font-serif text-lg tracking-tight">Points by round</h2>
                 </div>
-                <div>
-                  {upcomingMatches.slice(0, 3).map(match => (
-                    <div
-                      key={match.id}
-                      style={{
-                        padding: '12px 20px',
-                        borderBottom: 'var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                        <span style={{ fontWeight: 500 }}>{match.player1_name}</span>
-                        <span style={{ color: 'var(--text-muted)', margin: '0 8px' }}>vs</span>
-                        <span style={{ fontWeight: 500 }}>{match.player2_name}</span>
-                      </span>
-                      <Link
-                        href={`/tournaments/${tournament.slug}/round/${upcomingRound.name}`}
-                        style={{
-                          fontSize: 13,
-                          color: 'var(--rg-green)',
-                          border: '1px solid var(--rg-green)',
-                          borderRadius: 6,
-                          padding: '4px 12px',
-                          textDecoration: 'none',
-                        }}
-                      >
-                        Pick
-                      </Link>
-                    </div>
-                  ))}
-                  {upcomingMatches.length > 3 && (
-                    <div style={{ padding: '12px 20px', textAlign: 'center' }}>
-                      <Link
-                        href={`/tournaments/${tournament.slug}/round/${upcomingRound.name}`}
-                        style={{ fontSize: 13, color: 'var(--text-muted)' }}
-                      >
-                        + {upcomingMatches.length - 3} more matches
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
+                <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
+              </section>
             )}
-          </>
-        )}
-      </main>
-    </div>
+
+          </div>
+
+          {/* Pull quote */}
+          <section className="relative z-10 px-5 pb-6">
+            <div className="border-l-[3px] border-[#C89744] pl-3
+                            font-serif text-[17px] leading-[1.25]
+                            italic text-[#3C342C] tracking-tight">
+              {tipsInRound === 0
+                ? <>Round opens. <span className="text-[#1B1814] not-italic font-medium">Nothing in yet — get on it.</span></>
+                : tipsInRound === totalInRound
+                ? <>All in. <span className="text-[#1B1814] not-italic font-medium">Now we wait.</span></>
+                : <>{totalInRound - tipsInRound} still to call. <span className="text-[#1B1814] not-italic font-medium">Don&apos;t dawdle.</span></>}
+            </div>
+          </section>
+        </>
+      )}
+
+      <TabBar tournamentSlug={tournament?.slug ?? undefined} />
+    </main>
   )
 }
