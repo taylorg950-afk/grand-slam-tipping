@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import { TabBar } from '@/components/TabBar'
@@ -95,6 +96,18 @@ function buildChartData(
   return rows.length > 1 ? rows : []
 }
 
+function roundLongName(name: string) {
+  const map: Record<string, string> = {
+    R128: 'Round of 128', R64: 'Round of 64', R32: 'Round of 32',
+    R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', F: 'The Final',
+  }
+  return map[name] ?? name
+}
+
+function stripSeed(name: string) {
+  return name.replace(/\s*\[.*?\]/, '').trim()
+}
+
 function fmtCountdown(ms: number) {
   if (ms <= 0) return 'locked'
   const h = Math.floor(ms / 3_600_000)
@@ -106,6 +119,7 @@ function fmtCountdown(ms: number) {
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const [{ data: profile }, { data: tournament }] = await Promise.all([
     supabase.from('users').select('display_name, is_admin').eq('id', user!.id).single(),
@@ -201,7 +215,9 @@ export default async function DashboardPage() {
     : 1
 
   const weekday = new Date().toLocaleDateString('en-AU', { weekday: 'short' })
-  const currentRoundName = upcomingRound?.name ?? roundBreakdown.at(-1)?.round.name ?? 'Round'
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
+  const currentRoundName = roundLongName(upcomingRound?.name ?? roundBreakdown.at(-1)?.round.name ?? 'Round')
 
   const editorLine = !myRank ? 'Welcome to the comp. Get tipping.'
     : myRank === 1 ? "You're top of the pile. Hold the line."
@@ -217,14 +233,15 @@ export default async function DashboardPage() {
 
       {/* Masthead */}
       <header className="relative z-10 px-5 py-3.5 flex items-baseline justify-between border-b border-[#1B181420]">
-        <div className="font-serif italic text-[22px] leading-none tracking-tight">
+        <Link href="/dashboard" className="font-serif italic text-[22px] leading-none tracking-tight">
           The Tipping Post
-        </div>
+        </Link>
         <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[#3C342C]">
           {tournament ? `${tournament.name} · ${weekday}` : weekday}
           {profile?.is_admin && (
             <Link href="/admin" className="text-[#B85433] font-semibold">Admin</Link>
           )}
+          <Link href="/profile" className="hover:text-[#1B1814]">Profile</Link>
         </div>
       </header>
 
@@ -238,8 +255,7 @@ export default async function DashboardPage() {
       ) : (
         <>
           {/* Clay banner */}
-          <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC]"
-                   style={{ background: 'linear-gradient(180deg, #B85433 0%, #8E3A1F 100%)' }}>
+          <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC] bg-[#B85433]">
             <div aria-hidden
                  className="absolute -right-8 -top-3 text-[140px] leading-none italic
                             font-serif text-white/[0.06] select-none pointer-events-none">
@@ -268,7 +284,7 @@ export default async function DashboardPage() {
               From the Editor
             </div>
             <p className="font-serif text-[22px] leading-[1.15] tracking-tight">
-              Morning, {firstName}.{' '}
+              {greeting}, {firstName}.{' '}
               <span className="italic text-[#3C342C]">{editorLine}</span>
             </p>
           </section>
@@ -287,9 +303,9 @@ export default async function DashboardPage() {
                   </Link>
                 </div>
                 <div className="font-serif text-2xl leading-[1.1] tracking-tight mt-2">
-                  {upcomingMatches[0].player1_name}{' '}
+                  {stripSeed(upcomingMatches[0].player1_name)}{' '}
                   <span className="italic text-[#3C342C]">v</span>{' '}
-                  {upcomingMatches[0].player2_name}
+                  {stripSeed(upcomingMatches[0].player2_name)}
                 </div>
                 <Link
                   href={`/tournaments/${tournament.slug}/round/${upcomingRound!.name}`}
@@ -304,10 +320,10 @@ export default async function DashboardPage() {
           )}
 
           {/* Standings + Chart: stacked on mobile, side-by-side on desktop */}
-          <div className="relative z-10 md:grid md:grid-cols-2 md:gap-8 md:px-5 md:pb-4">
+          <div className="relative z-10 md:grid md:grid-cols-2 md:gap-8 md:px-5 md:pb-4 md:pt-2">
 
             {/* Left col: Standings + Round breakdown */}
-            <div className="space-y-0">
+            <div className="space-y-4 md:space-y-0">
               <section className="px-5 pb-4 md:px-0 md:pb-0">
                 <div className="flex items-baseline justify-between pb-2 border-b-2 border-[#1B1814] mb-2.5">
                   <h2 className="font-serif text-lg tracking-tight">The Standings</h2>
@@ -330,7 +346,7 @@ export default async function DashboardPage() {
                       return (
                         <div
                           key={s.id}
-                          className={`grid grid-cols-[22px_1fr_auto_36px] gap-2.5 py-2 items-baseline text-[13px]
+                          className={`grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-baseline text-[13px]
                                       ${isMe ? 'text-[#B85433] font-semibold' : 'text-[#1B1814]'}
                                       ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
                         >
@@ -341,9 +357,12 @@ export default async function DashboardPage() {
                             {s.display_name}
                             {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
                           </div>
-                          <div className="font-serif text-lg tabular-nums">{s.totalPoints}</div>
-                          <div className="text-[10px] text-[#3C342C] text-right tracking-wide tabular-nums">
+                          <div className="text-right font-serif text-lg tabular-nums">{s.totalPoints}</div>
+                          <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
                             {s.correctTips}/{s.totalTips}
+                          </div>
+                          <div className="text-right tabular-nums text-[10px] text-[#1B181450]">
+                            {s.totalTips > 0 ? `${Math.round((s.correctTips / s.totalTips) * 100)}%` : '—'}
                           </div>
                         </div>
                       )
@@ -351,11 +370,16 @@ export default async function DashboardPage() {
                     {myRank && myRank > 5 && myScore && (
                       <>
                         <div className="text-center text-[10px] tracking-[0.4em] text-[#3C342C40] py-1.5">···</div>
-                        <div className="grid grid-cols-[22px_1fr_auto_36px] gap-2.5 py-2 items-baseline text-[13px] text-[#B85433] font-semibold">
+                        <div className="grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-baseline text-[13px] text-[#B85433] font-semibold">
                           <div className="font-serif text-base italic text-[#B85433]">{myRank}</div>
                           <div className="truncate">{myScore.display_name}<span className="italic font-normal text-[#3C342C]"> · you</span></div>
-                          <div className="font-serif text-lg tabular-nums">{myScore.totalPoints}</div>
-                          <div className="text-[10px] text-[#3C342C] text-right tabular-nums">{myScore.correctTips}/{myScore.totalTips}</div>
+                          <div className="text-right font-serif text-lg tabular-nums">{myScore.totalPoints}</div>
+                          <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
+                            {myScore.correctTips}/{myScore.totalTips}
+                          </div>
+                          <div className="text-right tabular-nums text-[10px] text-[#1B181450]">
+                            {myScore.totalTips > 0 ? `${Math.round((myScore.correctTips / myScore.totalTips) * 100)}%` : '—'}
+                          </div>
                         </div>
                       </>
                     )}
@@ -430,7 +454,7 @@ export default async function DashboardPage() {
 
           {/* Pull quote */}
           <section className="relative z-10 px-5 pb-6">
-            <div className="border-l-[3px] border-[#C89744] pl-3
+            <div className="border-l-[3px] border-[#B85433] pl-3
                             font-serif text-[17px] leading-[1.25]
                             italic text-[#3C342C] tracking-tight">
               {tipsInRound === 0

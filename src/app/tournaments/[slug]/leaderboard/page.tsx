@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { computeScores } from '@/lib/scoring'
 import { TabBar } from '@/components/TabBar'
@@ -13,6 +13,7 @@ export default async function LeaderboardPage({
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: tournament } = await supabase
     .from('tournaments')
@@ -52,17 +53,16 @@ export default async function LeaderboardPage({
 
       {/* Masthead */}
       <header className="relative z-10 px-5 py-3.5 flex items-baseline justify-between border-b border-[#1B181420]">
-        <div className="font-serif italic text-[22px] leading-none tracking-tight">
+        <Link href="/dashboard" className="font-serif italic text-[22px] leading-none tracking-tight">
           The Tipping Post
-        </div>
+        </Link>
         <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C]">
           {tournament.name}
         </div>
       </header>
 
       {/* Clay banner */}
-      <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC]"
-               style={{ background: 'linear-gradient(180deg, #B85433 0%, #8E3A1F 100%)' }}>
+      <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC] bg-[#B85433]">
         <div aria-hidden className="absolute -right-8 -top-3 text-[140px] leading-none italic
                                     font-serif text-white/[0.06] select-none pointer-events-none">
           {tournament.slug?.split('-')[0]?.toUpperCase() ?? 'GS'}
@@ -93,35 +93,39 @@ export default async function LeaderboardPage({
         ) : (
           <div>
             {/* Header row */}
-            <div className="grid grid-cols-[22px_1fr_auto_44px] gap-2.5 pb-2 mb-1
+            <div className="grid grid-cols-[22px_1fr_48px_36px_40px] gap-2.5 pb-2 mb-1
                             border-b-2 border-[#1B1814]
                             text-[9px] uppercase tracking-[0.18em] text-[#3C342C] font-semibold">
               <div>#</div>
               <div>Player</div>
               <div className="text-right">Correct</div>
+              <div className="text-right">%</div>
               <div className="text-right">Pts</div>
             </div>
 
             {scores.map((s, i) => {
               const isMe = s.id === user!.id
               const isLast = i === scores.length - 1
-              const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null
+              const pct = s.totalTips > 0 ? Math.round((s.correctTips / s.totalTips) * 100) : null
               return (
                 <div
                   key={s.id}
-                  className={`grid grid-cols-[22px_1fr_auto_44px] gap-2.5 py-2.5 items-baseline text-[13px]
+                  className={`grid grid-cols-[22px_1fr_48px_36px_40px] gap-2.5 py-2.5 items-baseline text-[13px]
                               ${isMe ? 'text-[#B85433] font-semibold' : 'text-[#1B1814]'}
                               ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
                 >
-                  <div className={`font-serif text-base italic ${isMe ? 'text-[#B85433]' : 'text-[#3C342C]'}`}>
-                    {medal ?? (i + 1)}
+                  <div className={`font-serif text-base italic ${isMe || i === 0 ? 'text-[#B85433]' : 'text-[#3C342C]'}`}>
+                    {i + 1}
                   </div>
                   <div className="truncate">
                     {s.display_name}
                     {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
                   </div>
-                  <div className="text-right tabular-nums text-[#3C342C]">
+                  <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
                     {s.correctTips}/{s.totalTips}
+                  </div>
+                  <div className="text-right tabular-nums text-[10px] text-[#1B181450]">
+                    {pct !== null ? `${pct}%` : '—'}
                   </div>
                   <div className={`text-right font-serif text-lg tabular-nums ${isMe ? 'text-[#B85433]' : 'text-[#1B1814]'}`}>
                     {s.totalPoints}

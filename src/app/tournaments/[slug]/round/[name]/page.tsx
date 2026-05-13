@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import MatchCard from './MatchCard'
+import { TabBar } from '@/components/TabBar'
 
 function roundLongName(n: string) {
   return ({
@@ -27,6 +28,7 @@ export default async function RoundPage({
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: tournament } = await supabase
     .from('tournaments')
@@ -82,6 +84,13 @@ export default async function RoundPage({
     }
   }
 
+  const firstUnpickedGroupIdx = groups.findIndex((group: any) =>
+    (group as any[]).some((m: any) =>
+      new Date(m.scheduled_start).getTime() > now && !tipsByMatchId[m.id]
+    )
+  )
+  const nextPickHref = firstUnpickedGroupIdx >= 0 ? `#group-${firstUnpickedGroupIdx}` : undefined
+
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF6EC] text-[#1B1814] relative">
       <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
@@ -123,7 +132,7 @@ export default async function RoundPage({
       </header>
 
       {/* Match list */}
-      <section className="relative z-10 px-5 pt-3.5 pb-32 flex-1">
+      <section className="relative z-10 px-5 pt-3.5 pb-56 flex-1">
         {groups.length === 0 ? (
           <div className="text-center py-16">
             <div className="font-serif text-2xl italic text-[#3C342C] tracking-tight">
@@ -133,7 +142,7 @@ export default async function RoundPage({
           </div>
         ) : (
           groups.map((group, gi) => (
-            <div key={gi} className="mb-6">
+            <div key={gi} id={`group-${gi}`} className="mb-6 scroll-mt-32">
               <div className="flex justify-between items-baseline text-[10px] uppercase tracking-[0.18em] text-[#3C342C] mb-2">
                 <span>Feeds {nextRoundName} {gi + 1}</span>
                 <span className="italic font-serif tracking-normal normal-case text-[11px]">
@@ -175,32 +184,33 @@ export default async function RoundPage({
         )}
       </section>
 
-      {/* Sticky lock bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-[#1B1814] text-[#FAF6EC]
-                      px-5 pt-3.5 flex items-center justify-between gap-4"
-           style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.14em] text-[#F2EBDC]/70">
-            {picked} of {total} picked
+      {/* Lock bar + tab nav stacked at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-20">
+        <div className="bg-[#1B1814] text-[#FAF6EC] px-5 pt-3.5 pb-3.5 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-[#F2EBDC]/70">
+              {picked} of {total} picked
+            </div>
+            <div className="font-serif italic text-lg leading-tight">
+              {fullyLocked
+                ? 'Round locked.'
+                : remaining === 0
+                ? 'All in. Hands off.'
+                : `${remaining} still to call.`}
+            </div>
           </div>
-          <div className="font-serif italic text-lg leading-tight">
-            {fullyLocked
-              ? 'Round locked.'
-              : remaining === 0
-              ? 'All in. Hands off.'
-              : `${remaining} still to call.`}
-          </div>
+          {!fullyLocked && remaining > 0 && nextPickHref && (
+            <Link
+              href={nextPickHref}
+              className="bg-[#B85433] hover:bg-[#8E3A1F] text-[#FAF6EC] px-4 py-3
+                         text-[11px] uppercase tracking-[0.18em] font-semibold rounded-[2px]
+                         transition-colors"
+            >
+              Next pick →
+            </Link>
+          )}
         </div>
-        {!fullyLocked && remaining > 0 && (
-          <Link
-            href="#top"
-            className="bg-[#B85433] hover:bg-[#8E3A1F] text-[#FAF6EC] px-4 py-3
-                       text-[11px] uppercase tracking-[0.18em] font-semibold rounded-[2px]
-                       transition-colors"
-          >
-            Next pick →
-          </Link>
-        )}
+        <TabBar tournamentSlug={slug} />
       </div>
     </main>
   )

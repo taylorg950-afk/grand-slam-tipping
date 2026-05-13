@@ -11,7 +11,7 @@ export function TabBar({ tournamentSlug }: Props) {
   const pathname = usePathname()
 
   const tabs = [
-    { label: 'Today', href: '/dashboard' },
+    { label: 'Dashboard', href: '/dashboard' },
     { label: 'Picks', href: tournamentSlug ? `/tournaments/${tournamentSlug}/picks` : null },
     { label: 'Bracket', href: tournamentSlug ? `/tournaments/${tournamentSlug}/bracket` : null },
     { label: 'Standings', href: tournamentSlug ? `/tournaments/${tournamentSlug}/leaderboard` : null },
@@ -33,7 +33,7 @@ export function TabBar({ tournamentSlug }: Props) {
           <Link
             key={t.href}
             href={t.href}
-            className={`text-[10px] uppercase tracking-[0.18em] pb-1 border-b-2 transition-colors
+            className={`text-[10px] uppercase tracking-[0.18em] pb-1 border-b-2 transition-colors hover:font-semibold hover:text-[#1B1814]
                        ${active
                          ? 'text-[#1B1814] font-semibold border-[#B85433]'
                          : 'text-[#3C342C] font-normal border-transparent'}`}

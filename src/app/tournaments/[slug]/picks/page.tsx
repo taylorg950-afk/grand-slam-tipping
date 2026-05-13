@@ -84,8 +84,7 @@ export default async function MyPicksPage({
         <span className="font-serif italic text-[18px] leading-none">My Picks</span>
       </header>
 
-      <section className="relative z-10 px-5 py-5 overflow-hidden text-[#FAF6EC]"
-               style={{ background: 'linear-gradient(180deg, #B85433 0%, #8E3A1F 100%)' }}>
+      <section className="relative z-10 px-5 py-5 overflow-hidden text-[#FAF6EC] bg-[#B85433]">
         <div aria-hidden className="absolute -right-8 -top-3 text-[140px] leading-none italic
                                     font-serif text-white/[0.06] select-none pointer-events-none">
           {tournament.slug?.split('-')[0]?.toUpperCase() ?? 'GS'}
