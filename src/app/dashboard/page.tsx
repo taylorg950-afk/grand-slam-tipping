@@ -142,6 +142,7 @@ export default async function DashboardPage() {
   let tipsInRound = 0
   let totalInRound = 0
   let lockMs = 0
+  let avatarMap: Record<string, string | null> = {}
 
   if (tournament) {
     const { data: roundData } = await supabase
@@ -166,10 +167,11 @@ export default async function DashboardPage() {
       matchIds.length
         ? supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
         : Promise.resolve({ data: [] as Tip[] }),
-      supabase.from('users').select('id, display_name').order('display_name'),
+      supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
     ])
 
     tips = tipData ?? []
+    avatarMap = Object.fromEntries((users ?? []).map(u => [u.id, u.avatar_url ?? null]))
     scores = computeScores(users ?? [], matches, rounds, tips)
     const myIndex = scores.findIndex(s => s.id === user!.id)
     if (myIndex !== -1) {
@@ -339,19 +341,29 @@ export default async function DashboardPage() {
                     {scores.slice(0, 5).map((s, i) => {
                       const isMe = s.id === user!.id
                       const isLast = i === Math.min(scores.length, 5) - 1
+                      const avatar = avatarMap[s.id]
                       return (
                         <div
                           key={s.id}
-                          className={`grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-baseline text-[13px]
+                          className={`grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-center text-[13px]
                                       ${isMe ? 'text-[#B85433] font-semibold' : 'text-[#1B1814]'}
                                       ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
                         >
                           <div className={`font-serif text-base italic ${isMe ? 'text-[#B85433]' : 'text-[#3C342C]'}`}>
                             {i + 1}
                           </div>
-                          <div className="truncate">
-                            {s.display_name}
-                            {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {avatar
+                              ? <img src={avatar} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                              : <div className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] text-[#FAF6EC] font-semibold"
+                                     style={{ background: '#8E3A1F' }}>
+                                  {s.display_name[0].toUpperCase()}
+                                </div>
+                            }
+                            <span className="truncate">
+                              {s.display_name}
+                              {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
+                            </span>
                           </div>
                           <div className="text-right font-serif text-lg tabular-nums">{s.totalPoints}</div>
                           <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
@@ -366,9 +378,18 @@ export default async function DashboardPage() {
                     {myRank && myRank > 5 && myScore && (
                       <>
                         <div className="text-center text-[10px] tracking-[0.4em] text-[#3C342C40] py-1.5">···</div>
-                        <div className="grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-baseline text-[13px] text-[#B85433] font-semibold">
+                        <div className="grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-center text-[13px] text-[#B85433] font-semibold">
                           <div className="font-serif text-base italic text-[#B85433]">{myRank}</div>
-                          <div className="truncate">{myScore.display_name}<span className="italic font-normal text-[#3C342C]"> · you</span></div>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {avatarMap[myScore.id]
+                              ? <img src={avatarMap[myScore.id]!} alt="" className="size-5 rounded-full object-cover shrink-0" />
+                              : <div className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] text-[#FAF6EC] font-semibold"
+                                     style={{ background: '#8E3A1F' }}>
+                                  {myScore.display_name[0].toUpperCase()}
+                                </div>
+                            }
+                            <span className="truncate">{myScore.display_name}<span className="italic font-normal text-[#3C342C]"> · you</span></span>
+                          </div>
                           <div className="text-right font-serif text-lg tabular-nums">{myScore.totalPoints}</div>
                           <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
                             {myScore.correctTips}/{myScore.totalTips}
