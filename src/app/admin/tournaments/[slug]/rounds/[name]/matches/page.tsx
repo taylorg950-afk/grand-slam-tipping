@@ -23,7 +23,7 @@ export default async function RoundMatchesPage({
 
   const { data: round } = await supabase
     .from('rounds')
-    .select('id, name, points_per_correct_tip')
+    .select('id, name, points_per_correct_tip, sort_order')
     .eq('tournament_id', tournament.id)
     .eq('name', roundName)
     .single()
