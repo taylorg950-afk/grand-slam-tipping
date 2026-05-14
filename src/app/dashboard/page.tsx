@@ -4,6 +4,7 @@ import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
+import { Greeting } from './Greeting'
 
 interface Round {
   id: string
@@ -215,8 +216,6 @@ export default async function DashboardPage() {
     : 1
 
   const weekday = new Date().toLocaleDateString('en-AU', { weekday: 'short' })
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
   const currentRoundName = roundLongName(upcomingRound?.name ?? roundBreakdown.at(-1)?.round.name ?? 'Round')
 
   const editorLine = !myRank ? 'Welcome to the comp. Get tipping.'
@@ -283,10 +282,7 @@ export default async function DashboardPage() {
             <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] mb-1.5 font-semibold">
               From the Editor
             </div>
-            <p className="font-serif text-[22px] leading-[1.15] tracking-tight">
-              {greeting}, {firstName}.{' '}
-              <span className="italic text-[#3C342C]">{editorLine}</span>
-            </p>
+            <Greeting firstName={firstName} editorLine={editorLine} />
           </section>
 
           {/* Pick of the day — next unlocked unconfirmed match */}
