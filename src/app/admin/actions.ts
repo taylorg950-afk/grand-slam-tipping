@@ -2,8 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/require-admin'
 
 export async function setActiveTournament(tournamentId: string) {
+  if (await requireAdmin()) return
   const supabase = await createClient()
 
   // Deactivate all, then activate the chosen one
@@ -15,6 +17,7 @@ export async function setActiveTournament(tournamentId: string) {
 }
 
 export async function deactivateAllTournaments() {
+  if (await requireAdmin()) return
   const supabase = await createClient()
   await supabase.from('tournaments').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000')
   revalidatePath('/admin')

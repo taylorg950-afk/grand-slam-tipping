@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import BracketView from './BracketView'
 import { TabBar } from '@/components/TabBar'
@@ -38,6 +38,7 @@ export default async function BracketPage({
   ])
 
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const matchIds = (matches ?? []).map(m => m.id)
 

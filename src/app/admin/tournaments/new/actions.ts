@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/require-admin'
 
 const SLAM_ROUNDS = [
   { name: 'R64', points_per_correct_tip: 2,  sort_order: 1 },
@@ -16,6 +17,8 @@ export async function createTournament(
   _prevState: { error: string } | null,
   formData: FormData
 ): Promise<{ error: string }> {
+  const authError = await requireAdmin()
+  if (authError) return authError
   const supabase = await createClient()
 
   const name       = (formData.get('name') as string).trim()

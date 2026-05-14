@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/require-admin'
 
 export interface ParsedMatch {
   position: number
@@ -26,6 +27,8 @@ const ROUND_POINTS: Record<string, number> = { R128: 1, R64: 2, R32: 4, R16: 8, 
 export async function parseDrawPdf(
   formData: FormData
 ): Promise<{ ok: true; data: ParsedDraw } | { ok: false; error: string }> {
+  const authError = await requireAdmin()
+  if (authError) return { ok: false, error: authError.error }
   const file = formData.get('pdf') as File | null
   if (!file) return { ok: false, error: 'No file selected.' }
   if (file.type !== 'application/pdf') return { ok: false, error: 'File must be a PDF.' }
@@ -94,6 +97,8 @@ export async function saveDrawMatches(
   draw: 'mens' | 'womens',
   rounds: ParsedRound[]
 ): Promise<{ ok: boolean; error?: string }> {
+  const authError = await requireAdmin()
+  if (authError) return { ok: false, error: authError.error }
   const supabase = await createClient()
 
   const { data: tournament } = await supabase
