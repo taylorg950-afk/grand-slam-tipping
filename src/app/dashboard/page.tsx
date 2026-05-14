@@ -163,15 +163,16 @@ export default async function DashboardPage() {
     matches = matchData ?? []
     const matchIds = matches.map(m => m.id)
 
-    const [{ data: tipData }, { data: users }] = await Promise.all([
+    const [{ data: tipData }, { data: users }, { data: avatarRows }] = await Promise.all([
       matchIds.length
         ? supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
         : Promise.resolve({ data: [] as Tip[] }),
-      supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
+      supabase.from('users').select('id, display_name').order('display_name'),
+      supabase.from('users').select('id, avatar_url').order('display_name'),
     ])
 
     tips = tipData ?? []
-    avatarMap = Object.fromEntries((users ?? []).map(u => [u.id, u.avatar_url ?? null]))
+    avatarMap = Object.fromEntries((avatarRows ?? []).map((u: { id: string; avatar_url?: string | null }) => [u.id, u.avatar_url ?? null]))
     scores = computeScores(users ?? [], matches, rounds, tips)
     const myIndex = scores.findIndex(s => s.id === user!.id)
     if (myIndex !== -1) {
