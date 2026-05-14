@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import AddMatchForm from './AddMatchForm'
+import GenerateMatchesForm from './GenerateMatchesForm'
 import { deleteMatch } from './actions'
 
 export default async function RoundMatchesPage({
@@ -29,6 +30,14 @@ export default async function RoundMatchesPage({
 
   if (!round) notFound()
 
+  const { data: allRounds } = await supabase
+    .from('rounds')
+    .select('id, name, sort_order')
+    .eq('tournament_id', tournament.id)
+    .order('sort_order')
+
+  const prevRound = (allRounds ?? []).find(r => r.sort_order === round.sort_order - 1) ?? null
+
   const { data: matches } = await supabase
     .from('matches')
     .select('id, player1_name, player2_name, draw, scheduled_start, winner')
@@ -46,6 +55,15 @@ export default async function RoundMatchesPage({
         <h1 className="mt-2 text-xl font-semibold">{round.name}</h1>
         <p className="text-sm text-zinc-500">{round.points_per_correct_tip} pts per correct tip</p>
       </div>
+
+      {prevRound && (
+        <GenerateMatchesForm
+          roundId={round.id}
+          roundName={roundName}
+          prevRoundName={prevRound.name}
+          slug={slug}
+        />
+      )}
 
       <AddMatchForm roundId={round.id} roundName={roundName} slug={slug} />
 
