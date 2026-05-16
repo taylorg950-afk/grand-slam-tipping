@@ -227,11 +227,17 @@ function buildBracketMatches(
 
   if (all.length === 0) return { matches: [], roundNames: [] }
 
-  const firstRoundCount = (byRound[sortedRounds[0]?.id] ?? []).length
+  // Infer the true first-round slot count from the deepest-filled round.
+  // R0 may have fewer matches than the bracket allows when seeds get byes
+  // (e.g. 48 R0 matches + 16 byes feeding directly into R1 = 64 slots).
+  // Each round R doubles the slot count: round R has slots, R0 has slots * 2^R.
+  const firstRoundSlots = all.reduce((max, m) => {
+    return Math.max(max, (m.position + 1) * Math.pow(2, m.originalRi))
+  }, (byRound[sortedRounds[0]?.id] ?? []).length)
 
   let filtered = all
-  if (quarter !== null && firstRoundCount >= 4) {
-    const quarterSize = firstRoundCount / 4  // matches per quarter in round 0
+  if (quarter !== null && firstRoundSlots >= 4) {
+    const quarterSize = firstRoundSlots / 4
     if (quarterSize >= 1) {
       filtered = all.filter(m => {
         const perQ = Math.max(1, Math.floor(quarterSize / Math.pow(2, m.originalRi)))
@@ -244,8 +250,8 @@ function buildBracketMatches(
   // Quarter view: shift positions so the selected quarter starts at 0.
   // Full view: keep absolute positions — gaps stay as gaps, so layout matches reality.
   const positionOffset = (originalRi: number): number => {
-    if (quarter === null || firstRoundCount < 4) return 0
-    const quarterSize = firstRoundCount / 4
+    if (quarter === null || firstRoundSlots < 4) return 0
+    const quarterSize = firstRoundSlots / 4
     return quarter * Math.max(1, Math.floor(quarterSize / Math.pow(2, originalRi)))
   }
 
@@ -294,22 +300,40 @@ export default function BracketView({
   const firstRoundCount = firstRound
     ? matches.filter(m => m.draw === draw && m.round_id === firstRound.id).length
     : 0
-  const showQuarters = firstRoundCount >= 16
+
+  // Infer true bracket size from deepest filled round so byes in R0 don't shrink it.
+  const inferredFirstRoundSlots = useMemo(() => {
+    let slots = firstRoundCount
+    sortedRounds.forEach((r, ri) => {
+      const inRound = matches.filter(m => m.draw === draw && m.round_id === r.id)
+      for (const m of inRound) {
+        const pos = m.bracket_position
+        if (pos === null) continue
+        slots = Math.max(slots, (pos + 1) * Math.pow(2, ri))
+      }
+    })
+    return slots
+  }, [matches, draw, sortedRounds, firstRoundCount])
+
+  const showQuarters = inferredFirstRoundSlots >= 16
 
   const quarterLabels = useMemo(() => {
     if (!showQuarters || !firstRound) return []
-    const quarterSize = Math.floor(firstRoundCount / 4)
-    const firstRoundSorted = matches
-      .filter(m => m.draw === draw && m.round_id === firstRound.id)
-      .sort((a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
-        a.id.localeCompare(b.id)
-      )
+    const quarterSize = Math.floor(inferredFirstRoundSlots / 4)
+    const firstRoundByPos = new Map<number, DbMatch>()
+    for (const m of matches) {
+      if (m.draw !== draw || m.round_id !== firstRound.id || m.bracket_position === null) continue
+      firstRoundByPos.set(m.bracket_position, m)
+    }
     return [0, 1, 2, 3].map(q => {
-      const anchor = firstRoundSorted[q * quarterSize]
-      return anchor ? `${surname(anchor.player1_name)}'s quarter` : `Q${q + 1}`
+      // First real match in this quarter — skip bye slots until we hit a played match.
+      for (let p = q * quarterSize; p < (q + 1) * quarterSize; p++) {
+        const m = firstRoundByPos.get(p)
+        if (m) return `${surname(m.player1_name)}'s quarter`
+      }
+      return `Q${q + 1}`
     })
-  }, [showQuarters, firstRound, firstRoundCount, matches, draw])
+  }, [showQuarters, firstRound, inferredFirstRoundSlots, matches, draw])
 
   const { matches: bracketMatches, roundNames } = useMemo(
     () => buildBracketMatches(rounds, matches, draw, showQuarters ? quarter : null, tipMap, showPicksPath),
