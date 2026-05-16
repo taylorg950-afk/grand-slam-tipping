@@ -62,10 +62,13 @@ function xLeft(ri: number): number {
 
 function BracketCanvas({ matches, roundNames }: { matches: BracketMatch[]; roundNames: string[] }) {
   const numRounds = roundNames.length
-  const firstRoundCount = matches.filter(m => m.roundIndex === 0).length || 1
+  const firstRoundMaxPos = matches
+    .filter(m => m.roundIndex === 0)
+    .reduce((max, m) => Math.max(max, m.position), -1)
+  const firstRoundSlots = firstRoundMaxPos + 1 || 1
 
   const totalW = PAD * 2 + numRounds * MATCH_W + Math.max(numRounds - 1, 0) * ROUND_GAP
-  const totalH = PAD * 2 + HEADER_H + firstRoundCount * U - MATCH_GAP
+  const totalH = PAD * 2 + HEADER_H + firstRoundSlots * U - MATCH_GAP
 
   const connectors = useMemo(() => {
     const paths: { d: string; picks: boolean }[] = []
@@ -196,12 +199,16 @@ function buildBracketMatches(
       })
   }
 
-  const all: (BracketMatch & { roundId: string })[] = []
+  // Use the match's actual bracket_position for layout — that's what encodes the
+  // bracket structure (pos p in round R is fed by pos 2p, 2p+1 in round R-1, and
+  // feeds floor(p/2) in round R+1). Array index would only work if positions are
+  // contiguous, which breaks as soon as one match in a round is missing.
+  const all: (BracketMatch & { roundId: string; originalRi: number })[] = []
   for (let ri = 0; ri < sortedRounds.length; ri++) {
     const r = sortedRounds[ri]
     const rms = byRound[r.id] ?? []
-    for (let pos = 0; pos < rms.length; pos++) {
-      const dm = rms[pos]
+    for (let i = 0; i < rms.length; i++) {
+      const dm = rms[i]
       const locked = new Date(dm.scheduled_start) <= now
       const tip = tipMap.get(dm.id)
       let isPicksPath = false
@@ -209,7 +216,8 @@ function buildBracketMatches(
         isPicksPath = dm.winner ? tip === dm.winner : true
       }
       all.push({
-        id: dm.id, roundIndex: ri, position: pos,
+        id: dm.id, roundIndex: ri, originalRi: ri,
+        position: dm.bracket_position ?? i,
         roundName: r.name, roundId: r.id,
         player1: dm.player1_name, player2: dm.player2_name,
         winner: dm.winner, isLocked: locked, isPicksPath,
@@ -219,38 +227,43 @@ function buildBracketMatches(
 
   if (all.length === 0) return { matches: [], roundNames: [] }
 
+  const firstRoundCount = (byRound[sortedRounds[0]?.id] ?? []).length
+
   let filtered = all
-  if (quarter !== null) {
-    // Base quarters on first-round size — works even when QF/SF/F aren't entered yet
-    const firstRoundCount = (byRound[sortedRounds[0]?.id] ?? []).length
+  if (quarter !== null && firstRoundCount >= 4) {
     const quarterSize = firstRoundCount / 4  // matches per quarter in round 0
     if (quarterSize >= 1) {
-      const keep = new Set<string>()
-      for (const m of all) {
-        const perQ = Math.max(1, Math.floor(quarterSize / Math.pow(2, m.roundIndex)))
+      filtered = all.filter(m => {
+        const perQ = Math.max(1, Math.floor(quarterSize / Math.pow(2, m.originalRi)))
         const start = quarter * perQ
-        if (m.position >= start && m.position < start + perQ) keep.add(m.id)
-      }
-      filtered = all.filter(m => keep.has(m.id))
+        return m.position >= start && m.position < start + perQ
+      })
     }
   }
 
-  const riSet = [...new Set(filtered.map(m => m.roundIndex))].sort((a, b) => a - b)
+  // Quarter view: shift positions so the selected quarter starts at 0.
+  // Full view: keep absolute positions — gaps stay as gaps, so layout matches reality.
+  const positionOffset = (originalRi: number): number => {
+    if (quarter === null || firstRoundCount < 4) return 0
+    const quarterSize = firstRoundCount / 4
+    return quarter * Math.max(1, Math.floor(quarterSize / Math.pow(2, originalRi)))
+  }
+
+  const riSet = [...new Set(filtered.map(m => m.originalRi))].sort((a, b) => a - b)
   const riMap = new Map(riSet.map((ri, i) => [ri, i]))
-  let matches = filtered.map(m => ({ ...m, roundIndex: riMap.get(m.roundIndex)! }))
   const roundNames = riSet.map(ri => sortedRounds[ri].name)
 
-  const byRi = new Map<number, typeof matches>()
-  for (const m of matches) {
-    if (!byRi.has(m.roundIndex)) byRi.set(m.roundIndex, [])
-    byRi.get(m.roundIndex)!.push(m)
-  }
-  const posMap = new Map<string, number>()
-  for (const group of byRi.values()) {
-    group.sort((a, b) => a.position - b.position)
-    group.forEach((m, i) => posMap.set(m.id, i))
-  }
-  matches = matches.map(m => ({ ...m, position: posMap.get(m.id)! }))
+  const matches: BracketMatch[] = filtered.map(m => ({
+    id: m.id,
+    roundIndex: riMap.get(m.originalRi)!,
+    position: m.position - positionOffset(m.originalRi),
+    roundName: m.roundName,
+    player1: m.player1,
+    player2: m.player2,
+    winner: m.winner,
+    isLocked: m.isLocked,
+    isPicksPath: m.isPicksPath,
+  }))
 
   return { matches, roundNames }
 }
