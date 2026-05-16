@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { submitTip } from '../round/[name]/actions'
 
 interface Match {
   id: string
@@ -31,8 +32,12 @@ interface Props {
   slug: string
 }
 
-export default function PicksView({ grouped, tipMap, slug }: Props) {
+export default function PicksView({ grouped, tipMap: initialTipMap, slug }: Props) {
+  const router = useRouter()
   const [activeRoundId, setActiveRoundId] = useState(grouped[0]?.round.id ?? null)
+  const [tipMap, setTipMap] = useState(initialTipMap)
+  const [pending, startTransition] = useTransition()
+  const [pendingPick, setPendingPick] = useState<{ matchId: string; pick: 'player1' | 'player2' } | null>(null)
 
   const active = grouped.find(g => g.round.id === activeRoundId) ?? grouped[0]
   const now = new Date()
@@ -49,6 +54,24 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
   const roundCorrect = roundMatches.filter(m => m.winner && tipMap[m.id] === m.winner).length
   const roundPoints = roundCorrect * round.points_per_correct_tip
   const roundPicked = roundMatches.filter(m => tipMap[m.id]).length
+
+  function placePick(matchId: string, roundName: string, pick: 'player1' | 'player2') {
+    if (pending) return
+    if (tipMap[matchId] === pick) return
+    const prev = tipMap
+    setPendingPick({ matchId, pick })
+    setTipMap({ ...tipMap, [matchId]: pick })
+    startTransition(async () => {
+      const result = await submitTip(slug, roundName, matchId, pick)
+      if (result?.error) {
+        setTipMap(prev)
+        console.error(result.error)
+      } else {
+        router.refresh()
+      }
+      setPendingPick(null)
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -99,6 +122,7 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
           const resulted = !!m.winner
           const correct = resulted && tip === m.winner
           const wrong = resulted && !!tip && tip !== m.winner
+          const rowPending = pendingPick?.matchId === m.id
 
           const p1Name = stripSeed(m.player1_name)
           const p2Name = stripSeed(m.player2_name)
@@ -111,6 +135,7 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
               className={`rounded-[2px] border px-3 py-2.5 flex items-center gap-3
                           ${correct ? 'border-[#3D4F2B] bg-[#3D4F2B08]'
                             : wrong ? 'border-[#B8543330] bg-[#B8543308]'
+                            : tip && !locked ? 'border-[#B8543340] bg-white'
                             : 'border-[#1B181418] bg-white'}`}
             >
               {/* Status dot */}
@@ -126,18 +151,29 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
 
               {/* Players */}
               <div className="flex-1 min-w-0">
-                <PlayerLine name={p1Name} seed={p1Seed} picked={tip === 'player1'} won={m.winner === 'player1'} resulted={resulted} />
+                <PlayerLine
+                  name={p1Name} seed={p1Seed}
+                  picked={tip === 'player1'} won={m.winner === 'player1'}
+                  resulted={resulted} locked={locked}
+                  pending={rowPending && pendingPick?.pick === 'player1'}
+                  onPick={() => placePick(m.id, round.name, 'player1')}
+                />
                 <div className="text-[9px] uppercase tracking-[0.12em] text-[#1B181430] my-0.5 ml-0.5">vs</div>
-                <PlayerLine name={p2Name} seed={p2Seed} picked={tip === 'player2'} won={m.winner === 'player2'} resulted={resulted} />
+                <PlayerLine
+                  name={p2Name} seed={p2Seed}
+                  picked={tip === 'player2'} won={m.winner === 'player2'}
+                  resulted={resulted} locked={locked}
+                  pending={rowPending && pendingPick?.pick === 'player2'}
+                  onPick={() => placePick(m.id, round.name, 'player2')}
+                />
               </div>
 
               {/* Right */}
-              <div className="shrink-0 text-right">
+              <div className="shrink-0 text-right min-w-[44px]">
                 {!tip && !locked && (
-                  <Link href={`/tournaments/${slug}/round/${round.name}`}
-                        className="text-[9px] uppercase tracking-[0.14em] text-[#B85433] font-semibold">
-                    Pick
-                  </Link>
+                  <span className="text-[9px] uppercase tracking-[0.14em] text-[#B85433] font-semibold">
+                    Tap to pick
+                  </span>
                 )}
                 {!tip && locked && (
                   <span className="text-[9px] uppercase tracking-[0.12em] text-[#1B181430]">No pick</span>
@@ -152,10 +188,7 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
                   <span className="text-[9px] uppercase tracking-[0.12em] text-[#3C342C] opacity-50">Pending</span>
                 )}
                 {tip && !resulted && !locked && (
-                  <Link href={`/tournaments/${slug}/round/${round.name}`}
-                        className="text-[9px] uppercase tracking-[0.12em] text-[#3C342C] opacity-50 hover:opacity-100 hover:text-[#B85433] transition-opacity">
-                    Picked
-                  </Link>
+                  <span className="text-[9px] uppercase tracking-[0.12em] text-[#3C342C] opacity-50">Picked</span>
                 )}
               </div>
             </div>
@@ -166,21 +199,53 @@ export default function PicksView({ grouped, tipMap, slug }: Props) {
   )
 }
 
-function PlayerLine({ name, seed, picked, won, resulted }: {
-  name: string; seed: string | null; picked: boolean; won: boolean; resulted: boolean
+function PlayerLine({ name, seed, picked, won, resulted, locked, pending, onPick }: {
+  name: string
+  seed: string | null
+  picked: boolean
+  won: boolean
+  resulted: boolean
+  locked: boolean
+  pending: boolean
+  onPick: () => void
 }) {
   const dim = resulted && !won
-  return (
-    <div className={`flex items-center gap-1.5 text-[13px] leading-snug
+  const interactive = !locked && !resulted
+  const inner = (
+    <div className={`flex items-center gap-1.5 text-[13px] leading-snug w-full
                      ${dim ? 'opacity-35' : ''} ${picked ? 'font-semibold' : 'font-normal'}`}>
       <span className={picked ? (won ? 'text-[#3D4F2B]' : resulted ? 'text-[#B85433]' : 'text-[#1B1814]') : 'text-[#3C342C]'}>
         {name}
       </span>
       {seed && <span className="text-[9px] text-[#1B181450] font-normal">[{seed}]</span>}
-      {picked && !resulted && (
+      {picked && !resulted && !pending && (
         <span className="text-[9px] uppercase tracking-[0.1em] text-[#B85433] font-normal ml-0.5">← pick</span>
       )}
+      {pending && (
+        <svg className="animate-spin size-3 ml-0.5" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#B85433" strokeWidth="3" />
+          <path className="opacity-75" fill="#B85433" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      )}
     </div>
+  )
+
+  if (!interactive) {
+    return inner
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      aria-pressed={picked}
+      aria-label={`Pick ${name}`}
+      className="w-full text-left rounded-[2px] -mx-1 px-1 py-0.5
+                 hover:bg-[#B854330f] active:scale-[0.99] transition-all duration-75
+                 cursor-pointer"
+    >
+      {inner}
+    </button>
   )
 }
 
