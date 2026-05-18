@@ -214,12 +214,36 @@ export default async function DashboardPage() {
     lockMs = firstUnlocked ? new Date(firstUnlocked.scheduled_start).getTime() - Date.now() : 0
   }
 
+  // Banner shows the active round: prefer one the user can still pick, then
+  // one that's underway (started, not all resulted), then the latest completed.
+  const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
+  const nowForBanner = new Date()
+  const inProgressForBanner = orderedRounds.find(round => {
+    const rm = matches.filter(m => m.round_id === round.id)
+    return rm.length > 0 && rm.some(m => !m.winner)
+  })
+  const lastResulted = [...orderedRounds].reverse().find(round =>
+    matches.some(m => m.round_id === round.id && m.winner)
+  )
+  const bannerRound = upcomingRound ?? inProgressForBanner ?? lastResulted ?? orderedRounds[0] ?? null
+  const bannerMatches = bannerRound ? matches.filter(m => m.round_id === bannerRound.id) : []
+  const nextUnstarted = bannerMatches.find(m => new Date(m.scheduled_start) > nowForBanner)
+  const bannerLockMs = nextUnstarted ? new Date(nextUnstarted.scheduled_start).getTime() - Date.now() : 0
+  const bannerAllResulted = bannerMatches.length > 0 && bannerMatches.every(m => !!m.winner)
+  const bannerStatus = bannerLockMs > 0
+    ? `locks in ${fmtCountdown(bannerLockMs)}.`
+    : bannerAllResulted
+      ? 'complete.'
+      : bannerMatches.length === 0
+        ? 'to come.'
+        : 'in progress.'
+
   const dayNum = tournament?.start_date
     ? Math.max(1, Math.ceil((Date.now() - new Date(tournament.start_date).getTime()) / 86_400_000))
     : 1
 
   const weekday = new Date().toLocaleDateString('en-AU', { weekday: 'short' })
-  const currentRoundName = roundLongName(upcomingRound?.name ?? roundBreakdown.at(-1)?.round.name ?? 'Round')
+  const currentRoundName = roundLongName(bannerRound?.name ?? 'Round')
 
   const editorLine = !myRank ? 'Welcome to the comp. Get tipping.'
     : myRank === 1 ? "You're top of the pile. Hold the line."
@@ -270,7 +294,7 @@ export default async function DashboardPage() {
               {currentRoundName}
               <br />
               <span className="italic text-[#F2EBDC]">
-                {lockMs > 0 ? `locks in ${fmtCountdown(lockMs)}.` : 'locked.'}
+                {bannerStatus}
               </span>
             </h1>
             <div className="mt-3 flex items-center gap-3.5 text-xs text-white/85">
