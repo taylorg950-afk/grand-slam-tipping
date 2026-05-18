@@ -21,6 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div className="flex items-center gap-4">
             <a href="/admin" className="text-sm font-medium">Admin</a>
+            <a href="/admin/users" className="text-sm text-zinc-500 hover:text-zinc-900">Users</a>
             <span className="text-zinc-300">|</span>
             <a href="/dashboard" className="text-sm text-zinc-500 hover:text-zinc-900">Back to app</a>
           </div>
