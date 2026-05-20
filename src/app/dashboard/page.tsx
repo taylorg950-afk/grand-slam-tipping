@@ -4,7 +4,8 @@ import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
-import { Greeting } from './Greeting'
+import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
+import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
 
 interface Round {
   id: string
@@ -35,22 +36,78 @@ interface RoundBreakdown {
   tipped: number
   resulted: number
   total: number
+  state: 'done' | 'live' | 'pending'
+}
+
+const ROUND_LONG: Record<string, string> = {
+  R128: 'Round of 128', R64: 'Round of 64', R32: 'Round of 32',
+  R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', F: 'The Final',
+}
+
+const TOURNAMENT_INFO: Record<string, { city: string; surface: string }> = {
+  'australian-open': { city: 'Melbourne', surface: 'hard court' },
+  'roland-garros': { city: 'Paris', surface: 'clay' },
+  'french-open': { city: 'Paris', surface: 'clay' },
+  'italian-open': { city: 'Rome', surface: 'clay' },
+  'madrid-open': { city: 'Madrid', surface: 'clay' },
+  'wimbledon': { city: 'London', surface: 'grass' },
+  'us-open': { city: 'New York', surface: 'hard court' },
+  'miami-open': { city: 'Miami', surface: 'hard court' },
+  'indian-wells': { city: 'Indian Wells', surface: 'hard court' },
+}
+
+function tournamentMeta(slug: string | null | undefined, name: string): { city: string; surface: string } {
+  if (slug) {
+    for (const key of Object.keys(TOURNAMENT_INFO)) {
+      if (slug.includes(key)) return TOURNAMENT_INFO[key]
+    }
+  }
+  return { city: name.split(' ')[0] ?? 'the tournament', surface: 'court' }
+}
+
+function stripSeed(name: string) {
+  return name.replace(/\s*\[.*?\]/, '').trim()
+}
+
+function fmtCountdown(ms: number) {
+  if (ms <= 0) return null
+  const totalMin = Math.floor(ms / 60_000)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
+}
+
+function fmtClock(date: Date) {
+  return date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: false })
+}
+
+function fmtLockTime(date: Date) {
+  return date.toLocaleString('en-AU', { weekday: 'short', hour: 'numeric', hour12: true }).toLowerCase()
 }
 
 function computeRoundBreakdown(
   userId: string,
   rounds: Round[],
   matches: Match[],
-  tips: Tip[]
+  tips: Tip[],
+  now: Date,
 ): RoundBreakdown[] {
   return rounds.map(round => {
     const roundMatches = matches.filter(m => m.round_id === round.id)
     const resulted = roundMatches.filter(m => m.winner)
+    const started = roundMatches.filter(m => new Date(m.scheduled_start) <= now)
     const myTips = tips.filter(t => t.user_id === userId && roundMatches.some(m => m.id === t.match_id))
     const correct = myTips.filter(t => {
       const match = resulted.find(m => m.id === t.match_id)
       return match && t.predicted_winner === match.winner
     })
+
+    let state: 'done' | 'live' | 'pending' = 'pending'
+    if (roundMatches.length > 0 && resulted.length === roundMatches.length) state = 'done'
+    else if (started.length > 0) state = 'live'
+
     return {
       round,
       points: correct.length * round.points_per_correct_tip,
@@ -58,6 +115,7 @@ function computeRoundBreakdown(
       tipped: myTips.length,
       resulted: resulted.length,
       total: roundMatches.length,
+      state,
     }
   })
 }
@@ -66,7 +124,7 @@ function buildChartData(
   users: Array<{ id: string; display_name: string }>,
   rounds: Round[],
   matches: Match[],
-  tips: Tip[]
+  tips: Tip[],
 ): CumulativePointsData[] {
   const names = users.map(u => u.display_name)
   const start: CumulativePointsData = { round: 'Start' }
@@ -97,24 +155,27 @@ function buildChartData(
   return rows.length > 1 ? rows : []
 }
 
-function roundLongName(name: string) {
-  const map: Record<string, string> = {
-    R128: 'Round of 128', R64: 'Round of 64', R32: 'Round of 32',
-    R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', F: 'The Final',
+function streakFor(userId: string, matches: Match[], tips: Tip[]): number {
+  const resulted = matches
+    .filter(m => m.winner)
+    .sort((a, b) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
+  let streak = 0
+  for (const m of resulted) {
+    const t = tips.find(x => x.user_id === userId && x.match_id === m.id)
+    if (!t || t.predicted_winner !== m.winner) break
+    streak++
   }
-  return map[name] ?? name
+  return streak
 }
 
-function stripSeed(name: string) {
-  return name.replace(/\s*\[.*?\]/, '').trim()
-}
-
-function fmtCountdown(ms: number) {
-  if (ms <= 0) return 'locked'
-  const h = Math.floor(ms / 3_600_000)
-  const m = Math.floor((ms % 3_600_000) / 60_000)
-  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`
-  return `${h}h ${m}m`
+function consensusOf(matchId: string, tips: Tip[]) {
+  const ts = tips.filter(t => t.match_id === matchId)
+  if (ts.length === 0) return null
+  const p1 = ts.filter(t => t.predicted_winner === 'player1').length
+  const p2 = ts.length - p1
+  const side: 'player1' | 'player2' = p1 >= p2 ? 'player1' : 'player2'
+  const pct = Math.round((Math.max(p1, p2) / ts.length) * 100)
+  return { side, pct, total: ts.length, nonConsensus: Math.min(p1, p2) }
 }
 
 export default async function DashboardPage() {
@@ -122,394 +183,649 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [{ data: profile }, { data: tournament }] = await Promise.all([
-    supabase.from('users').select('display_name, is_admin').eq('id', user!.id).single(),
+  const now = new Date()
+
+  const [{ data: profile }, { data: tournament }, { count: readerCount }] = await Promise.all([
+    supabase.from('users').select('display_name, is_admin').eq('id', user.id).single(),
     supabase.from('tournaments').select('id, name, slug, start_date').eq('is_active', true).maybeSingle(),
+    supabase.from('users').select('id', { count: 'exact', head: true }),
   ])
 
-  const firstName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'mate'
+  const yourName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'mate'
+  const weekday = now.toLocaleDateString('en-AU', { weekday: 'short' })
 
-  let scores = null
-  let myScore = null
-  let myRank: number | null = null
-  let roundBreakdown: RoundBreakdown[] = []
-  let rounds: Round[] = []
-  let matches: Match[] = []
-  let tips: Tip[] = []
-  let upcomingRound: Round | null = null
-  let upcomingMatches: Match[] = []
-  let chartData: CumulativePointsData[] = []
-  let tipsInRound = 0
-  let totalInRound = 0
-  let lockMs = 0
-  let avatarMap: Record<string, string | null> = {}
-
-  if (tournament) {
-    const { data: roundData } = await supabase
-      .from('rounds')
-      .select('id, name, points_per_correct_tip, sort_order')
-      .eq('tournament_id', tournament.id)
-      .order('sort_order')
-
-    rounds = roundData ?? []
-    const roundIds = rounds.map(r => r.id)
-
-    const { data: matchData } = await supabase
-      .from('matches')
-      .select('id, round_id, winner, scheduled_start, player1_name, player2_name')
-      .in('round_id', roundIds)
-      .order('scheduled_start')
-
-    matches = matchData ?? []
-    const matchIds = matches.map(m => m.id)
-
-    const [{ data: tipData }, { data: users }, { data: avatarRows }] = await Promise.all([
-      matchIds.length
-        ? supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
-        : Promise.resolve({ data: [] as Tip[] }),
-      supabase.from('users').select('id, display_name').order('display_name'),
-      supabase.from('users').select('id, avatar_url').order('display_name'),
-    ])
-
-    tips = tipData ?? []
-    avatarMap = Object.fromEntries((avatarRows ?? []).map((u: { id: string; avatar_url?: string | null }) => [u.id, u.avatar_url ?? null]))
-    scores = computeScores(users ?? [], matches, rounds, tips)
-    const myIndex = scores.findIndex(s => s.id === user!.id)
-    if (myIndex !== -1) {
-      myScore = scores[myIndex]
-      myRank = myIndex + 1
-    }
-
-    roundBreakdown = computeRoundBreakdown(user!.id, rounds, matches, tips)
-    chartData = buildChartData(users ?? [], rounds, matches, tips)
-
-    const now = new Date()
-    for (const round of [...rounds].sort((a, b) => a.sort_order - b.sort_order)) {
-      const roundMatches = matches.filter(m => m.round_id === round.id)
-      const unpicked = roundMatches.filter(m =>
-        new Date(m.scheduled_start) > now &&
-        !tips.some(t => t.user_id === user!.id && t.match_id === m.id)
-      )
-      if (unpicked.length > 0) {
-        upcomingRound = round
-        upcomingMatches = unpicked.sort((a, b) =>
-          new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime()
-        )
-        break
-      }
-    }
-
-    // Tips progress for the first in-progress round
-    const inProgressRound = rounds.find(round => {
-      const rm = matches.filter(m => m.round_id === round.id)
-      return rm.some(m => new Date(m.scheduled_start) <= now) && rm.some(m => !m.winner)
-    }) ?? upcomingRound
-    if (inProgressRound) {
-      const rm = matches.filter(m => m.round_id === inProgressRound.id)
-      totalInRound = rm.length
-      tipsInRound = tips.filter(t => t.user_id === user!.id && rm.some(m => m.id === t.match_id)).length
-    }
-
-    const firstUnlocked = matches.find(m => new Date(m.scheduled_start) > now)
-    lockMs = firstUnlocked ? new Date(firstUnlocked.scheduled_start).getTime() - Date.now() : 0
+  // ─── Off-season state ───────────────────────────────────────────────
+  if (!tournament) {
+    const offHeadline = dashboardHeadline({
+      hasActiveTournament: false,
+      isFirstTimeUser: false,
+      rank: null,
+      numTippers: 0,
+      gap: 0,
+      leaderName: '',
+      yourName,
+      city: '',
+      round: '',
+      roundResultedCount: 0,
+      tournamentComplete: false,
+    })
+    return (
+      <main className="relative flex min-h-screen flex-col">
+        <div aria-hidden className="tp-paper-grain" />
+        <Masthead weekday={weekday} readers={readerCount ?? 0} isAdmin={profile?.is_admin ?? false} />
+        <section className="relative z-10 mx-auto max-w-3xl px-5 py-20 text-center">
+          <div className="tp-eyebrow mb-3">{offHeadline.kicker}</div>
+          <h1 className="font-serif text-[40px] leading-[1.05] tracking-tight md:text-[56px]">
+            {offHeadline.line1}
+            <br />
+            <span className="italic text-[var(--ink-2)]">{offHeadline.line2}</span>
+          </h1>
+        </section>
+        <TabBar />
+      </main>
+    )
   }
 
-  // Banner shows the active round: prefer one the user can still pick, then
-  // one that's underway (started, not all resulted), then the latest completed.
-  const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
-  const nowForBanner = new Date()
-  const inProgressForBanner = orderedRounds.find(round => {
-    const rm = matches.filter(m => m.round_id === round.id)
-    return rm.length > 0 && rm.some(m => !m.winner)
-  })
-  const lastResulted = [...orderedRounds].reverse().find(round =>
-    matches.some(m => m.round_id === round.id && m.winner)
-  )
-  const bannerRound = upcomingRound ?? inProgressForBanner ?? lastResulted ?? orderedRounds[0] ?? null
-  const bannerMatches = bannerRound ? matches.filter(m => m.round_id === bannerRound.id) : []
-  const nextUnstarted = bannerMatches.find(m => new Date(m.scheduled_start) > nowForBanner)
-  const bannerLockMs = nextUnstarted ? new Date(nextUnstarted.scheduled_start).getTime() - Date.now() : 0
-  const bannerAllResulted = bannerMatches.length > 0 && bannerMatches.every(m => !!m.winner)
-  const bannerStatus = bannerLockMs > 0
-    ? `locks in ${fmtCountdown(bannerLockMs)}.`
-    : bannerAllResulted
-      ? 'complete.'
-      : bannerMatches.length === 0
-        ? 'to come.'
-        : 'in progress.'
+  // ─── Active tournament — pull data ──────────────────────────────────
+  const { data: roundData } = await supabase
+    .from('rounds')
+    .select('id, name, points_per_correct_tip, sort_order')
+    .eq('tournament_id', tournament.id)
+    .order('sort_order')
+  const rounds: Round[] = roundData ?? []
 
-  const dayNum = tournament?.start_date
-    ? Math.max(1, Math.ceil((Date.now() - new Date(tournament.start_date).getTime()) / 86_400_000))
+  const roundIds = rounds.map(r => r.id)
+  const { data: matchData } = await supabase
+    .from('matches')
+    .select('id, round_id, winner, scheduled_start, player1_name, player2_name')
+    .in('round_id', roundIds)
+    .order('scheduled_start')
+  const matches: Match[] = matchData ?? []
+  const matchIds = matches.map(m => m.id)
+
+  const [{ data: tipData }, { data: users }, { data: avatarRows }] = await Promise.all([
+    matchIds.length
+      ? supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
+      : Promise.resolve({ data: [] as Tip[] }),
+    supabase.from('users').select('id, display_name').order('display_name'),
+    supabase.from('users').select('id, avatar_url').order('display_name'),
+  ])
+
+  const tips: Tip[] = tipData ?? []
+  const avatarMap: Record<string, string | null> = Object.fromEntries(
+    (avatarRows ?? []).map((u: { id: string; avatar_url?: string | null }) => [u.id, u.avatar_url ?? null])
+  )
+  const scores = computeScores(users ?? [], matches, rounds, tips)
+  const myIndex = scores.findIndex(s => s.id === user.id)
+  const myScore = myIndex !== -1 ? scores[myIndex] : null
+  const myRank = myIndex !== -1 ? myIndex + 1 : null
+
+  const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
+  const roundBreakdown = computeRoundBreakdown(user.id, orderedRounds, matches, tips, now)
+  const chartData = buildChartData(users ?? [], rounds, matches, tips)
+
+  // Current round = first round with matches that isn't fully resulted
+  const currentRound =
+    orderedRounds.find(r => {
+      const rm = matches.filter(m => m.round_id === r.id)
+      return rm.length > 0 && rm.some(m => !m.winner)
+    }) ?? orderedRounds.find(r => matches.some(m => m.round_id === r.id)) ?? orderedRounds[0] ?? null
+  const currentRoundLong = currentRound ? (ROUND_LONG[currentRound.name] ?? currentRound.name) : 'Round'
+
+  const currentRoundMatches = currentRound ? matches.filter(m => m.round_id === currentRound.id) : []
+  const currentRoundResultedCount = currentRoundMatches.filter(m => m.winner).length
+  const myCurrentRoundTips = tips.filter(
+    t => t.user_id === user.id && currentRoundMatches.some(m => m.id === t.match_id)
+  )
+  const tipsInRound = myCurrentRoundTips.length
+  const totalInRound = currentRoundMatches.length
+
+  // Next lock = earliest unlocked unresulted match in the current round
+  const nextLockMatch = currentRoundMatches
+    .filter(m => !m.winner && new Date(m.scheduled_start) > now)
+    .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())[0]
+  const lockMs = nextLockMatch ? new Date(nextLockMatch.scheduled_start).getTime() - now.getTime() : 0
+  const lockCountdown = fmtCountdown(lockMs)
+  const firstLockClock = nextLockMatch ? fmtLockTime(new Date(nextLockMatch.scheduled_start)) : null
+
+  // Banner status verb (per COPY-PATTERNS Banner status verb table)
+  const totalMatchesCurrent = currentRoundMatches.length
+  const statusVerb =
+    currentRoundResultedCount === totalMatchesCurrent && totalMatchesCurrent > 0
+      ? 'complete'
+      : currentRoundResultedCount > 0
+        ? 'underway'
+        : currentRoundMatches.some(m => new Date(m.scheduled_start) <= now)
+          ? 'in progress'
+          : 'to come'
+
+  const dayNum = tournament.start_date
+    ? Math.max(1, Math.ceil((now.getTime() - new Date(tournament.start_date).getTime()) / 86_400_000))
     : 1
 
-  const weekday = new Date().toLocaleDateString('en-AU', { weekday: 'short' })
-  const currentRoundName = roundLongName(bannerRound?.name ?? 'Round')
+  const meta = tournamentMeta(tournament.slug, tournament.name)
 
-  const editorLine = !myRank ? 'Welcome to the comp. Get tipping.'
-    : myRank === 1 ? "You're top of the pile. Hold the line."
-    : myRank === 2 ? 'Second. The leader can be caught.'
-    : myRank === 3 ? "You're third. A bold afternoon could change that."
-    : `${myRank}th. Time for a bold call.`
+  // ─── Headline state ─────────────────────────────────────────────────
+  const second = scores[myRank === 1 ? 1 : 0]
+  const leader = scores[0]
+  const gap = myScore && second ? Math.abs(myScore.totalPoints - (myRank === 1 ? second.totalPoints : (leader?.totalPoints ?? 0))) : 0
+  const numTippers = scores.length
+  const tournamentComplete = orderedRounds.length > 0 &&
+    matches.length > 0 &&
+    orderedRounds.every(r => {
+      const rm = matches.filter(m => m.round_id === r.id)
+      return rm.length > 0 && rm.every(m => !!m.winner)
+    })
+  const isFirstTimeUser = (myScore?.totalTips ?? 0) === 0 && (tips.filter(t => t.user_id === user.id).length === 0)
+  const numUnpickedMatches = currentRoundMatches.filter(
+    m => new Date(m.scheduled_start) > now && !tips.some(t => t.user_id === user.id && t.match_id === m.id)
+  ).length
+
+  // Tied for first
+  const tiedAtTop =
+    myRank === 1 && leader && scores.filter(s => s.totalPoints === leader.totalPoints).length > 1
+  const tiedOthers = tiedAtTop
+    ? scores.filter(s => s.totalPoints === leader.totalPoints && s.id !== user.id).map(s => s.display_name)
+    : []
+
+  const headlineState: HeadlineState = {
+    hasActiveTournament: true,
+    isFirstTimeUser,
+    rank: myRank,
+    numTippers,
+    gap,
+    leaderName: leader?.display_name ?? 'the leader',
+    yourName,
+    city: meta.city,
+    round: currentRoundLong,
+    roundResultedCount: currentRoundResultedCount,
+    tournamentComplete,
+    tiedAtTop: !!tiedAtTop,
+    tiedNames: tiedOthers,
+    tiedPoints: leader?.totalPoints,
+    finalPoints: tournamentComplete ? leader?.totalPoints : undefined,
+    numUnpickedMatches,
+    locksIn: lockCountdown ?? undefined,
+  }
+  const headline = dashboardHeadline(headlineState)
+
+  // ─── Body state ─────────────────────────────────────────────────────
+  const resultedRoundBreakdown = roundBreakdown.filter(r => r.resulted > 0)
+  const r1 = resultedRoundBreakdown[0] ?? null
+  const r2 = resultedRoundBreakdown[1] ?? null
+  const currentRoundIdx = currentRound ? orderedRounds.findIndex(r => r.id === currentRound.id) : -1
+  const nextRound = currentRoundIdx >= 0 ? orderedRounds[currentRoundIdx + 1] ?? null : null
+
+  // Lead match = first locked (or pre-lock if none locked) currentRound match
+  const leadMatch =
+    currentRoundMatches.find(m => new Date(m.scheduled_start) <= now && !m.winner) ??
+    currentRoundMatches.find(m => !m.winner) ??
+    null
+  const leadConsensus = leadMatch ? consensusOf(leadMatch.id, tips) : null
+  const leadConsensusPlayer = leadMatch && leadConsensus
+    ? (leadConsensus.side === 'player1' ? stripSeed(leadMatch.player1_name) : stripSeed(leadMatch.player2_name))
+    : null
+
+  const leaderScore = scores[0]
+  const leaderAccuracy = leaderScore && leaderScore.totalTips > 0
+    ? Math.round((leaderScore.correctTips / leaderScore.totalTips) * 100)
+    : null
+  const secondScore = scores[1]
+  const secondAccuracy = secondScore && secondScore.totalTips > 0
+    ? Math.round((secondScore.correctTips / secondScore.totalTips) * 100)
+    : null
+  const myAccuracy = myScore && myScore.totalTips > 0
+    ? Math.round((myScore.correctTips / myScore.totalTips) * 100)
+    : null
+
+  const bodyState: BodyState = {
+    hasActiveTournament: true,
+    isFirstTimeUser,
+    rank: myRank,
+    numTippers,
+    yourName,
+    leaderName: leader?.display_name ?? 'The leader',
+    secondName: secondScore?.display_name ?? null,
+    points: myScore?.totalPoints ?? 0,
+    leaderPts: leader?.totalPoints ?? 0,
+    gap,
+    leaderAccuracy,
+    secondAccuracy,
+    secondTipped: secondScore?.totalTips ?? 0,
+    accuracy: myAccuracy,
+    tipped: myScore?.totalTips ?? 0,
+    city: meta.city,
+    surface: meta.surface,
+    round: currentRoundLong,
+    roundResultedCount: currentRoundResultedCount,
+    currentRoundMatchCount: currentRoundMatches.length,
+    firstRoundName: r1 ? (ROUND_LONG[r1.round.name] ?? r1.round.name) : null,
+    secondRoundName: r2 ? (ROUND_LONG[r2.round.name] ?? r2.round.name) : null,
+    r1Correct: r1?.correct ?? null,
+    r1Total: r1?.resulted ?? null,
+    r2Correct: r2?.correct ?? null,
+    r2Total: r2?.resulted ?? null,
+    nextRound: nextRound ? (ROUND_LONG[nextRound.name] ?? nextRound.name) : null,
+    nextRoundPts: nextRound?.points_per_correct_tip ?? null,
+    leadMatchP1: leadMatch ? stripSeed(leadMatch.player1_name) : null,
+    leadMatchP2: leadMatch ? stripSeed(leadMatch.player2_name) : null,
+    consensus: leadConsensusPlayer,
+    consensusPct: leadConsensus?.pct ?? null,
+    nonConsensusCount: leadConsensus?.nonConsensus ?? null,
+    leadMatchLockTime: leadMatch ? fmtLockTime(new Date(leadMatch.scheduled_start)) : null,
+    firstLock: firstLockClock,
+    nMatches: currentRoundMatches.length,
+    nUnpicked: numUnpickedMatches,
+    nAbove: myRank ? myRank - 1 : null,
+    nRoundsLeft: orderedRounds.length - Math.max(0, currentRoundIdx),
+  }
+  const body = dashboardBody(bodyState)
+
+  // ─── Order of play ──────────────────────────────────────────────────
+  const orderOfPlay = currentRoundMatches
+    .filter(m => !m.winner)
+    .slice(0, 6)
+
+  // ─── Pull quote ─────────────────────────────────────────────────────
+  let pullItalic: string | null = null
+  let pullPunch: string | null = null
+  if (totalInRound > 0 && tipsInRound === 0) {
+    pullItalic = 'Round opens.'
+    pullPunch = 'Nothing in yet — get on it.'
+  } else if (totalInRound > 0 && tipsInRound === totalInRound) {
+    pullItalic = 'All in.'
+    pullPunch = 'Now we wait.'
+  } else if (totalInRound > 0) {
+    pullItalic = `${totalInRound - tipsInRound} still to call.`
+    pullPunch = "Don't dawdle."
+  }
+
+  const myCorrectStreak = streakFor(user.id, matches, tips)
+  const hasAnyResults = matches.some(m => m.winner)
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#FAF6EC] text-[#1B1814] relative">
-      {/* Dotted texture */}
-      <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
-           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1B1814 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
+    <main className="relative flex min-h-screen flex-col">
+      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Masthead */}
-      <header className="relative z-10 px-5 py-3.5 flex items-baseline justify-between border-b border-[#1B181420]">
-        <Link href="/dashboard" className="font-serif italic text-[22px] leading-none tracking-tight">
+      {/* Broadsheet masthead */}
+      <header
+        className="relative z-10 border-b-[3px] border-double border-[var(--ink)] px-4 pt-6 md:px-8"
+      >
+        {/* Edition strip */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[var(--rule)] pb-3 text-[9px] uppercase tracking-[0.2em] text-[var(--ink-2)] md:text-[10px]">
+          <span>Vol. I · No. {String(dayNum).padStart(2, '0')}</span>
+          <span>{weekday} · Day {dayNum}</span>
+          <span className="hidden md:inline">Subscribers only · {readerCount ?? 0} readers</span>
+          <span className="flex items-center gap-4">
+            {profile?.is_admin && <Link href="/admin" className="text-[var(--brick)] font-semibold">Admin</Link>}
+            <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
+          </span>
+        </div>
+        <h1 className="m-0 mb-1.5 mt-4 text-center font-serif italic leading-none tracking-tight text-[42px] md:mb-2 md:mt-5 md:text-[84px]">
           The Tipping Post
-        </Link>
-        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-[#3C342C]">
-          {tournament ? `${tournament.name} · ${weekday}` : weekday}
-          {profile?.is_admin && (
-            <Link href="/admin" className="text-[#B85433] font-semibold">Admin</Link>
-          )}
-          <Link href="/profile" className="hover:text-[#1B1814]">Profile</Link>
+        </h1>
+        <div className="pb-3 text-center text-[8px] uppercase tracking-[0.28em] text-[var(--ink-2)] md:pb-4 md:text-[10px] md:tracking-[0.35em]">
+          A private dispatch from the {tournament.name}
         </div>
       </header>
 
-      {!tournament ? (
-        <section className="relative z-10 px-5 py-16 text-center flex-1">
-          <h1 className="font-serif text-4xl italic mb-3">Off-season.</h1>
-          <p className="text-[#3C342C] italic font-serif text-lg">
-            Nothing live right now. Check back when the next Slam fires up.
-          </p>
-        </section>
-      ) : (
-        <>
-          {/* Clay banner */}
-          <section className="relative z-10 px-5 py-4 overflow-hidden text-[#FAF6EC] bg-[#B85433]">
-            <div aria-hidden
-                 className="absolute -right-8 -top-3 text-[140px] leading-none italic
-                            font-serif text-white/[0.06] select-none pointer-events-none">
-              {tournament.slug?.split('-')[0]?.toUpperCase() ?? 'GS'}
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.2em] opacity-80">
-              {tournament.name} · Day {dayNum}
-            </div>
-            <h1 className="font-serif text-3xl leading-[1.05] tracking-tight mt-1">
-              {currentRoundName}
-              <br />
-              <span className="italic text-[#F2EBDC]">
-                {bannerStatus}
-              </span>
-            </h1>
-            <div className="mt-3 flex items-center gap-3.5 text-xs text-white/85">
-              <span><b className="text-white font-semibold">{tipsInRound}</b> of {totalInRound} picks in</span>
-              <span className="w-[3px] h-[3px] rounded-full bg-white/40" />
-              <span>{Math.max(0, totalInRound - tipsInRound)} still to call</span>
-            </div>
-          </section>
+      {/* Section heading bar */}
+      <div className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[var(--ink-2)] md:px-8 md:py-3 md:text-[11px] md:tracking-[0.2em]">
+        <span className="hidden md:inline">The Front Page</span>
+        <span className="font-semibold text-[var(--brick)]">
+          {currentRoundLong} · <span className="italic normal-case tracking-normal">{statusVerb}</span>
+        </span>
+        <span>
+          {totalInRound > 0 ? `${tipsInRound}/${totalInRound} in` : 'no fixtures yet'}
+          {lockCountdown ? ` · locks in ${lockCountdown}` : ''}
+        </span>
+      </div>
 
-          {/* From the Editor */}
-          <section className="relative z-10 px-5 pt-4 pb-3">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] mb-1.5 font-semibold">
-              From the Editor
-            </div>
-            <Greeting firstName={firstName} editorLine={editorLine} />
-          </section>
+      {/* Above the fold — Lead + Sidebar */}
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-[3fr_2fr]">
+        {/* Lead story */}
+        <article className="px-4 pb-6 pt-5 md:border-r md:border-[var(--rule)] md:px-8 md:pb-6 md:pt-7">
+          <div className="tp-eyebrow tp-eyebrow--brick mb-2.5">{headline.kicker}</div>
+          <h2 className="m-0 mb-3 font-serif tracking-tight text-[32px] leading-[1.05] md:text-[52px] md:leading-[1.04]">
+            {headline.line1}
+            <br />
+            <span className="italic">{headline.line2}</span>
+          </h2>
 
-          {/* Pick of the day — next unlocked unconfirmed match */}
-          {upcomingMatches[0] && (
-            <section className="relative z-10 px-5 pb-4">
-              <div className="border border-[#1B181420] rounded-[2px] bg-[#F2EBDC] p-4">
-                <div className="flex justify-between items-baseline text-[10px] uppercase tracking-[0.18em] font-semibold text-[#B85433]">
-                  <span>Pick of the day</span>
-                  <Link
-                    href={`/tournaments/${tournament.slug}/round/${upcomingRound!.name}`}
-                    className="text-[#3C342C] font-normal normal-case text-[11px] hover:text-[#1B1814]"
-                  >
-                    {upcomingRound!.name} · {upcomingMatches.length} to go →
-                  </Link>
-                </div>
-                <div className="font-serif text-2xl leading-[1.1] tracking-tight mt-2">
-                  {stripSeed(upcomingMatches[0].player1_name)}{' '}
-                  <span className="italic text-[#3C342C]">v</span>{' '}
-                  {stripSeed(upcomingMatches[0].player2_name)}
-                </div>
-                <Link
-                  href={`/tournaments/${tournament.slug}/round/${upcomingRound!.name}`}
-                  className="mt-3 inline-block bg-[#B85433] hover:bg-[#8E3A1F] text-[#FAF6EC]
-                             px-4 py-2 text-[11px] uppercase tracking-[0.18em] font-semibold
-                             rounded-[2px] transition-colors"
-                >
-                  Make your pick →
-                </Link>
+          {body.paragraphs.length > 0 && (
+            <>
+              <div className="mb-3.5 border-b border-dotted border-[var(--rule)] pb-3 font-serif italic text-[14px] leading-[1.4] text-[var(--ink-2)] md:text-[16px]">
+                {body.paragraphs[0]?.text}
               </div>
-            </section>
+              {body.paragraphs.length > 1 && (
+                <div
+                  className="font-sans text-[14px] leading-[1.55] text-[var(--ink-2)] [&>p]:m-0 [&>p:not(:last-child)]:mb-3 md:columns-2 md:gap-6 md:[column-rule:1px_solid_var(--rule-soft)]"
+                >
+                  {body.paragraphs.slice(1).map((p, i) => {
+                    const first = p.text.trimStart()[0]
+                    const isLetter = first && /[A-Za-z]/.test(first)
+                    if (i === 0 && p.dropCap !== false && isLetter) {
+                      const lead = p.text.trimStart()
+                      return (
+                        <p key={i}>
+                          <span className="float-left pr-2 pt-1 font-serif italic text-[48px] leading-[0.85] text-[var(--ink)] md:text-[56px]">
+                            {lead[0]}
+                          </span>
+                          {lead.slice(1)}
+                        </p>
+                      )
+                    }
+                    return <p key={i}>{p.text}</p>
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </article>
+
+        {/* Sidebar — Standings + By the numbers */}
+        <aside className="border-t border-[var(--rule)] px-4 pb-6 pt-5 md:border-t-0 md:px-8 md:pt-7">
+          <div className="tp-eyebrow mb-1 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
+            <span>The Standings · <span className="tp-eyebrow--brick">Live</span></span>
+            <Link href={`/tournaments/${tournament.slug}/leaderboard`} className="tp-eyebrow hover:text-[var(--ink)]">See all</Link>
+          </div>
+          {!scores.length ? (
+            <div className="py-4 font-serif italic text-[var(--ink-2)]">
+              No tips judged yet. Wait till results land.
+            </div>
+          ) : (
+            <>
+              {scores.slice(0, 5).map((s, i) => {
+                const isMe = s.id === user.id
+                const avatar = avatarMap[s.id]
+                return (
+                  <StandingsRow
+                    key={s.id}
+                    rank={i + 1}
+                    name={s.display_name}
+                    avatarUrl={avatar}
+                    points={hasAnyResults ? s.totalPoints : null}
+                    isMe={isMe}
+                  />
+                )
+              })}
+              {myRank && myRank > 5 && myScore && (
+                <>
+                  <div className="py-1.5 text-center text-[10px] tracking-[0.4em] text-[var(--ink-4)]">···</div>
+                  <StandingsRow
+                    rank={myRank}
+                    name={myScore.display_name}
+                    avatarUrl={avatarMap[myScore.id]}
+                    points={hasAnyResults ? myScore.totalPoints : null}
+                    isMe
+                  />
+                </>
+              )}
+            </>
           )}
 
-          {/* Standings + Chart: stacked on mobile, side-by-side on desktop */}
-          <div className="relative z-10 md:grid md:grid-cols-2 md:gap-8 md:px-5 md:pb-4 md:pt-2">
-
-            {/* Left col: Standings + Round breakdown */}
-            <div className="space-y-4 md:space-y-0">
-              <section className="px-5 pb-4 md:px-0 md:pb-0">
-                <div className="flex items-baseline justify-between pb-2 border-b-2 border-[#1B1814] mb-2.5">
-                  <h2 className="font-serif text-lg tracking-tight">The Standings</h2>
-                  <Link
-                    href={`/tournaments/${tournament.slug}/leaderboard`}
-                    className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] hover:text-[#1B1814]"
-                  >
-                    See all
-                  </Link>
-                </div>
-                {!scores?.length ? (
-                  <div className="text-sm text-[#3C342C] italic font-serif py-4">
-                    No tips judged yet. Wait till results land.
-                  </div>
-                ) : (
-                  <>
-                    {scores.slice(0, 5).map((s, i) => {
-                      const isMe = s.id === user!.id
-                      const isLast = i === Math.min(scores.length, 5) - 1
-                      const avatar = avatarMap[s.id]
-                      return (
-                        <div
-                          key={s.id}
-                          className={`grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-center text-[13px]
-                                      ${isMe ? 'text-[#B85433] font-semibold' : 'text-[#1B1814]'}
-                                      ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
-                        >
-                          <div className={`font-serif text-base italic ${isMe ? 'text-[#B85433]' : 'text-[#3C342C]'}`}>
-                            {i + 1}
-                          </div>
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {avatar
-                              ? <img src={avatar} alt="" className="size-5 rounded-full object-cover shrink-0" />
-                              : <div className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] text-[#FAF6EC] font-semibold"
-                                     style={{ background: '#8E3A1F' }}>
-                                  {s.display_name[0].toUpperCase()}
-                                </div>
-                            }
-                            <span className="truncate">
-                              {s.display_name}
-                              {isMe && <span className="italic font-normal text-[#3C342C]"> · you</span>}
-                            </span>
-                          </div>
-                          <div className="text-right font-serif text-lg tabular-nums">{s.totalPoints}</div>
-                          <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
-                            {s.correctTips}/{s.totalTips}
-                          </div>
-                          <div className="text-right tabular-nums text-[10px] text-[#1B181450]">
-                            {s.totalTips > 0 ? `${Math.round((s.correctTips / s.totalTips) * 100)}%` : '—'}
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {myRank && myRank > 5 && myScore && (
-                      <>
-                        <div className="text-center text-[10px] tracking-[0.4em] text-[#3C342C40] py-1.5">···</div>
-                        <div className="grid grid-cols-[22px_1fr_40px_48px_36px] gap-2.5 py-2 items-center text-[13px] text-[#B85433] font-semibold">
-                          <div className="font-serif text-base italic text-[#B85433]">{myRank}</div>
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {avatarMap[myScore.id]
-                              ? <img src={avatarMap[myScore.id]!} alt="" className="size-5 rounded-full object-cover shrink-0" />
-                              : <div className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] text-[#FAF6EC] font-semibold"
-                                     style={{ background: '#8E3A1F' }}>
-                                  {myScore.display_name[0].toUpperCase()}
-                                </div>
-                            }
-                            <span className="truncate">{myScore.display_name}<span className="italic font-normal text-[#3C342C]"> · you</span></span>
-                          </div>
-                          <div className="text-right font-serif text-lg tabular-nums">{myScore.totalPoints}</div>
-                          <div className="text-right tabular-nums text-[10px] text-[#3C342C]">
-                            {myScore.correctTips}/{myScore.totalTips}
-                          </div>
-                          <div className="text-right tabular-nums text-[10px] text-[#1B181450]">
-                            {myScore.totalTips > 0 ? `${Math.round((myScore.correctTips / myScore.totalTips) * 100)}%` : '—'}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-              </section>
-
-              {roundBreakdown.length > 0 && (
-                <section className="px-5 pb-4 md:px-0 md:pb-0 md:mt-6">
-                  <div className="pb-2 border-b-2 border-[#1B1814] mb-2.5">
-                    <h2 className="font-serif text-lg tracking-tight">Your rounds</h2>
-                  </div>
-                  <div>
-                    {roundBreakdown.map(({ round, points, correct, tipped, resulted, total }, i) => {
-                      const barPct = resulted > 0 ? Math.round((correct / resulted) * 100) : 0
-                      const hasResults = resulted > 0
-                      const isLast = i === roundBreakdown.length - 1
-                      return (
-                        <div
-                          key={round.id}
-                          className={`py-2.5 ${isLast ? '' : 'border-b border-dotted border-[#1B181420]'}`}
-                        >
-                          <div className="flex items-baseline justify-between mb-1.5">
-                            <div className="flex items-baseline gap-2">
-                              <Link
-                                href={`/tournaments/${tournament.slug}/round/${round.name}`}
-                                className="text-[13px] font-semibold text-[#1B1814] hover:text-[#B85433]"
-                              >
-                                {round.name}
-                              </Link>
-                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#3C342C]">
-                                {round.points_per_correct_tip}pt
-                              </span>
-                            </div>
-                            <div className="flex items-baseline gap-3 text-[13px]">
-                              <span className="text-[#3C342C] tabular-nums">
-                                {hasResults ? `${correct}/${resulted}` : total > 0 ? `${tipped} tipped` : '—'}
-                              </span>
-                              <span className="font-serif text-base tabular-nums text-[#1B1814]">
-                                {hasResults ? points : '—'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="h-[3px] rounded-full bg-[#1B181415] overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-[width] duration-500"
-                              style={{
-                                width: hasResults ? `${barPct}%` : '0%',
-                                background: resulted < total ? '#B85433' : '#3D4F2B',
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </section>
-              )}
+          {/* By the numbers */}
+          <div className="tp-card mt-5 p-4">
+            <div className="tp-eyebrow tp-eyebrow--brick mb-3">By the numbers</div>
+            <div className="grid grid-cols-2 gap-3.5">
+              <Stat label="Your points" value={hasAnyResults ? (myScore?.totalPoints ?? 0) : '—'} />
+              <Stat
+                label={myRank === 1 ? 'Lead over 2nd' : numTippers >= 3 ? 'Leader gap' : 'Tippers'}
+                value={
+                  numTippers < 3
+                    ? numTippers
+                    : !hasAnyResults
+                      ? '—'
+                      : myRank === 1
+                        ? `+${gap}`
+                        : `−${gap}`
+                }
+              />
+              <Stat label="Hit rate" value={myAccuracy != null ? `${myAccuracy}%` : '—'} />
+              <Stat label="Streak" value={myCorrectStreak > 0 ? `${myCorrectStreak} in a row` : '—'} />
             </div>
-
-            {/* Right col: Chart */}
-            {chartData.length > 0 && (
-              <section className="px-5 pb-4 md:px-0 md:pb-0">
-                <div className="pb-2 border-b-2 border-[#1B1814] mb-4">
-                  <h2 className="font-serif text-lg tracking-tight">Points by round</h2>
-                </div>
-                <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
-              </section>
-            )}
-
           </div>
+        </aside>
+      </div>
 
-          {/* Pull quote */}
-          <section className="relative z-10 px-5 pb-6">
-            <div className="border-l-[3px] border-[#B85433] pl-3
-                            font-serif text-[17px] leading-[1.25]
-                            italic text-[#3C342C] tracking-tight">
-              {tipsInRound === 0
-                ? <>Round opens. <span className="text-[#1B1814] not-italic font-medium">Nothing in yet — get on it.</span></>
-                : tipsInRound === totalInRound
-                ? <>All in. <span className="text-[#1B1814] not-italic font-medium">Now we wait.</span></>
-                : <>{totalInRound - tipsInRound} still to call. <span className="text-[#1B1814] not-italic font-medium">Don&apos;t dawdle.</span></>}
+      {/* Below the fold marker */}
+      <div className="relative z-10 border-y border-[var(--rule)] [border-top:3px_double_var(--ink)] px-4 py-2.5 text-center text-[9px] uppercase tracking-[0.3em] text-[var(--ink-2)] md:px-8 md:text-[10px]">
+        · Below the fold ·
+      </div>
+
+      {/* Below the fold — Order of play + Chart */}
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-[4fr_5fr]">
+        <section className="px-4 pb-6 pt-5 md:border-r md:border-[var(--rule)] md:px-8 md:pt-6">
+          <div className="mb-1 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
+            <h3 className="m-0 font-serif text-[19px] tracking-tight md:text-[22px]">Today&apos;s order of play</h3>
+            <span className="tp-eyebrow">{orderOfPlay.length || 'no'} matches</span>
+          </div>
+          {orderOfPlay.length === 0 ? (
+            <div className="py-4 font-serif italic text-[var(--ink-2)]">
+              No fixtures listed yet. Check back when the draw lands.
             </div>
-          </section>
-        </>
+          ) : (
+            <>
+              {/* Desktop: show all; Mobile: 4 max */}
+              <div className="md:hidden">
+                {orderOfPlay.slice(0, 4).map((m, i) => (
+                  <OrderRow
+                    key={m.id}
+                    match={m}
+                    tips={tips}
+                    userId={user.id}
+                    now={now}
+                    isLast={i === Math.min(3, orderOfPlay.length - 1)}
+                  />
+                ))}
+                {orderOfPlay.length > 4 && (
+                  <div className="pt-3 text-center font-serif italic text-[12px] text-[var(--ink-2)]">
+                    + {orderOfPlay.length - 4} more · <Link href={`/tournaments/${tournament.slug}/picks`} className="text-[var(--brick)]">see Picks →</Link>
+                  </div>
+                )}
+              </div>
+              <div className="hidden md:block">
+                {orderOfPlay.map((m, i) => (
+                  <OrderRow
+                    key={m.id}
+                    match={m}
+                    tips={tips}
+                    userId={user.id}
+                    now={now}
+                    isLast={i === orderOfPlay.length - 1}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="border-t border-[var(--rule)] px-4 pb-6 pt-5 md:border-t-0 md:px-8 md:pt-6">
+          <div className="mb-3 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
+            <h3 className="m-0 font-serif text-[19px] tracking-tight md:text-[22px]">Points by round</h3>
+          </div>
+          {chartData.length > 0 ? (
+            <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
+          ) : (
+            <div className="py-4 font-serif italic text-[var(--ink-2)]">
+              No results to chart yet.
+            </div>
+          )}
+
+          {/* Your rounds — desktop only */}
+          {roundBreakdown.length > 0 && (
+            <div className="mt-6 hidden md:block">
+              <div className="tp-eyebrow mb-2.5">Your rounds</div>
+              <div className="grid grid-cols-6 gap-3">
+                {roundBreakdown.map(r => {
+                  const pct = r.resulted > 0 ? (r.correct / r.resulted) * 100 : 0
+                  const active = r.state !== 'pending'
+                  return (
+                    <div key={r.round.id} className={active ? '' : 'opacity-40'}>
+                      <div className="text-[12px] font-medium leading-none">
+                        {r.round.name}
+                        <span className="ml-1 text-[9px] text-[var(--ink-3)]">{r.round.points_per_correct_tip}pt</span>
+                      </div>
+                      <div className="mb-1.5 mt-1 font-serif text-[24px] leading-none tabular-nums">
+                        {active ? r.points : '—'}
+                      </div>
+                      <div className="h-[2px] bg-[var(--rule-soft)]">
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${pct}%`,
+                            background: r.state === 'live' ? 'var(--brick)' : 'var(--olive)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Pull quote */}
+      {pullItalic && pullPunch && (
+        <section className="relative z-10 px-4 pb-7 pt-2 md:px-8">
+          <div className="tp-pull">
+            {pullItalic} <span className="tp-pull__punch">{pullPunch}</span>
+          </div>
+        </section>
       )}
 
-      <TabBar tournamentSlug={tournament?.slug ?? undefined} />
+      <TabBar tournamentSlug={tournament.slug ?? undefined} />
     </main>
+  )
+}
+
+// ─── Small UI primitives ─────────────────────────────────────────────
+
+function Masthead({ weekday, readers, isAdmin }: { weekday: string; readers: number; isAdmin: boolean }) {
+  return (
+    <header className="relative z-10 border-b-[3px] border-double border-[var(--ink)] px-4 pt-6 md:px-8">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[var(--rule)] pb-3 text-[9px] uppercase tracking-[0.2em] text-[var(--ink-2)] md:text-[10px]">
+        <span>Off-season</span>
+        <span>{weekday}</span>
+        <span className="hidden md:inline">Subscribers only · {readers} readers</span>
+        <span className="flex items-center gap-4">
+          {isAdmin && <Link href="/admin" className="text-[var(--brick)] font-semibold">Admin</Link>}
+          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
+        </span>
+      </div>
+      <h1 className="m-0 mb-1.5 mt-4 text-center font-serif italic leading-none tracking-tight text-[42px] md:mb-2 md:mt-5 md:text-[84px]">
+        The Tipping Post
+      </h1>
+      <div className="pb-3 text-center text-[8px] uppercase tracking-[0.28em] text-[var(--ink-2)] md:pb-4 md:text-[10px] md:tracking-[0.35em]">
+        A private sports broadsheet
+      </div>
+    </header>
+  )
+}
+
+function StandingsRow({
+  rank, name, avatarUrl, points, isMe,
+}: { rank: number; name: string; avatarUrl: string | null | undefined; points: number | null; isMe: boolean }) {
+  return (
+    <div
+      className={`grid grid-cols-[24px_22px_1fr_auto] items-center gap-2.5 border-b border-dotted border-[var(--rule)] py-3 ${
+        isMe ? 'text-[var(--brick)]' : 'text-[var(--ink)]'
+      }`}
+    >
+      <div className={`font-serif italic text-[19px] leading-none md:text-[22px] ${isMe ? 'text-[var(--brick)]' : 'text-[var(--ink-2)]'}`}>
+        {rank}
+      </div>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="size-[22px] shrink-0 rounded-full object-cover" />
+      ) : (
+        <div className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--brick-dark)] text-[9px] font-medium text-[var(--paper)]">
+          {name[0]?.toUpperCase()}
+        </div>
+      )}
+      <div className={`truncate text-[14px] leading-[1.2] ${isMe ? 'font-medium' : 'font-normal'}`}>
+        {name}
+        {isMe && <span className="ml-1 italic font-normal text-[var(--ink-2)]">· you</span>}
+      </div>
+      <div className="min-w-[36px] text-right font-serif text-[19px] leading-none tabular-nums md:text-[22px]">
+        {points == null ? '—' : points}
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--ink-2)]">{label}</div>
+      <div className="font-serif text-[24px] leading-none tabular-nums md:text-[28px]">{value}</div>
+    </div>
+  )
+}
+
+function OrderRow({
+  match, tips, userId, now, isLast,
+}: { match: Match; tips: Tip[]; userId: string; now: Date; isLast: boolean }) {
+  const mine = tips.find(t => t.user_id === userId && t.match_id === match.id)
+  const mySide = mine?.predicted_winner as 'player1' | 'player2' | undefined
+  const locked = new Date(match.scheduled_start) <= now
+
+  // Hide consensus until the match is locked.
+  const c = locked ? consensusOf(match.id, tips) : null
+  const roomFavour = c
+    ? c.side === 'player1' ? stripSeed(match.player1_name) : stripSeed(match.player2_name)
+    : null
+  const agreesWithMe = c && mySide && c.side === mySide
+
+  return (
+    <div
+      className={`grid grid-cols-[54px_1fr_70px] items-center gap-3.5 py-3 ${
+        isLast ? '' : 'border-b border-dotted border-[var(--rule)]'
+      } ${locked ? 'opacity-70' : ''}`}
+    >
+      <div className="font-serif italic text-[15px] leading-none tabular-nums text-[var(--ink-2)] md:text-[16px]">
+        {fmtClock(new Date(match.scheduled_start))}
+      </div>
+      <div>
+        <div className="font-serif text-[15px] leading-[1.2] md:text-[17px] md:leading-[1.15]">
+          <span
+            style={{
+              fontWeight: mySide === 'player1' ? 500 : 400,
+              textDecoration: mySide === 'player1' ? 'underline var(--brick) 1.5px' : 'none',
+              textUnderlineOffset: 4,
+            }}
+          >
+            {stripSeed(match.player1_name)}
+          </span>
+          <span className="mx-1.5 italic text-[var(--ink-3)] md:mx-2">v</span>
+          <span
+            style={{
+              fontWeight: mySide === 'player2' ? 500 : 400,
+              textDecoration: mySide === 'player2' ? 'underline var(--brick) 1.5px' : 'none',
+              textUnderlineOffset: 4,
+            }}
+          >
+            {stripSeed(match.player2_name)}
+          </span>
+        </div>
+        {c && mySide ? (
+          agreesWithMe ? (
+            <div className="mt-1 text-[11px] text-[var(--ink-3)]">{c.pct}% of the room agrees</div>
+          ) : (
+            <div className="mt-1 text-[11px] text-[var(--brick)]">contrarian · room favours {roomFavour}</div>
+          )
+        ) : null}
+      </div>
+      <div className="text-right">
+        <span
+          className={`text-[9px] font-medium uppercase tracking-[0.18em] ${
+            locked ? 'text-[var(--ink-3)]' : 'text-[var(--brick)]'
+          }`}
+        >
+          {locked ? 'locked' : 'open'}
+        </span>
+      </div>
+    </div>
   )
 }

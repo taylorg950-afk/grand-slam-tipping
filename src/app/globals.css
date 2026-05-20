@@ -186,3 +186,164 @@ a:active {
   70%  { width: 100%; opacity: 1; }
   100% { width: 100%; opacity: 0; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The Tipping Post — design tokens.
+   Append into src/app/globals.css below the existing @import lines.
+   These declarations replace the older "Roland Garros theme tokens" set;
+   keep names/values exactly as below so DESIGN.md references stay valid.
+   ─────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Paper — page surfaces */
+  --paper:          #FAF6EC;
+  --paper-2:        #F2EBDC;
+  --paper-3:        #EDE4D0;
+
+  /* Ink — text, rules, borders */
+  --ink:            #1B1814;
+  --ink-2:          #3C342C;
+  --ink-3:          rgba(27, 24, 20, 0.55);
+  --ink-4:          rgba(27, 24, 20, 0.28);
+  --rule:           rgba(27, 24, 20, 0.18);
+  --rule-soft:      rgba(27, 24, 20, 0.10);
+
+  /* Accents */
+  --brick:          #B85433;
+  --brick-dark:     #8E3A1F;
+  --brick-surface:  #FEF2EC;
+  --olive:          #3D4F2B;   /* "you" / "won" / "leader" data */
+
+  /* Chart palette — assigned by stable player order */
+  --chart-1:        #3D4F2B;   /* olive */
+  --chart-2:        #3D6A8F;   /* dusty blue */
+  --chart-3:        #7A4A8F;   /* plum */
+  --chart-4:        #C58A2E;   /* ochre */
+  --chart-5:        #4A8C6A;   /* sage */
+  --chart-6:        #9A6B4E;   /* clay-brown */
+
+  /* Typography */
+  --font-serif:     'Instrument Serif', 'Times New Roman', serif;
+  --font-sans:      'DM Sans', system-ui, sans-serif;
+  --font-mono:      'JetBrains Mono', ui-monospace, monospace;
+
+  /* Sizes (use sparingly — most type is set inline at the component level) */
+  --eyebrow-size:   10px;
+  --eyebrow-track:  0.18em;
+  --body-size:      14px;
+  --body-line:      1.55;
+}
+
+/* Subtle paper grain — drop into the page root as an aria-hidden layer */
+.tp-paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: radial-gradient(circle at 1px 1px, rgba(27, 24, 20, 0.45) 0.5px, transparent 0);
+  background-size: 3px 3px;
+}
+
+/* Eyebrow — the small-caps label used everywhere */
+.tp-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--eyebrow-size);
+  line-height: 1;
+  letter-spacing: var(--eyebrow-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.tp-eyebrow--brick { color: var(--brick); font-weight: 600; }
+
+/* Section heading — H2 with the 2px ink bottom rule */
+.tp-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+.tp-section-head h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Tabular numerals — apply on data cells */
+.tp-tabular { font-variant-numeric: tabular-nums; }
+
+/* Brick CTA — single primary action per page */
+.tp-cta {
+  display: inline-block;
+  padding: 10px 16px;
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--brick);
+  color: var(--paper);
+  border: none;
+  cursor: pointer;
+}
+.tp-cta:hover { background: var(--brick-dark); }
+
+/* Ghost / secondary action */
+.tp-ghost {
+  background: transparent;
+  color: var(--brick);
+  border: none;
+  cursor: pointer;
+  font: 500 11px/1 var(--font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tp-ghost:hover { color: var(--ink); }
+
+/* Pull quote — closing line of the dashboard, etc. */
+.tp-pull {
+  border-left: 3px solid var(--brick);
+  padding-left: 16px;
+  font: 400 italic 19px/1.3 var(--font-serif);
+  color: var(--ink-2);
+  letter-spacing: -0.005em;
+}
+.tp-pull > .tp-pull__punch {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Card — paper2 surface with hairline border, no shadow, no radius */
+.tp-card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+}
+
+/* Body sets — these override Tailwind/Shadcn so the editorial type lands */
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* Avoid Tailwind's default rounded corners on common big surfaces */
+@layer components {
+  .tp-flat { border-radius: 0 !important; }
+}
+
+/* Hide native number-input spinners — used by the tiebreaker scrubbers
+   where we ship explicit ± buttons instead. */
+.tp-no-spinner::-webkit-outer-spin-button,
+.tp-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.tp-no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

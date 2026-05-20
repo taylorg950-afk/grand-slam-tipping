@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ProfileForm from './ProfileForm'
+import ChangePasswordForm from './ChangePasswordForm'
+import { signOut } from './actions'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -56,6 +58,27 @@ export default async function ProfilePage() {
             avatar_url: profile.avatar_url ?? null,
           }}
         />
+
+        <div className="mt-8">
+          <ChangePasswordForm />
+        </div>
+
+        <form action={signOut} className="mt-8 border-t border-dotted border-[#1B181420] pt-6">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] font-semibold mb-3">
+            Sign out
+          </div>
+          <p className="text-[12px] text-[#3C342C] opacity-70 mb-3">
+            End this session on this device.
+          </p>
+          <button
+            type="submit"
+            className="w-full py-3 rounded-[2px] text-[11px] uppercase tracking-[0.2em] font-semibold
+                       border border-[#B85433] text-[#B85433] bg-transparent
+                       hover:bg-[#B85433] hover:text-[#FAF6EC] transition-colors"
+          >
+            Sign out
+          </button>
+        </form>
       </main>
     </div>
   )
