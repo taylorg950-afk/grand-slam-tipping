@@ -59,8 +59,8 @@ export default async function TiebreakerPage({
     .single()
   if (!tournament) notFound()
 
-  // Lock state — men's final has started
-  const { data: mensFinalRound } = await supabase
+  // Lock state — locks once EITHER final (men's or women's) has started.
+  const { data: finalRound } = await supabase
     .from('rounds')
     .select('id')
     .eq('tournament_id', tournament.id)
@@ -68,14 +68,14 @@ export default async function TiebreakerPage({
     .single()
 
   let locked = false
-  if (mensFinalRound) {
-    const { data: mensFinal } = await supabase
+  if (finalRound) {
+    const { data: finals } = await supabase
       .from('matches')
       .select('scheduled_start')
-      .eq('round_id', mensFinalRound.id)
-      .eq('draw', 'mens')
-      .single()
-    if (mensFinal && new Date(mensFinal.scheduled_start) <= new Date()) locked = true
+      .eq('round_id', finalRound.id)
+      .in('draw', ['mens', 'womens'])
+    const now = new Date()
+    locked = (finals ?? []).some(f => new Date(f.scheduled_start) <= now)
   }
 
   const { data: existing } = await supabase

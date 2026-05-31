@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
 import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
 import { AEST_TZ, AEST_LABEL } from '@/lib/time'
+import { fetchTipsForMatches } from '@/lib/tips'
 
 interface Round {
   id: string
@@ -244,19 +245,16 @@ export default async function DashboardPage() {
   const matches: Match[] = matchData ?? []
   const matchIds = matches.map(m => m.id)
 
-  const [{ data: tipData }, { data: users }, { data: avatarRows }] = await Promise.all([
-    matchIds.length
-      ? supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
-      : Promise.resolve({ data: [] as Tip[] }),
-    supabase.from('users').select('id, display_name').order('display_name'),
-    supabase.from('users').select('id, avatar_url').order('display_name'),
+  const [tips, { data: userRows }] = await Promise.all([
+    fetchTipsForMatches(supabase, matchIds),
+    supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
   ])
 
-  const tips: Tip[] = tipData ?? []
+  const users = (userRows ?? []).map(u => ({ id: u.id, display_name: u.display_name }))
   const avatarMap: Record<string, string | null> = Object.fromEntries(
-    (avatarRows ?? []).map((u: { id: string; avatar_url?: string | null }) => [u.id, u.avatar_url ?? null])
+    (userRows ?? []).map((u: { id: string; avatar_url?: string | null }) => [u.id, u.avatar_url ?? null])
   )
-  const scores = computeScores(users ?? [], matches, rounds, tips)
+  const scores = computeScores(users, matches, rounds, tips)
   const myIndex = scores.findIndex(s => s.id === user.id)
   const myScore = myIndex !== -1 ? scores[myIndex] : null
   const myRank = myIndex !== -1 ? myIndex + 1 : null

@@ -106,23 +106,22 @@ export default function SignupPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <Field
-                  id="displayName"
-                  label="Display name"
-                  type="text"
-                  value={displayName}
-                  onChange={setDisplayName}
-                  placeholder="how should we list you?"
-                  autoFocus
-                  required
-                />
-                <Field
                   id="email"
                   label="Email"
                   type="email"
                   value={email}
                   onChange={setEmail}
                   placeholder="you@example.com"
+                  autoFocus
                   required
+                />
+                <Field
+                  id="displayName"
+                  label="Display name (optional)"
+                  type="text"
+                  value={displayName}
+                  onChange={setDisplayName}
+                  placeholder="defaults to your email name"
                 />
                 <Field
                   id="password"

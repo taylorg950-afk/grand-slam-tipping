@@ -10,6 +10,7 @@ import {
   pluralRounds,
   MoverSignals,
 } from '@/lib/copy/standings-movers'
+import { fetchTipsForMatches } from '@/lib/tips'
 
 interface Round {
   id: string
@@ -382,10 +383,7 @@ export default async function LeaderboardPage({
   const userRows: UserRow[] = users ?? []
   const matchIds = matches.map(m => m.id)
 
-  const { data: tipData } = matchIds.length
-    ? await supabase.from('tips').select('user_id, match_id, predicted_winner').in('match_id', matchIds)
-    : { data: [] as Tip[] }
-  const tips: Tip[] = tipData ?? []
+  const tips: Tip[] = await fetchTipsForMatches(supabase, matchIds)
 
   const snapshots = computeSnapshots(userRows, orderedRounds, matches, tips)
   const rows = computeRows(userRows, orderedRounds, matches, tips)
