@@ -115,8 +115,9 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
   const router = useRouter()
   const now = useMemo(() => new Date(), [])
   const [tipMap, setTipMap] = useState(initialTipMap)
-  const [pending, startTransition] = useTransition()
-  const [pendingPick, setPendingPick] = useState<{ matchId: string; pick: 'player1' | 'player2' } | null>(null)
+  const [, startTransition] = useTransition()
+  // Track in-flight picks per match so saving one doesn't block picking others.
+  const [pendingPicks, setPendingPicks] = useState<Record<string, 'player1' | 'player2'>>({})
 
   const orderedRounds = useMemo(
     () => [...rounds].sort((a, b) => a.sort_order - b.sort_order),
@@ -149,20 +150,30 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
   const cityGhost = cityFor(tournament.slug)
 
   function placePick(matchId: string, roundName: string, pick: 'player1' | 'player2') {
-    if (pending) return
-    if (tipMap[matchId] === pick) return
-    const prev = tipMap
-    setPendingPick({ matchId, pick })
-    setTipMap({ ...tipMap, [matchId]: pick })
+    // Ignore no-op taps, but allow picking other matches while this one saves.
+    if (tipMap[matchId] === pick || pendingPicks[matchId] === pick) return
+    const prevForMatch = tipMap[matchId]
+    setPendingPicks(p => ({ ...p, [matchId]: pick }))
+    setTipMap(m => ({ ...m, [matchId]: pick }))
     startTransition(async () => {
       const result = await submitTip(tournament.slug, roundName, matchId, pick)
       if (result?.error) {
-        setTipMap(prev)
+        // Roll back just this match, leaving other concurrent picks intact.
+        setTipMap(m => {
+          const next = { ...m }
+          if (prevForMatch === undefined) delete next[matchId]
+          else next[matchId] = prevForMatch
+          return next
+        })
         console.error(result.error)
       } else {
         router.refresh()
       }
-      setPendingPick(null)
+      setPendingPicks(p => {
+        const next = { ...p }
+        delete next[matchId]
+        return next
+      })
     })
   }
 
@@ -314,7 +325,6 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
             {active.matches.map(m => {
               const tip = tipMap[m.id] as 'player1' | 'player2' | undefined
               const state = classifyMatch(m, tip, now)
-              const rowPending = pendingPick?.matchId === m.id
               return (
                 <MatchCard
                   key={m.id}
@@ -324,7 +334,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   pointsPerCorrect={active.round.points_per_correct_tip}
                   roundName={active.round.name}
                   onPick={(side) => placePick(m.id, active.round.name, side)}
-                  pendingSide={rowPending ? pendingPick?.pick ?? null : null}
+                  pendingSide={pendingPicks[m.id] ?? null}
                   now={now}
                 />
               )
