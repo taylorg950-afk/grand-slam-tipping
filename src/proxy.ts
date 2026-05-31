@@ -27,14 +27,15 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Protect all routes except login and auth callback
-  const isPublicPath = pathname === '/login' || pathname.startsWith('/auth/')
+  // Protect all routes except login, signup, and auth callback
+  const isPublicPath =
+    pathname === '/login' || pathname === '/signup' || pathname.startsWith('/auth/')
   if (!user && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Redirect logged-in users away from login page
-  if (user && pathname === '/login') {
+  // Redirect logged-in users away from login and signup pages
+  if (user && (pathname === '/login' || pathname === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
