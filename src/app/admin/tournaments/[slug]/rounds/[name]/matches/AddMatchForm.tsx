@@ -46,7 +46,7 @@ export default function AddMatchForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label htmlFor="scheduled_start">Start time (UTC)</Label>
+          <Label htmlFor="scheduled_start">Start time (AEST)</Label>
           <Input id="scheduled_start" name="scheduled_start" type="datetime-local" required />
         </div>
         <div className="space-y-1">

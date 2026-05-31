@@ -4,6 +4,7 @@ import Link from 'next/link'
 import AddMatchForm from './AddMatchForm'
 import GenerateMatchesForm from './GenerateMatchesForm'
 import { deleteMatch } from './actions'
+import { AEST_TZ, AEST_LABEL } from '@/lib/time'
 
 export default async function RoundMatchesPage({
   params,
@@ -85,7 +86,7 @@ export default async function RoundMatchesPage({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-zinc-400">
-                    <span>{new Date(match.scheduled_start).toUTCString().replace(' GMT', ' UTC')}</span>
+                    <span>{new Date(match.scheduled_start).toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: false })} {AEST_LABEL}</span>
                     {locked ? (
                       <span className="text-amber-600 font-medium">Locked</span>
                     ) : (

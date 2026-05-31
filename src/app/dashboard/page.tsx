@@ -6,6 +6,7 @@ import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
 import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
+import { AEST_TZ, AEST_LABEL } from '@/lib/time'
 
 interface Round {
   id: string
@@ -80,11 +81,11 @@ function fmtCountdown(ms: number) {
 }
 
 function fmtClock(date: Date) {
-  return date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: false })
+  return date.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })
 }
 
 function fmtLockTime(date: Date) {
-  return date.toLocaleString('en-AU', { weekday: 'short', hour: 'numeric', hour12: true }).toLowerCase()
+  return `${date.toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', hour: 'numeric', hour12: true }).toLowerCase()} ${AEST_LABEL}`
 }
 
 function computeRoundBreakdown(
@@ -192,7 +193,7 @@ export default async function DashboardPage() {
   ])
 
   const yourName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'mate'
-  const weekday = now.toLocaleDateString('en-AU', { weekday: 'short' })
+  const weekday = now.toLocaleDateString('en-AU', { timeZone: AEST_TZ, weekday: 'short' })
 
   // ─── Off-season state ───────────────────────────────────────────────
   if (!tournament) {

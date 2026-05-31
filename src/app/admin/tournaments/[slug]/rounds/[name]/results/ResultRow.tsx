@@ -2,6 +2,7 @@
 
 import { useTransition, useState } from 'react'
 import { setResult } from './actions'
+import { AEST_TZ, AEST_LABEL } from '@/lib/time'
 
 interface Match {
   id: string
@@ -64,7 +65,7 @@ export default function ResultRow({
         )}
       </div>
       <div className="flex items-center justify-between text-xs text-zinc-400">
-        <span>{new Date(match.scheduled_start).toUTCString().replace(' GMT', ' UTC')}</span>
+        <span>{new Date(match.scheduled_start).toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: false })} {AEST_LABEL}</span>
         {error && <span className="text-red-600">{error}</span>}
         {!error && match.winner && (
           <span className="text-green-600 font-medium">

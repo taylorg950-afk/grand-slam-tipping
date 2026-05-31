@@ -35,7 +35,8 @@ export async function addMatch(
     player1_name,
     player2_name,
     draw,
-    scheduled_start: new Date(scheduled_start + 'Z').toISOString(),
+    // Form input is AEST wall-clock time (fixed UTC+10, no DST).
+    scheduled_start: new Date(scheduled_start + '+10:00').toISOString(),
     bracket_position: isNaN(bracket_position as number) ? null : bracket_position,
   })
 
@@ -91,7 +92,8 @@ export async function generateFromPreviousRound(
 
   if (!prevMatches?.length) return { error: `No matches with bracket positions found in ${prevRound.name}.`, created: 0, updated: 0 }
 
-  const scheduledStartISO = new Date(scheduledStart + ':00Z').toISOString()
+  // Form input is AEST wall-clock time (fixed UTC+10, no DST).
+  const scheduledStartISO = new Date(scheduledStart + ':00+10:00').toISOString()
   const draws = [...new Set(prevMatches.map(m => m.draw))]
   let created = 0
   let updated = 0

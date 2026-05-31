@@ -33,7 +33,7 @@ export default function GenerateMatchesForm({
       </p>
 
       <div className="space-y-1">
-        <Label htmlFor="gen_scheduled_start" className="text-xs">Match start time (UTC)</Label>
+        <Label htmlFor="gen_scheduled_start" className="text-xs">Match start time (AEST)</Label>
         <Input
           id="gen_scheduled_start"
           name="scheduled_start"

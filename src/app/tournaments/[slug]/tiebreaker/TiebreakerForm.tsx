@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition, useEffect } from 'react'
 import { saveTiebreaker } from './actions'
+import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
 
 interface Averages {
   mensAvg: number
@@ -50,7 +51,7 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
   }
 
   const filedLabel = savedAt
-    ? `Filed at ${new Date(savedAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: false })} ${dayLabel(savedAt)}.`
+    ? `Filed at ${new Date(savedAt).toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })} ${AEST_LABEL} ${dayLabel(savedAt)}.`
     : 'Not filed yet.'
 
   return (
@@ -114,12 +115,13 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
 
 function dayLabel(iso: string): string {
   const d = new Date(iso)
-  const today = new Date()
-  if (d.toDateString() === today.toDateString()) return 'today'
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return 'yesterday'
-  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+  const now = new Date()
+  const key = aestDayKey(d)
+  if (key === aestDayKey(now)) return 'today'
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (key === aestDayKey(yesterday)) return 'yesterday'
+  return d.toLocaleDateString('en-AU', { timeZone: AEST_TZ, weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 interface ScrubberProps {

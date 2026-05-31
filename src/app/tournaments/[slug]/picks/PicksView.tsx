@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TabBar } from '@/components/TabBar'
 import { submitTip } from '../round/[name]/actions'
+import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
 
 export interface PicksRound {
   id: string
@@ -64,15 +65,15 @@ function statusVerb(meta: RoundMeta, now: Date): string {
 }
 
 function fmtLockTime(d: Date) {
-  return d.toLocaleString('en-AU', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: false })
+  return `${d.toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: false })} ${AEST_LABEL}`
 }
 
 function fmtClock(d: Date) {
-  return d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: false })
+  return `${d.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })} ${AEST_LABEL}`
 }
 
 function fmtTimeOrDay(d: Date, now: Date) {
-  const sameDay = d.toDateString() === now.toDateString()
+  const sameDay = aestDayKey(d) === aestDayKey(now)
   if (sameDay) return fmtClock(d)
   return fmtLockTime(d)
 }
