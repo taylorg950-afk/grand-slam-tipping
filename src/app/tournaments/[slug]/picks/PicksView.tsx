@@ -421,7 +421,7 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
           pending={pendingSide === 'player1'}
           onPick={interactive ? () => onPick('player1') : undefined}
         />
-        <div className="my-1 text-[8px] font-medium uppercase tracking-[0.18em] text-[var(--ink-3)] md:text-[9px]">v</div>
+        <div className="text-[8px] font-medium uppercase tracking-[0.18em] text-[var(--ink-3)] md:text-[9px]">v</div>
         <PlayerLine
           name={match.player2_name}
           picked={myP2}
@@ -540,8 +540,10 @@ function PlayerLine({ name, picked, won, lost, state, pending, onPick }: PlayerL
       onClick={onPick}
       aria-pressed={picked}
       aria-label={`Pick ${display}`}
-      className="block w-full text-left transition-colors hover:bg-[rgba(184,84,51,0.06)] active:scale-[0.99]"
-      style={{ padding: '2px 4px', margin: '-2px -4px' }}
+      // min-h-[44px] keeps the tap target at the mobile minimum even though the
+      // text line is only ~20px — small targets here caused missed taps.
+      className="flex min-h-[44px] w-full items-center text-left transition-colors hover:bg-[rgba(184,84,51,0.06)] active:scale-[0.99]"
+      style={{ padding: '6px 6px', margin: '0 -6px' }}
     >
       {inner}
     </button>
