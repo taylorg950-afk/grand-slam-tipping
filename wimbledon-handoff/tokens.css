@@ -1,0 +1,207 @@
+/* ============================================================================
+   The Tipping Post — Wimbledon edition · design tokens  ("The Lawn")
+   ----------------------------------------------------------------------------
+   DROP-IN REPLACEMENT for the existing block in src/app/globals.css that
+   starts at the comment:
+
+       The Tipping Post — design tokens.
+       Append into src/app/globals.css below the existing @import lines.
+
+   Replace everything from that `:root { --paper … }` block down to the end of
+   the `.tp-no-spinner` rules with the contents of this file. Same variable
+   names and class names — your components keep working; only the VALUES (and
+   the serif font) change. Read the two notes at the bottom before you ship.
+   ============================================================================ */
+
+:root {
+  /* Paper — page surfaces (cream, retuned slightly cooler) */
+  --paper:          #F6F2E6;
+  --paper-2:        #EFE9D7;
+  --paper-3:        #E7E0CA;
+
+  /* Ink — green-black text, rules, borders */
+  --ink:            #15231B;
+  --ink-2:          #3B473E;
+  --ink-3:          rgba(21, 35, 27, 0.55);
+  --ink-4:          rgba(21, 35, 27, 0.28);
+  --rule:           rgba(21, 35, 27, 0.18);
+  --rule-soft:      rgba(21, 35, 27, 0.10);
+
+  /* Accents — green = the house colour (structure, CTA, live, "open");
+     violet = strictly "you". See NOTE 1 about --olive. */
+  --brick:          #00643C;   /* was terracotta — now Wimbledon grass green */
+  --brick-dark:     #0A3D26;   /* deep green — banner / hover */
+  --brick-surface:  #EAF1ED;   /* pale green fill (auth screens) */
+  --violet:         #4F2683;   /* NEW — Wimbledon purple, the "you" colour */
+  --violet-soft:    #EFE9F5;
+  --olive:          #00643C;   /* "won / correct" data → green (see NOTE 1) */
+
+  /* Chart palette — assigned by stable player order (series 1 = leader/you) */
+  --chart-1:        #00643C;   /* grass green */
+  --chart-2:        #4F2683;   /* violet */
+  --chart-3:        #1C7A4E;   /* light green */
+  --chart-4:        #8E6BB0;   /* muted violet */
+  --chart-5:        #B08A3E;   /* brass */
+  --chart-6:        #4A8C6A;   /* sage */
+
+  /* Typography — serif swaps to Newsreader (see NOTE 2 for loading it) */
+  --font-serif:     'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans:      'DM Sans', system-ui, sans-serif;
+  --font-mono:      'JetBrains Mono', ui-monospace, monospace;
+
+  --eyebrow-size:   10px;
+  --eyebrow-track:  0.18em;
+  --body-size:      14px;
+  --body-line:      1.55;
+
+  /* NEW — mown-lawn banner stripe + grain colour (Wimbledon signature) */
+  --lawn-stripe:    repeating-linear-gradient(90deg,
+                      var(--brick-dark) 0, var(--brick-dark) 46px,
+                      #0C432B 46px, #0C432B 92px);
+}
+
+/* Subtle paper grain — drop into the page root as an aria-hidden layer */
+.tp-paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: radial-gradient(circle at 1px 1px, rgba(21, 35, 27, 0.5) 0.5px, transparent 0);
+  background-size: 3px 3px;
+}
+
+/* Eyebrow — the small-caps label used everywhere */
+.tp-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--eyebrow-size);
+  line-height: 1;
+  letter-spacing: var(--eyebrow-track);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.tp-eyebrow--brick { color: var(--brick); font-weight: 600; }   /* green */
+.tp-eyebrow--you   { color: var(--violet); font-weight: 600; }  /* NEW — purple */
+
+/* Section heading — H2 with the 2px ink bottom rule */
+.tp-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+.tp-section-head h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.005em;   /* Newsreader sits a touch wider than Instrument */
+}
+
+/* Tabular numerals — apply on data cells */
+.tp-tabular { font-variant-numeric: tabular-nums; }
+
+/* Green CTA — single primary action per page */
+.tp-cta {
+  display: inline-block;
+  padding: 10px 16px;
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--brick);
+  color: var(--paper);
+  border: none;
+  cursor: pointer;
+}
+.tp-cta:hover { background: var(--brick-dark); }
+
+/* Ghost / secondary action */
+.tp-ghost {
+  background: transparent;
+  color: var(--brick);
+  border: none;
+  cursor: pointer;
+  font: 500 11px/1 var(--font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tp-ghost:hover { color: var(--ink); }
+
+/* Pull quote — closing line of the dashboard, etc. (green rule) */
+.tp-pull {
+  border-left: 3px solid var(--brick);
+  padding-left: 16px;
+  font: 400 italic 19px/1.3 var(--font-serif);
+  color: var(--ink-2);
+  letter-spacing: -0.005em;
+}
+.tp-pull > .tp-pull__punch {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Card — paper2 surface with hairline border, no shadow, no radius */
+.tp-card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+}
+
+/* NEW — mown-lawn banner. Apply to the dashboard status banner; put the
+   ghost "SW19" wordmark and a 4px green bottom border inside it. */
+.tp-banner {
+  position: relative;
+  overflow: hidden;
+  color: var(--paper);
+  background: var(--lawn-stripe);
+  border-bottom: 4px solid var(--brick);
+}
+
+/* Body sets — these override Tailwind/Shadcn so the editorial type lands */
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .tp-flat { border-radius: 0 !important; }
+}
+
+/* Hide native number-input spinners — tiebreaker scrubbers ship explicit ±. */
+.tp-no-spinner::-webkit-outer-spin-button,
+.tp-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.tp-no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ============================================================================
+   NOTE 1 — the accent split (the one place that needs a component pass)
+   ----------------------------------------------------------------------------
+   Terracotta used ONE accent for everything. Wimbledon splits it:
+     • --brick  = green  → structure, the single primary CTA, "live", "open".
+     • --violet = purple → strictly "you": your standings row, your pick
+                           underline, the "· you" tag, "against the room".
+   In the old build, "you" was drawn with --olive. Search the components for
+   --olive (and var(--olive)) and, where it means "this is YOU", switch it to
+   --violet. Where --olive means "won / correct result", leave it — it now
+   resolves to green, which is what you want.
+
+   NOTE 2 — load Newsreader
+   ----------------------------------------------------------------------------
+   The serif is now Newsreader. Load it once (it replaces Instrument Serif):
+     • next/font:  import { Newsreader } from 'next/font/google' with
+       weights ['400','500'], style ['normal','italic'], and wire its CSS
+       variable to --font-serif in layout.tsx, OR
+     • a <link> in layout.tsx <head>:
+       https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap
+   You can drop the --font-instrument-serif wiring in the @theme inline block.
+   ============================================================================ */

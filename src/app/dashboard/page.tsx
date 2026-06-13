@@ -468,16 +468,24 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {/* Section heading bar */}
-      <div className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[var(--ink-2)] md:px-8 md:py-3 md:text-[11px] md:tracking-[0.2em]">
-        <span className="hidden md:inline">The Front Page</span>
-        <span className="font-semibold text-[var(--brick)]">
-          {currentRoundLong} · <span className="italic normal-case tracking-normal">{statusVerb}</span>
+      {/* Mown-lawn banner — the Wimbledon signature colour hit */}
+      <div className="tp-banner relative z-10">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 select-none font-serif text-[64px] font-medium leading-none tracking-tight text-[var(--paper)] opacity-[0.07] md:right-8 md:text-[96px]"
+        >
+          SW19
         </span>
-        <span>
-          {totalInRound > 0 ? `${tipsInRound}/${totalInRound} in` : 'no fixtures yet'}
-          {lockCountdown ? ` · locks in ${lockCountdown}` : ''}
-        </span>
+        <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[var(--paper)] md:px-8 md:py-3 md:text-[11px] md:tracking-[0.2em]">
+          <span className="hidden md:inline opacity-80">The front page</span>
+          <span className="font-semibold">
+            {currentRoundLong} · <span className="italic normal-case tracking-normal">{statusVerb}</span>
+          </span>
+          <span className="opacity-90">
+            {totalInRound > 0 ? `${tipsInRound}/${totalInRound} in` : 'no fixtures yet'}
+            {lockCountdown ? ` · locks in ${lockCountdown}` : ''}
+          </span>
+        </div>
       </div>
 
       {/* Above the fold — Lead + Sidebar */}
@@ -580,8 +588,8 @@ export default async function DashboardPage() {
                         : `−${gap}`
                 }
               />
-              <Stat label="Hit rate" value={myAccuracy != null ? `${myAccuracy}%` : '—'} />
-              <Stat label="Streak" value={myCorrectStreak > 0 ? `${myCorrectStreak} in a row` : '—'} />
+              <Stat label="Strike rate" value={myAccuracy != null ? `${myAccuracy}%` : '—'} />
+              <Stat label="On the trot" value={myCorrectStreak > 0 ? `${myCorrectStreak} ties` : '—'} />
             </div>
           </div>
         </aside>
@@ -673,7 +681,7 @@ export default async function DashboardPage() {
                           className="h-full"
                           style={{
                             width: `${pct}%`,
-                            background: r.state === 'live' ? 'var(--brick)' : 'var(--olive)',
+                            background: r.state === 'live' ? 'var(--violet)' : 'var(--olive)',
                           }}
                         />
                       </div>
@@ -730,10 +738,10 @@ function StandingsRow({
   return (
     <div
       className={`grid grid-cols-[24px_22px_1fr_auto] items-center gap-2.5 border-b border-dotted border-[var(--rule)] py-3 ${
-        isMe ? 'text-[var(--brick)]' : 'text-[var(--ink)]'
+        isMe ? 'text-[var(--violet)]' : 'text-[var(--ink)]'
       }`}
     >
-      <div className={`font-serif italic text-[19px] leading-none md:text-[22px] ${isMe ? 'text-[var(--brick)]' : 'text-[var(--ink-2)]'}`}>
+      <div className={`font-serif italic text-[19px] leading-none md:text-[22px] ${isMe ? 'text-[var(--violet)]' : 'text-[var(--ink-2)]'}`}>
         {rank}
       </div>
       {avatarUrl ? (
@@ -745,7 +753,7 @@ function StandingsRow({
       )}
       <div className={`truncate text-[14px] leading-[1.2] ${isMe ? 'font-medium' : 'font-normal'}`}>
         {name}
-        {isMe && <span className="ml-1 italic font-normal text-[var(--ink-2)]">· you</span>}
+        {isMe && <span className="ml-1 italic font-normal text-[var(--violet)]">· you</span>}
       </div>
       <div className="min-w-[36px] text-right font-serif text-[19px] leading-none tabular-nums md:text-[22px]">
         {points == null ? '—' : points}
@@ -791,7 +799,7 @@ function OrderRow({
           <span
             style={{
               fontWeight: mySide === 'player1' ? 500 : 400,
-              textDecoration: mySide === 'player1' ? 'underline var(--brick) 1.5px' : 'none',
+              textDecoration: mySide === 'player1' ? 'underline var(--violet) 1.5px' : 'none',
               textUnderlineOffset: 4,
             }}
           >
@@ -801,7 +809,7 @@ function OrderRow({
           <span
             style={{
               fontWeight: mySide === 'player2' ? 500 : 400,
-              textDecoration: mySide === 'player2' ? 'underline var(--brick) 1.5px' : 'none',
+              textDecoration: mySide === 'player2' ? 'underline var(--violet) 1.5px' : 'none',
               textUnderlineOffset: 4,
             }}
           >
@@ -812,7 +820,7 @@ function OrderRow({
           agreesWithMe ? (
             <div className="mt-1 text-[11px] text-[var(--ink-3)]">{c.pct}% of the room agrees</div>
           ) : (
-            <div className="mt-1 text-[11px] text-[var(--brick)]">contrarian · room favours {roomFavour}</div>
+            <div className="mt-1 text-[11px] text-[var(--violet)]">against the room · they favour {roomFavour}</div>
           )
         ) : null}
       </div>

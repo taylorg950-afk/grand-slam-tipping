@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-serif: var(--font-instrument-serif);
+  --font-serif: var(--font-newsreader);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -188,42 +188,45 @@ a:active {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   The Tipping Post — design tokens.
-   Append into src/app/globals.css below the existing @import lines.
-   These declarations replace the older "Roland Garros theme tokens" set;
-   keep names/values exactly as below so DESIGN.md references stay valid.
+   The Tipping Post — Wimbledon edition · design tokens  ("The Lawn")
+   Re-skin of the terracotta edition. Same variable/class names so every
+   component keeps working — only the VALUES (and the serif face) change.
+   See DESIGN.md (Wimbledon) and wimbledon-handoff/CHANGES.md for the mapping.
    ─────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Paper — page surfaces */
-  --paper:          #FAF6EC;
-  --paper-2:        #F2EBDC;
-  --paper-3:        #EDE4D0;
+  /* Paper — page surfaces (cream, retuned slightly cooler) */
+  --paper:          #F6F2E6;
+  --paper-2:        #EFE9D7;
+  --paper-3:        #E7E0CA;
 
-  /* Ink — text, rules, borders */
-  --ink:            #1B1814;
-  --ink-2:          #3C342C;
-  --ink-3:          rgba(27, 24, 20, 0.55);
-  --ink-4:          rgba(27, 24, 20, 0.28);
-  --rule:           rgba(27, 24, 20, 0.18);
-  --rule-soft:      rgba(27, 24, 20, 0.10);
+  /* Ink — green-black text, rules, borders */
+  --ink:            #15231B;
+  --ink-2:          #3B473E;
+  --ink-3:          rgba(21, 35, 27, 0.55);
+  --ink-4:          rgba(21, 35, 27, 0.28);
+  --rule:           rgba(21, 35, 27, 0.18);
+  --rule-soft:      rgba(21, 35, 27, 0.10);
 
-  /* Accents */
-  --brick:          #B85433;
-  --brick-dark:     #8E3A1F;
-  --brick-surface:  #FEF2EC;
-  --olive:          #3D4F2B;   /* "you" / "won" / "leader" data */
+  /* Accents — green = the house colour (structure, CTA, live, "open");
+     violet = strictly "you". --olive now resolves to green ("won/correct"). */
+  --brick:          #00643C;   /* was terracotta — now Wimbledon grass green */
+  --brick-dark:     #0A3D26;   /* deep green — banner / hover */
+  --brick-surface:  #EAF1ED;   /* pale green fill (auth screens) */
+  --violet:         #4F2683;   /* NEW — Wimbledon purple, the "you" colour */
+  --violet-soft:    #EFE9F5;
+  --olive:          #00643C;   /* "won / correct" data → green */
 
-  /* Chart palette — assigned by stable player order */
-  --chart-1:        #3D4F2B;   /* olive */
-  --chart-2:        #3D6A8F;   /* dusty blue */
-  --chart-3:        #7A4A8F;   /* plum */
-  --chart-4:        #C58A2E;   /* ochre */
-  --chart-5:        #4A8C6A;   /* sage */
-  --chart-6:        #9A6B4E;   /* clay-brown */
+  /* Chart palette — assigned by stable player order (series 1 = leader/you) */
+  --chart-1:        #00643C;   /* grass green */
+  --chart-2:        #4F2683;   /* violet */
+  --chart-3:        #1C7A4E;   /* light green */
+  --chart-4:        #8E6BB0;   /* muted violet */
+  --chart-5:        #B08A3E;   /* brass */
+  --chart-6:        #4A8C6A;   /* sage */
 
-  /* Typography */
-  --font-serif:     'Instrument Serif', 'Times New Roman', serif;
+  /* Typography — serif swaps to Newsreader (loaded via next/font in layout) */
+  --font-serif:     'Newsreader', Georgia, 'Times New Roman', serif;
   --font-sans:      'DM Sans', system-ui, sans-serif;
   --font-mono:      'JetBrains Mono', ui-monospace, monospace;
 
@@ -232,6 +235,11 @@ a:active {
   --eyebrow-track:  0.18em;
   --body-size:      14px;
   --body-line:      1.55;
+
+  /* NEW — mown-lawn banner stripe (Wimbledon signature) */
+  --lawn-stripe:    repeating-linear-gradient(90deg,
+                      var(--brick-dark) 0, var(--brick-dark) 46px,
+                      #0C432B 46px, #0C432B 92px);
 }
 
 /* Subtle paper grain — drop into the page root as an aria-hidden layer */
@@ -240,8 +248,8 @@ a:active {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.06;
-  background-image: radial-gradient(circle at 1px 1px, rgba(27, 24, 20, 0.45) 0.5px, transparent 0);
+  opacity: 0.05;
+  background-image: radial-gradient(circle at 1px 1px, rgba(21, 35, 27, 0.5) 0.5px, transparent 0);
   background-size: 3px 3px;
 }
 
@@ -255,7 +263,8 @@ a:active {
   text-transform: uppercase;
   color: var(--ink-2);
 }
-.tp-eyebrow--brick { color: var(--brick); font-weight: 600; }
+.tp-eyebrow--brick { color: var(--brick); font-weight: 600; }   /* green */
+.tp-eyebrow--you   { color: var(--violet); font-weight: 600; }  /* NEW — purple */
 
 /* Section heading — H2 with the 2px ink bottom rule */
 .tp-section-head {
@@ -272,7 +281,16 @@ a:active {
   font-weight: 400;
   font-size: 22px;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;   /* Newsreader sits a touch wider than Instrument */
+}
+
+/* Mown-lawn banner — deep-green block, ghost SW19, 4px green base border */
+.tp-banner {
+  position: relative;
+  overflow: hidden;
+  color: var(--paper);
+  background: var(--lawn-stripe);
+  border-bottom: 4px solid var(--brick);
 }
 
 /* Tabular numerals — apply on data cells */
