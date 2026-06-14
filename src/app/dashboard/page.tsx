@@ -298,6 +298,14 @@ export default async function DashboardPage() {
           ? 'in progress'
           : 'to come'
 
+  // Banner phrase — British register for the masthead lawn banner
+  const bannerStatus =
+    statusVerb === 'complete'
+      ? 'all done on the lawns'
+      : statusVerb === 'to come'
+        ? 'still to come'
+        : 'underway on the lawns'
+
   const dayNum = tournament.start_date
     ? Math.max(1, Math.ceil((now.getTime() - new Date(tournament.start_date).getTime()) / 86_400_000))
     : 1
@@ -469,23 +477,33 @@ export default async function DashboardPage() {
       </header>
 
       {/* Mown-lawn banner — the Wimbledon signature colour hit */}
-      <div className="tp-banner relative z-10">
+      <div className="tp-banner relative z-10 overflow-hidden">
         <span
           aria-hidden
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 select-none font-serif text-[64px] font-medium leading-none tracking-tight text-[var(--paper)] opacity-[0.07] md:right-8 md:text-[96px]"
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 select-none font-serif font-medium leading-none tracking-[-0.02em] text-[var(--paper)] opacity-[0.08] text-[110px] md:right-6 md:text-[210px]"
         >
           SW19
         </span>
-        <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[var(--paper)] md:px-8 md:py-3 md:text-[11px] md:tracking-[0.2em]">
-          <span className="hidden md:inline opacity-80">The front page</span>
-          <span className="font-semibold">
-            {currentRoundLong} · <span className="italic normal-case tracking-normal">{statusVerb}</span>
-          </span>
-          <span className="opacity-90">
-            {totalInRound > 0 ? `${tipsInRound}/${totalInRound} in` : 'no fixtures yet'}
-            {lockCountdown ? ` · locks in ${lockCountdown}` : ''}
-          </span>
+        <div className="relative px-4 py-8 md:px-8 md:py-14">
+          <div className="mb-2 font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--paper)] opacity-70 md:mb-3 md:text-[11px]">
+            The Championships · SW19
+          </div>
+          <h2 className="m-0 font-serif tracking-tight text-[var(--paper)] text-[30px] leading-[1.05] md:text-[50px] md:leading-[1.02]">
+            {currentRoundLong}, <span className="italic">{bannerStatus}</span>
+          </h2>
         </div>
+      </div>
+
+      {/* Section heading bar — front-page meta */}
+      <div className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-2.5 text-[9px] uppercase tracking-[0.18em] text-[var(--ink-2)] md:px-8 md:py-3 md:text-[11px] md:tracking-[0.2em]">
+        <span className="hidden md:inline">The front page</span>
+        <span className="font-semibold text-[var(--brick)]">
+          {currentRoundLong} · <span className="italic normal-case tracking-normal">{statusVerb}</span>
+        </span>
+        <span>
+          {totalInRound > 0 ? `${tipsInRound}/${totalInRound} in` : 'no fixtures yet'}
+          {lockCountdown ? ` · locks in ${lockCountdown}` : ''}
+        </span>
       </div>
 
       {/* Above the fold — Lead + Sidebar */}
