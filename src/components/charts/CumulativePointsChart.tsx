@@ -20,10 +20,12 @@ interface Props {
   currentUserName: string
 }
 
-const TOP_COLOURS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981']
-const ACCENT_COLOUR = '#B85433'
-const USER_COLOUR = '#3D4F2B'
-const OTHERS_COLOUR = '#1B181430'
+// Wimbledon series palette (see globals.css --chart-1…6). Leader = grass green,
+// you = violet (the reserved "you" accent), remaining tippers = the sage/brass tail.
+const TOP_COLOURS = ['#1C7A4E', '#8E6BB0', '#B08A3E', '#4A8C6A']
+const ACCENT_COLOUR = '#00643C'
+const USER_COLOUR = '#4F2683'
+const OTHERS_COLOUR = '#15231B30'
 
 function buildSeriesConfig(data: CumulativePointsData[], currentUserName: string) {
   if (data.length === 0) return []
@@ -59,18 +61,18 @@ function CustomTooltip({ active, payload, label }: {
 
   return (
     <div style={{
-      background: '#F2EBDC',
-      border: '1px solid #1B181420',
+      background: 'var(--paper-2)',
+      border: '1px solid #15231B20',
       borderRadius: 2,
       padding: '8px 12px',
       fontSize: 13,
       minWidth: 160,
     }}>
-      <p style={{ color: '#3C342C', marginBottom: 6, fontSize: 12 }}>{label}</p>
+      <p style={{ color: 'var(--ink-2)', marginBottom: 6, fontSize: 12 }}>{label}</p>
       {sorted.map(entry => (
         <div key={entry.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-          <span style={{ color: '#3C342C' }}>{entry.name}</span>
-          <span style={{ fontWeight: 500, color: '#1B1814', fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ color: 'var(--ink-2)' }}>{entry.name}</span>
+          <span style={{ fontWeight: 500, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
             {entry.value}
           </span>
         </div>
@@ -96,7 +98,7 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
             <div style={{ width: 16, height: s.name === leader ? 2.5 : 2, borderRadius: 1, background: s.colour, flexShrink: 0 }} />
             <span style={{
               fontSize: 13,
-              color: s.name === leader || s.name === currentUserName ? '#1B1814' : '#3C342C',
+              color: s.name === leader || s.name === currentUserName ? 'var(--ink)' : 'var(--ink-2)',
               fontWeight: s.name === leader || s.name === currentUserName ? 500 : 400,
             }}>
               {s.name}
@@ -109,7 +111,7 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
         {otherCount > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 16, height: 1, borderRadius: 1, background: OTHERS_COLOUR, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: '#1B181450' }}>+ {otherCount} others</span>
+            <span style={{ fontSize: 13, color: '#15231B50' }}>+ {otherCount} others</span>
           </div>
         )}
       </div>
@@ -117,15 +119,15 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
       {/* Chart */}
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-          <CartesianGrid vertical={false} stroke="#1B181415" strokeOpacity={1} />
+          <CartesianGrid vertical={false} stroke="#15231B15" strokeOpacity={1} />
           <XAxis
             dataKey="round"
-            tick={{ fontSize: 12, fill: '#3C342C' }}
+            tick={{ fontSize: 12, fill: 'var(--ink-2)' }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fontSize: 12, fill: '#3C342C' }}
+            tick={{ fontSize: 12, fill: 'var(--ink-2)' }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}

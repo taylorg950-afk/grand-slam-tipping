@@ -581,7 +581,7 @@ function HalfConnectors({
       height={halfH}
     >
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="rgba(27,24,20,0.18)" strokeWidth="1" strokeDasharray="2 3" />
+        <path key={i} d={d} fill="none" stroke="rgba(21,35,27,0.18)" strokeWidth="1" strokeDasharray="2 3" />
       ))}
     </svg>
   )
@@ -642,7 +642,7 @@ function BracketRow({
         padding: `${big ? 5 : 3}px 8px`,
         borderBottom: isFirst ? '1px dotted var(--rule)' : 'none',
         opacity: lost ? 0.45 : 1,
-        background: won ? 'rgba(61,79,43,0.07)' : 'transparent',
+        background: won ? 'rgba(0,100,60,0.07)' : 'transparent',
         minHeight: big ? 22 : 17,
       }}
     >

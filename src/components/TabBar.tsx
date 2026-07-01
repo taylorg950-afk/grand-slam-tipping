@@ -19,12 +19,12 @@ export function TabBar({ tournamentSlug }: Props) {
   ]
 
   return (
-    <nav className="sticky bottom-0 z-20 bg-[#FAF6EC] border-t border-[#1B181420]
+    <nav className="sticky bottom-0 z-20 bg-[var(--paper)] border-t border-[#15231B20]
                     px-8 pt-3 flex items-center justify-between"
          style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
       {tabs.map((t) => {
         if (!t.href) return (
-          <span key={t.label} className="text-[10px] uppercase tracking-[0.18em] text-[#1B181430] pb-1 border-b-2 border-transparent">
+          <span key={t.label} className="text-[10px] uppercase tracking-[0.18em] text-[#15231B30] pb-1 border-b-2 border-transparent">
             {t.label}
           </span>
         )
@@ -33,10 +33,10 @@ export function TabBar({ tournamentSlug }: Props) {
           <Link
             key={t.href}
             href={t.href}
-            className={`text-[10px] uppercase tracking-[0.18em] pb-1 border-b-2 transition-colors hover:font-semibold hover:text-[#1B1814]
+            className={`text-[10px] uppercase tracking-[0.18em] pb-1 border-b-2 transition-colors hover:font-semibold hover:text-[var(--ink)]
                        ${active
-                         ? 'text-[#1B1814] font-semibold border-[#B85433]'
-                         : 'text-[#3C342C] font-normal border-transparent'}`}
+                         ? 'text-[var(--ink)] font-semibold border-[var(--brick)]'
+                         : 'text-[var(--ink-2)] font-normal border-transparent'}`}
           >
             {t.label}
           </Link>

@@ -44,7 +44,7 @@ export function NavigationProgress() {
       <div
         style={{
           height: '100%',
-          background: '#B85433',
+          background: 'var(--brick)',
           animation: state === 'loading'
             ? 'nav-progress 8s ease-out forwards'
             : 'nav-progress-done 350ms ease-out forwards',

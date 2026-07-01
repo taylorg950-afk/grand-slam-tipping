@@ -37,14 +37,14 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 border-t border-dotted border-[#1B181420] pt-6">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-[#3C342C] font-semibold">
+    <form onSubmit={submit} className="space-y-4 border-t border-dotted border-[#15231B20] pt-6">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] font-semibold">
         Change password
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="new_password"
-               className="block text-[10px] uppercase tracking-[0.18em] text-[#3C342C] font-semibold">
+               className="block text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] font-semibold">
           New password
         </label>
         <input
@@ -54,14 +54,14 @@ export default function ChangePasswordForm() {
           onChange={(e) => setPassword(e.target.value)}
           minLength={6}
           autoComplete="new-password"
-          className="w-full rounded-[2px] border border-[#1B181430] bg-white px-3 py-2.5
-                     text-[15px] text-[#1B1814] focus:outline-none focus:border-[#B85433] transition-colors"
+          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
+                     text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="confirm_password"
-               className="block text-[10px] uppercase tracking-[0.18em] text-[#3C342C] font-semibold">
+               className="block text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] font-semibold">
           Confirm new password
         </label>
         <input
@@ -71,19 +71,19 @@ export default function ChangePasswordForm() {
           onChange={(e) => setConfirm(e.target.value)}
           minLength={6}
           autoComplete="new-password"
-          className="w-full rounded-[2px] border border-[#1B181430] bg-white px-3 py-2.5
-                     text-[15px] text-[#1B1814] focus:outline-none focus:border-[#B85433] transition-colors"
+          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
+                     text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
       </div>
 
-      {error && <p className="text-sm text-[#B85433]">{error}</p>}
-      {ok && <p className="text-sm text-[#3D4F2B] font-medium">Password updated.</p>}
+      {error && <p className="text-sm text-[var(--brick)]">{error}</p>}
+      {ok && <p className="text-sm text-[var(--olive)] font-medium">Password updated.</p>}
 
       <button
         type="submit"
         disabled={loading || !password || !confirm}
         className="w-full py-3 rounded-[2px] text-[11px] uppercase tracking-[0.2em] font-semibold
-                   bg-[#1B1814] text-[#FAF6EC] disabled:opacity-50 transition-opacity"
+                   bg-[var(--ink)] text-[var(--paper)] disabled:opacity-50 transition-opacity"
       >
         {loading ? 'Updating…' : 'Update password'}
       </button>

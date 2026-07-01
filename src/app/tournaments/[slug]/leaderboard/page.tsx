@@ -67,7 +67,7 @@ function ordinalSuffix(n: number) {
 function heatBg(v: number, max: number) {
   if (v === 0 || max === 0) return 'transparent'
   const a = 0.08 + (v / max) * 0.22
-  return `rgba(184, 84, 51, ${a.toFixed(2)})`
+  return `rgba(0,100,60, ${a.toFixed(2)})`
 }
 
 // ─── Round-by-round snapshot ────────────────────────────────────────
@@ -516,7 +516,7 @@ export default async function LeaderboardPage({
                     }`}
                     style={{
                       gridTemplateColumns: tableGridCols(orderedRounds.length),
-                      background: isMe ? 'rgba(184,84,51,0.04)' : 'transparent',
+                      background: isMe ? 'rgba(0,100,60,0.04)' : 'transparent',
                     }}
                   >
                     <div
@@ -562,7 +562,7 @@ export default async function LeaderboardPage({
                       {row.tipped > 0 ? `${accuracy}%` : '—'}
                     </div>
                     <div className="flex justify-end">
-                      <Sparkline data={row.spark} color={isMe ? '#3D4F2B' : '#3C342C'} width={56} height={22} />
+                      <Sparkline data={row.spark} color={isMe ? 'var(--olive)' : 'var(--ink-2)'} width={56} height={22} />
                     </div>
                     <div
                       className="text-right font-serif leading-none tabular-nums text-[26px]"
@@ -586,7 +586,7 @@ export default async function LeaderboardPage({
                     className="mt-2 p-3"
                     style={{
                       border: `1px solid ${isMe ? 'var(--brick)' : 'var(--rule)'}`,
-                      background: isMe ? 'rgba(184,84,51,0.04)' : 'transparent',
+                      background: isMe ? 'rgba(0,100,60,0.04)' : 'transparent',
                     }}
                   >
                     <div className="flex items-center gap-2.5">

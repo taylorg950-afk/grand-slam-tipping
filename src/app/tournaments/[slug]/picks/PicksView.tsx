@@ -266,7 +266,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   <div className="text-[10px] font-medium uppercase tracking-[0.18em]">{m.round.name}</div>
                   <div
                     className="mt-1 font-serif italic text-[11px]"
-                    style={{ color: isActive ? 'rgba(250, 246, 236, 0.6)' : 'var(--ink-3)' }}
+                    style={{ color: isActive ? 'rgba(246,242,230, 0.6)' : 'var(--ink-3)' }}
                   >
                     {m.round.points_per_correct_tip}pt each
                   </div>
@@ -281,7 +281,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   {m.state === 'live' && (
                     <div
                       className="mt-1.5 text-[9px] font-medium uppercase tracking-[0.18em]"
-                      style={{ color: isActive ? '#F2EBDC' : 'var(--brick)' }}
+                      style={{ color: isActive ? 'var(--paper-2)' : 'var(--brick)' }}
                     >
                       Live
                     </div>
@@ -382,8 +382,8 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
 
   let borderColor = 'var(--rule)'
   let bgColor: string | undefined
-  if (state === 'correct') { borderColor = 'rgba(61,79,43,0.4)'; bgColor = 'rgba(61,79,43,0.04)' }
-  else if (state === 'wrong') { borderColor = 'rgba(184,84,51,0.4)'; bgColor = 'rgba(184,84,51,0.04)' }
+  if (state === 'correct') { borderColor = 'rgba(0,100,60,0.4)'; bgColor = 'rgba(0,100,60,0.04)' }
+  else if (state === 'wrong') { borderColor = 'rgba(0,100,60,0.4)'; bgColor = 'rgba(0,100,60,0.04)' }
 
   return (
     <div
@@ -445,9 +445,9 @@ function StatusDot({ state }: { state: MatchState }) {
   const styles: Record<MatchState, { bg: string; border?: string; symbol?: React.ReactNode; color: string }> = {
     correct: { bg: 'var(--olive)', symbol: '✓', color: 'var(--paper)' },
     wrong:   { bg: 'var(--brick)', symbol: '✗', color: 'var(--paper)' },
-    locked:  { bg: 'rgba(27,24,20,0.12)', color: 'var(--ink-2)' },
-    'no-pick': { bg: 'rgba(27,24,20,0.06)', color: 'var(--ink-3)' },
-    picked:  { bg: 'rgba(27,24,20,0.08)', color: 'var(--ink-2)' },
+    locked:  { bg: 'rgba(21,35,27,0.12)', color: 'var(--ink-2)' },
+    'no-pick': { bg: 'rgba(21,35,27,0.06)', color: 'var(--ink-3)' },
+    picked:  { bg: 'rgba(21,35,27,0.08)', color: 'var(--ink-2)' },
     open:    { bg: 'transparent', border: '1px dashed var(--brick)', symbol: '+', color: 'var(--brick)' },
   }
   const s = styles[state]
@@ -464,8 +464,8 @@ function StatusDot({ state }: { state: MatchState }) {
 
 function StatePill({ state, pts }: { state: MatchState; pts: number }) {
   const styles: Record<MatchState, { label: string; color: string; fill?: string }> = {
-    correct: { label: `+${pts}`, color: 'var(--olive)', fill: 'rgba(61,79,43,0.1)' },
-    wrong:   { label: '0', color: 'var(--brick)', fill: 'rgba(184,84,51,0.1)' },
+    correct: { label: `+${pts}`, color: 'var(--olive)', fill: 'rgba(0,100,60,0.1)' },
+    wrong:   { label: '0', color: 'var(--brick)', fill: 'rgba(0,100,60,0.1)' },
     locked:  { label: 'pending', color: 'var(--ink-3)' },
     'no-pick': { label: 'no pick', color: 'var(--ink-3)' },
     picked:  { label: 'picked', color: 'var(--ink-2)' },
@@ -542,7 +542,7 @@ function PlayerLine({ name, picked, won, lost, state, pending, onPick }: PlayerL
       aria-label={`Pick ${display}`}
       // min-h-[44px] keeps the tap target at the mobile minimum even though the
       // text line is only ~20px — small targets here caused missed taps.
-      className="flex min-h-[44px] w-full items-center text-left transition-colors hover:bg-[rgba(184,84,51,0.06)] active:scale-[0.99]"
+      className="flex min-h-[44px] w-full items-center text-left transition-colors hover:bg-[rgba(0,100,60,0.06)] active:scale-[0.99]"
       style={{ padding: '6px 6px', margin: '0 -6px' }}
     >
       {inner}

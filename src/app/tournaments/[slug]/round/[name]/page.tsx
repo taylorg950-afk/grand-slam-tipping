@@ -92,14 +92,14 @@ export default async function RoundPage({
   const nextPickHref = firstUnpickedGroupIdx >= 0 ? `#group-${firstUnpickedGroupIdx}` : undefined
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#FAF6EC] text-[#1B1814] relative">
+    <main className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] relative">
       <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
-           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #1B1814 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
+           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--ink) 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
 
       {/* Sticky header */}
-      <header className="sticky top-0 z-20 bg-[#FAF6EC] border-b border-[#1B181420] px-5 pt-3.5 pb-3">
+      <header className="sticky top-0 z-20 bg-[var(--paper)] border-b border-[#15231B20] px-5 pt-3.5 pb-3">
         <div className="flex items-center gap-2 mb-1.5">
-          <Link href="/dashboard" className="flex items-center gap-2 text-[#3C342C]">
+          <Link href="/dashboard" className="flex items-center gap-2 text-[var(--ink-2)]">
             <span className="text-lg leading-none">‹</span>
             <span className="text-[10px] uppercase tracking-[0.18em]">{tournament.name}</span>
           </Link>
@@ -108,12 +108,12 @@ export default async function RoundPage({
           <h1 className="font-serif text-[28px] leading-none tracking-tight">
             {roundLongName(roundName)}
           </h1>
-          <span className={`text-xs font-semibold tracking-wide ${fullyLocked ? 'text-[#3C342C]' : 'text-[#B85433]'}`}>
+          <span className={`text-xs font-semibold tracking-wide ${fullyLocked ? 'text-[var(--ink-2)]' : 'text-[var(--brick)]'}`}>
             ● {fullyLocked ? 'Locked' : `Locks ${fmtCountdown(lockMs)}`}
           </span>
         </div>
         {/* Round tab strip */}
-        <div className="flex gap-3.5 mt-3 text-[11px] uppercase tracking-[0.14em] text-[#3C342C] overflow-x-auto pb-px">
+        <div className="flex gap-3.5 mt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-2)] overflow-x-auto pb-px">
           {(allRounds ?? []).map(r => {
             const active = r.name === roundName
             return (
@@ -121,8 +121,8 @@ export default async function RoundPage({
                 key={r.name}
                 href={`/tournaments/${slug}/round/${r.name}`}
                 className={`shrink-0 pb-1 border-b-2 ${active
-                  ? 'text-[#1B1814] font-bold border-[#B85433]'
-                  : 'border-transparent hover:text-[#1B1814]'}`}
+                  ? 'text-[var(--ink)] font-bold border-[var(--brick)]'
+                  : 'border-transparent hover:text-[var(--ink)]'}`}
               >
                 {r.name}
               </Link>
@@ -135,15 +135,15 @@ export default async function RoundPage({
       <section className="relative z-10 px-5 pt-3.5 pb-56 flex-1">
         {groups.length === 0 ? (
           <div className="text-center py-16">
-            <div className="font-serif text-2xl italic text-[#3C342C] tracking-tight">
+            <div className="font-serif text-2xl italic text-[var(--ink-2)] tracking-tight">
               No matches yet for {roundLongName(roundName)}.
             </div>
-            <div className="text-sm text-[#3C342C] mt-1">Admin&apos;s still loading the fixtures.</div>
+            <div className="text-sm text-[var(--ink-2)] mt-1">Admin&apos;s still loading the fixtures.</div>
           </div>
         ) : (
           groups.map((group, gi) => (
             <div key={gi} id={`group-${gi}`} className="mb-6 scroll-mt-32">
-              <div className="flex justify-between items-baseline text-[10px] uppercase tracking-[0.18em] text-[#3C342C] mb-2">
+              <div className="flex justify-between items-baseline text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] mb-2">
                 <span>Feeds {nextRoundName} {gi + 1}</span>
                 <span className="italic font-serif tracking-normal normal-case text-[11px]">
                   {gi === 0 ? 'top of draw' : gi === groups.length - 1 ? 'bottom of draw' : ''}
@@ -163,9 +163,9 @@ export default async function RoundPage({
                 <svg viewBox="0 0 100 20" preserveAspectRatio="none"
                      className="block w-full h-5 -mt-px" aria-hidden>
                   <path d="M 8 0 L 8 10 L 92 10 L 92 0 M 50 10 L 50 20"
-                        stroke="#1B181420" strokeWidth="1" fill="none" />
+                        stroke="#15231B20" strokeWidth="1" fill="none" />
                 </svg>
-                <div className="text-center -mt-0.5 text-[10px] uppercase tracking-[0.14em] text-[#3C342C]
+                <div className="text-center -mt-0.5 text-[10px] uppercase tracking-[0.14em] text-[var(--ink-2)]
                                 italic font-serif">
                   → {nextRoundName} {gi + 1}
                 </div>
@@ -175,8 +175,8 @@ export default async function RoundPage({
         )}
 
         {groups.length > 0 && (
-          <div className="mt-3 p-4 border border-dashed border-[#1B181420]
-                          font-serif italic text-[#3C342C] text-center tracking-tight text-base leading-snug">
+          <div className="mt-3 p-4 border border-dashed border-[#15231B20]
+                          font-serif italic text-[var(--ink-2)] text-center tracking-tight text-base leading-snug">
             {remaining === 0
               ? `All in. ${fullyLocked ? 'Sit back, watch the carnage.' : 'Now we wait for the lock.'}`
               : `${remaining} still to call. Don't sleep on it.`}
@@ -186,9 +186,9 @@ export default async function RoundPage({
 
       {/* Lock bar + tab nav stacked at bottom */}
       <div className="fixed bottom-0 left-0 right-0 z-20">
-        <div className="bg-[#1B1814] text-[#FAF6EC] px-5 pt-3.5 pb-3.5 flex items-center justify-between gap-4">
+        <div className="bg-[var(--ink)] text-[var(--paper)] px-5 pt-3.5 pb-3.5 flex items-center justify-between gap-4">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-[#F2EBDC]/70">
+            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--paper-2)]/70">
               {picked} of {total} picked
             </div>
             <div className="font-serif italic text-lg leading-tight">
@@ -202,7 +202,7 @@ export default async function RoundPage({
           {!fullyLocked && remaining > 0 && nextPickHref && (
             <Link
               href={nextPickHref}
-              className="bg-[#B85433] hover:bg-[#8E3A1F] text-[#FAF6EC] px-4 py-3
+              className="bg-[var(--brick)] hover:bg-[var(--brick-dark)] text-[var(--paper)] px-4 py-3
                          text-[11px] uppercase tracking-[0.18em] font-semibold rounded-[2px]
                          transition-colors"
             >
