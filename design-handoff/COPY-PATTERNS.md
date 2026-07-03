@@ -135,6 +135,10 @@ Sans-serif body, two inner columns on desktop with a column rule, single
 column on mobile. First paragraph gets a serif italic drop cap on its
 first letter — drop the cap if the first character isn't a letter.
 
+**Privacy rule:** the blurb only airs the *viewer's own* numbers (points,
+strike rate, tip count). Other tippers appear by name and relative gap
+only — never their points, accuracy, or volume.
+
 ### Template A — "The Leader"
 
 **When:** `rank === 1 && roundResultedCount > 0`
@@ -145,12 +149,12 @@ first letter — drop the cap if the first character isn't a letter.
 in {secondRoundName}, {yourName} now sits on {points} points — a
 {accuracy}% hit rate across {tipped} tips.
 
-The challenger, {secondName}, has been quieter on volume but sharper,
-converting {secondAccuracy}% of {secondTipped} tips. With {nextRound}
-worth {nextRoundPts} points each, the gap could close in an afternoon.
+The challenger, {secondName}, sits {gap} back and is rather too composed
+about it. With {nextRound} worth {nextRoundPts} points a pick, one
+afternoon of poor judgement is all it would take.
 
 The room is in agreement on the day's lead match. {consensus} draws
-{consensusPct}% support; only {nonConsensusCount} tipper(s) called the
+{consensusPct}% support; only {nonConsensusCount} tipper(s) fancy the
 upset. Locks at {leadMatchLockTime}.
 
 Continued in Order of play →
@@ -161,13 +165,11 @@ Continued in Order of play →
 **When:** `2 <= rank <= 4 && roundResultedCount > 0`
 
 ```
-{leader} sits on {leaderPts} after a {leaderAccuracy}% run through the
-early rounds. You're {gap} back on {points} — well inside one strong
-round.
+{leader} has the lead and, one assumes, the smugness that goes with it.
+You're {gap} back on {points} — well inside one strong round.
 
-{nextRound} is worth {nextRoundPts} per pick. {leader} would need to
-keep landing them; a sharper {nextRound} from you puts the title back
-in play.
+{nextRound} is worth {nextRoundPts} per pick. {leader} has to keep
+landing them; you only have to be right when it counts.
 ```
 
 ### Template C — "Round opens"
@@ -179,7 +181,7 @@ in play.
 at {firstLock}.
 
 Highest-profile call: {leadMatchP1} v {leadMatchP2}. The room's leaning
-{consensusPct}% toward {consensus}. Your move.
+{consensusPct}% toward {consensus}. The room has been wrong before.
 ```
 
 ### Template D — "Welcome"
@@ -189,7 +191,7 @@ Highest-profile call: {leadMatchP1} v {leadMatchP2}. The room's leaning
 ```
 Quiet so far. {nUnpicked} matches sit unpicked across {round}, with the
 first lock at {firstLock}. Open Picks to file them; you can edit until
-the moment each match starts.
+the moment each match starts. After that, your mistakes are permanent.
 ```
 
 ### Template E — "Down the back"
@@ -197,10 +199,10 @@ the moment each match starts.
 **When:** `rank >= 5 && numTippers >= 8`
 
 ```
-The field has stretched out. {leader} sits on {leaderPts}, {gapLeader}
-ahead of you; {nAbove} tippers in between. With {nRoundsLeft} rounds
-to play and the bigger points still on the table, this isn't done — but
-it'd take a near-perfect run from here.
+The field has stretched out, and you've given it a generous head start.
+{leader} is {gapLeader} ahead, with {nAbove} tippers in between.
+{nRoundsLeft} rounds to play and the bigger points still on the table —
+stranger things have happened, though not many.
 ```
 
 ### Fallback (any template's slot null)

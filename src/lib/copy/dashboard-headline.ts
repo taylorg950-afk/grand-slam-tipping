@@ -42,10 +42,18 @@ export function dashboardHeadline(s: HeadlineState): Headline {
   }
 
   if (s.tournamentComplete) {
+    // Only the champion sees the winning total — nobody else's score is aired.
+    if (s.rank === 1) {
+      return {
+        kicker: 'Champion',
+        line1: `${s.yourName} takes ${s.city}`,
+        line2: s.finalPoints != null ? `on ${s.finalPoints}. Take a bow.` : 'Take a bow.',
+      }
+    }
     return {
       kicker: 'Tournament complete',
-      line1: `${s.leaderName} takes ${s.city}`,
-      line2: s.finalPoints != null ? `on ${s.finalPoints}.` : 'as the dust settles.',
+      line1: `${s.leaderName} takes ${s.city}.`,
+      line2: 'There’s always the next one.',
     }
   }
 
@@ -53,7 +61,7 @@ export function dashboardHeadline(s: HeadlineState): Headline {
     return {
       kicker: 'Welcome',
       line1: 'Welcome to the comp.',
-      line2: `${s.numUnpickedMatches} matches need your call.`,
+      line2: `${s.numUnpickedMatches} matches need your call. No pressure.`,
     }
   }
 
@@ -64,8 +72,8 @@ export function dashboardHeadline(s: HeadlineState): Headline {
       others.length === 0
         ? `on ${sharedPts}.`
         : others.length === 1
-          ? `with ${others[0]} on ${sharedPts}.`
-          : `with ${others[0]} and ${others.length - 1} others on ${sharedPts}.`
+          ? `with ${others[0]} on ${sharedPts}. Awkward.`
+          : `with ${others[0]} and ${others.length - 1} others on ${sharedPts}. Cosy.`
     return {
       kicker: 'Tied at the top',
       line1: `${s.yourName} tied at the top`,
@@ -93,7 +101,7 @@ export function dashboardHeadline(s: HeadlineState): Headline {
     return {
       kicker: 'Leading narrowly',
       line1: `${s.yourName} clings to a ${s.gap}-point lead`,
-      line2: `as ${s.round} closes in.`,
+      line2: `as ${s.round} closes in. Don’t look down.`,
     }
   }
 
@@ -101,14 +109,14 @@ export function dashboardHeadline(s: HeadlineState): Headline {
     return {
       kicker: 'In the pack',
       line1: `${s.leaderName} leads by ${s.gap};`,
-      line2: `you sit ${ordinal(s.rank)}.`,
+      line2: `you lurk in ${ordinal(s.rank)}.`,
     }
   }
 
   return {
     kicker: 'Down the back',
-    line1: `${s.leaderName} runs away with ${s.city}`,
-    line2: `as ${s.round} approaches.`,
+    line1: `${s.leaderName} runs away with ${s.city};`,
+    line2: 'you remain, officially, a contender.',
   }
 }
 
