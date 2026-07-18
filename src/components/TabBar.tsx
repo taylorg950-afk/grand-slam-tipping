@@ -16,11 +16,12 @@ export function TabBar({ tournamentSlug }: Props) {
     { label: 'Bracket', href: tournamentSlug ? `/tournaments/${tournamentSlug}/bracket` : null },
     { label: 'Standings', href: tournamentSlug ? `/tournaments/${tournamentSlug}/leaderboard` : null },
     { label: 'Final', href: tournamentSlug ? `/tournaments/${tournamentSlug}/tiebreaker` : null },
+    { label: 'Rules', href: '/rules' },
   ]
 
   return (
     <nav className="sticky bottom-0 z-20 bg-[var(--paper)] border-t border-[#15231B20]
-                    px-8 pt-3 flex items-center justify-between"
+                    px-4 md:px-8 pt-3 flex items-center justify-between gap-2"
          style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
       {tabs.map((t) => {
         if (!t.href) return (

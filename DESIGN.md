@@ -129,8 +129,8 @@ swap. Summarised here; see `wb-lawn.jsx` for exact spacing.)
 - **Pull quote / drop cap** — serif italic; drop cap in `--accent` (green).
 - **Buttons** — one primary CTA per page in `--accent` (green) fill, ivory
   text, square corners. Everything else ghost (green text, hover to ink).
-- **Tab bar** — 5 tabs (Dashboard · Picks · Bracket · Standings · Final).
-  Active = `--accent` (green) + 1px underline.
+- **Tab bar** — 6 tabs (Dashboard · Picks · Bracket · Standings · Final ·
+  Rules). Active = `--accent` (green) + 1px underline.
 
 ## Voice — understated British club
 

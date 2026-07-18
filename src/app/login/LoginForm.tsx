@@ -220,6 +220,37 @@ export default function LoginForm() {
         </div>
       </div>
 
+      {/* Below the fold — how it works */}
+      <section className="relative z-10 border-t-[3px] border-double border-[var(--ink)] px-4 pb-9 pt-6 md:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-5 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
+            <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">How it works</h2>
+            <span className="tp-eyebrow">Four things to know</span>
+          </div>
+          <div className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2 md:grid-cols-4">
+            <HowStep n="1" heading="Call every tie">
+              Pick a winner for each match of the round — change your mind as often
+              as you like before first serve.
+            </HowStep>
+            <HowStep n="2" heading="Points double each round">
+              A correct call early on is pocket change; a correct call in the final
+              is a small fortune.
+            </HowStep>
+            <HowStep n="3" heading="Locked at first serve">
+              Each match locks at its scheduled start. Then the room&apos;s picks go
+              on the table for everyone to see.
+            </HowStep>
+            <HowStep n="4" heading="Settled at the line">
+              Level at the end? Closest on predicted total games in the finals takes
+              the table.
+            </HowStep>
+          </div>
+          <p className="m-0 mt-6 text-center font-serif italic text-[13px] text-[var(--ink-3)]">
+            The full house rules — walkovers, tiebreakers, the umpire&apos;s chair — live under Rules once you&apos;re in.
+          </p>
+        </div>
+      </section>
+
       {/* Closing line */}
       <footer className="relative z-10 border-t border-[var(--rule)] px-4 py-5 text-center md:px-8">
         <span className="font-serif italic text-[13px] text-[var(--ink-3)]">
@@ -227,6 +258,18 @@ export default function LoginForm() {
         </span>
       </footer>
     </main>
+  )
+}
+
+function HowStep({ n, heading, children }: { n: string; heading: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-2.5">
+        <span className="font-serif italic text-[26px] leading-none text-[var(--brick)]">{n}</span>
+        <h3 className="m-0 font-serif text-[16px] leading-tight tracking-tight">{heading}</h3>
+      </div>
+      <p className="m-0 mt-2 font-sans text-[13px] leading-[1.55] text-[var(--ink-2)]">{children}</p>
+    </div>
   )
 }
 
