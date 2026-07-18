@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { TabBar } from '@/components/TabBar'
+import { submitTip } from '../round/[name]/actions'
 
 interface DbRound {
   id: string
@@ -18,6 +20,8 @@ interface DbMatch {
   player2_name: string
   scheduled_start: string
   winner: string | null
+  score: string | null
+  no_points: boolean
   draw: string
   created_at: string
   bracket_position: number | null
@@ -67,9 +71,12 @@ interface BracketCard {
   col: number
   positionInHalf: number  // 0-based slot within this half at this column
   half: 'top' | 'bottom' | 'final'
+  roundName: string
   player1: string
   player2: string
   winner: string | null
+  score: string | null
+  noPoints: boolean
   myPick: string | null
   isLocked: boolean
   isResulted: boolean
@@ -89,7 +96,7 @@ function buildBracket(
   rounds: DbRound[],
   matches: DbMatch[],
   draw: 'mens' | 'womens',
-  tipMap: Map<string, string>,
+  tipMap: Record<string, string>,
   now: Date,
 ): BuiltBracket {
   const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
@@ -139,9 +146,12 @@ function buildBracket(
 
       cards.push({
         id: m.id, col, positionInHalf, half,
+        roundName: round.name,
         player1: m.player1_name, player2: m.player2_name,
         winner: m.winner,
-        myPick: tipMap.get(m.id) ?? null,
+        score: m.score,
+        noPoints: m.no_points,
+        myPick: tipMap[m.id] ?? null,
         isLocked, isResulted, isLive,
       })
     }
@@ -153,9 +163,12 @@ function buildBracket(
     const isResulted = !!finalMatch.winner
     finalCard = {
       id: finalMatch.id, col: halfRounds.length, positionInHalf: 0, half: 'final',
+      roundName: finalRound.name,
       player1: finalMatch.player1_name, player2: finalMatch.player2_name,
       winner: finalMatch.winner,
-      myPick: tipMap.get(finalMatch.id) ?? null,
+      score: finalMatch.score,
+      noPoints: finalMatch.no_points,
+      myPick: tipMap[finalMatch.id] ?? null,
       isLocked, isResulted, isLive: isLocked && !isResulted,
     }
   }
@@ -170,17 +183,50 @@ function buildBracket(
 export default function BracketView({
   tournament, rounds, matches, myTips,
 }: Props) {
+  const router = useRouter()
   const [draw, setDraw] = useState<'mens' | 'womens'>('mens')
   const [activeRoundName, setActiveRoundName] = useState<string | null>(null)
 
   const now = useMemo(() => new Date(), [])
   const hasWomens = matches.some(m => m.draw === 'womens')
 
-  const tipMap = useMemo(() => {
-    const m = new Map<string, string>()
-    myTips.forEach(t => m.set(t.match_id, t.predicted_winner))
-    return m
-  }, [myTips])
+  // Optimistic tip state so picks land instantly; rolled back per-match on error.
+  const [tipMap, setTipMap] = useState<Record<string, string>>(() =>
+    Object.fromEntries(myTips.map(t => [t.match_id, t.predicted_winner]))
+  )
+  const [pendingPicks, setPendingPicks] = useState<Record<string, 'player1' | 'player2'>>({})
+  const [, startTransition] = useTransition()
+
+  const roundNameById = useMemo(
+    () => Object.fromEntries(rounds.map(r => [r.id, r.name])),
+    [rounds]
+  )
+
+  function placePick(matchId: string, roundName: string, pick: 'player1' | 'player2') {
+    if (tipMap[matchId] === pick || pendingPicks[matchId] === pick) return
+    const prevForMatch = tipMap[matchId]
+    setPendingPicks(p => ({ ...p, [matchId]: pick }))
+    setTipMap(m => ({ ...m, [matchId]: pick }))
+    startTransition(async () => {
+      const result = await submitTip(tournament.slug, roundName, matchId, pick)
+      if (result?.error) {
+        setTipMap(m => {
+          const next = { ...m }
+          if (prevForMatch === undefined) delete next[matchId]
+          else next[matchId] = prevForMatch
+          return next
+        })
+        console.error(result.error)
+      } else {
+        router.refresh()
+      }
+      setPendingPicks(p => {
+        const next = { ...p }
+        delete next[matchId]
+        return next
+      })
+    })
+  }
 
   const orderedRounds = useMemo(
     () => [...rounds].sort((a, b) => a.sort_order - b.sort_order),
@@ -223,7 +269,7 @@ export default function BracketView({
     const alive: string[] = []
     const out: string[] = []
     for (const m of currentRoundMatches) {
-      const tip = tipMap.get(m.id)
+      const tip = tipMap[m.id]
       if (!tip) continue
       const pickedName = stripSeed(tip === 'player1' ? m.player1_name : m.player2_name)
       if (m.winner) {
@@ -375,7 +421,11 @@ export default function BracketView({
                       top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2,
                     }}
                   >
-                    <MatchCard card={c} />
+                    <MatchCard
+                      card={c}
+                      pendingSide={pendingPicks[c.id] ?? null}
+                      onPick={side => placePick(c.id, c.roundName, side)}
+                    />
                   </div>
                 ))}
               </div>
@@ -391,7 +441,12 @@ export default function BracketView({
                       · The Final ·
                     </div>
                     <div className="bg-[var(--paper)] px-3">
-                      <MatchCard card={built.finalCard} big />
+                      <MatchCard
+                        card={built.finalCard}
+                        big
+                        pendingSide={pendingPicks[built.finalCard.id] ?? null}
+                        onPick={side => placePick(built.finalCard!.id, built.finalCard!.roundName, side)}
+                      />
                     </div>
                     <div className="bg-[var(--paper)] px-3 font-serif italic text-[12px] text-[var(--ink-3)]">
                       Worth {orderedRounds.find(r => r.name === 'F')?.points_per_correct_tip ?? 64} points · earliest predicted total games wins ties.
@@ -413,7 +468,11 @@ export default function BracketView({
                       top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2,
                     }}
                   >
-                    <MatchCard card={c} />
+                    <MatchCard
+                      card={c}
+                      pendingSide={pendingPicks[c.id] ?? null}
+                      onPick={side => placePick(c.id, c.roundName, side)}
+                    />
                   </div>
                 ))}
               </div>
@@ -467,7 +526,7 @@ export default function BracketView({
                   </div>
                 ) : (
                   mobileMatches.map((m, i) => {
-                    const tip = tipMap.get(m.id)
+                    const tip = tipMap[m.id]
                     const isResulted = !!m.winner
                     const isLocked = new Date(m.scheduled_start) <= now
                     const wonP1 = m.winner === 'player1'
@@ -475,6 +534,8 @@ export default function BracketView({
                     const myP1 = tip === 'player1'
                     const myP2 = tip === 'player2'
                     const isLive = isLocked && !isResulted
+                    const isOpen = !isLocked && !isResulted
+                    const roundName = roundNameById[m.round_id] ?? mobileActive.name
                     return (
                       <div
                         key={m.id}
@@ -483,30 +544,58 @@ export default function BracketView({
                           borderBottom: i === mobileMatches.length - 1 ? 'none' : '1px dotted var(--rule)',
                         }}
                       >
-                        <div className="font-serif text-[15px] leading-[1.2]">
-                          <MobilePlayer
-                            name={m.player1_name}
-                            myPick={myP1}
-                            won={wonP1}
-                            lost={isResulted && !wonP1}
-                            resulted={isResulted}
-                          />
-                          <span className="mx-1.5 italic text-[var(--ink-3)]">v</span>
-                          <MobilePlayer
-                            name={m.player2_name}
-                            myPick={myP2}
-                            won={wonP2}
-                            lost={isResulted && !wonP2}
-                            resulted={isResulted}
-                          />
-                        </div>
+                        {isOpen ? (
+                          <div className="flex items-stretch gap-1.5">
+                            <MobilePickButton
+                              name={m.player1_name}
+                              myPick={myP1}
+                              pending={pendingPicks[m.id] === 'player1'}
+                              onPick={() => placePick(m.id, roundName, 'player1')}
+                            />
+                            <span className="self-center font-serif italic text-[12px] text-[var(--ink-3)]">v</span>
+                            <MobilePickButton
+                              name={m.player2_name}
+                              myPick={myP2}
+                              pending={pendingPicks[m.id] === 'player2'}
+                              onPick={() => placePick(m.id, roundName, 'player2')}
+                            />
+                          </div>
+                        ) : (
+                          <div className="font-serif text-[15px] leading-[1.2]">
+                            <MobilePlayer
+                              name={m.player1_name}
+                              myPick={myP1}
+                              won={wonP1}
+                              lost={isResulted && !wonP1}
+                              resulted={isResulted}
+                            />
+                            <span className="mx-1.5 italic text-[var(--ink-3)]">v</span>
+                            <MobilePlayer
+                              name={m.player2_name}
+                              myPick={myP2}
+                              won={wonP2}
+                              lost={isResulted && !wonP2}
+                              resulted={isResulted}
+                            />
+                          </div>
+                        )}
                         <div
                           className="mt-1 text-[9px] font-medium uppercase tracking-[0.18em]"
                           style={{
                             color: isLive ? 'var(--brick)' : isResulted ? 'var(--olive)' : 'var(--ink-3)',
                           }}
                         >
-                          {isLive ? '· Live' : isResulted ? `${stripSeed(wonP1 ? m.player1_name : m.player2_name)} into next` : 'awaiting'}
+                          {isLive
+                            ? '· Live'
+                            : isResulted
+                            ? <>
+                                {stripSeed(wonP1 ? m.player1_name : m.player2_name)} into next
+                                {m.score && <span className="ml-1.5 normal-case tracking-normal font-serif italic text-[11px] text-[var(--ink-2)]">{m.score}</span>}
+                                {m.no_points && <span className="ml-1.5 text-[var(--ink-3)]">· no points</span>}
+                              </>
+                            : tip
+                            ? <>your call: {stripSeed(tip === 'player1' ? m.player1_name : m.player2_name)}</>
+                            : 'tap a player to tip'}
                         </div>
                       </div>
                     )
@@ -587,17 +676,30 @@ function HalfConnectors({
   )
 }
 
-function MatchCard({ card, big }: { card: BracketCard; big?: boolean }) {
+function isPickableName(name: string) {
+  const display = stripSeed(name)
+  return !!display && display !== '—' && display.toUpperCase() !== 'TBD'
+}
+
+function MatchCard({
+  card, big, onPick, pendingSide,
+}: {
+  card: BracketCard
+  big?: boolean
+  onPick?: (side: 'player1' | 'player2') => void
+  pendingSide?: 'player1' | 'player2' | null
+}) {
   const p1Won = card.winner === 'player1'
   const p2Won = card.winner === 'player2'
   const isResulted = card.isResulted
+  const isOpen = !card.isLocked && !isResulted
 
   return (
     <div
       style={{
         width: MW,
         height: big ? MH + 16 : MH,
-        border: `1px solid ${card.isLive ? 'var(--brick)' : 'var(--rule)'}`,
+        border: `1px solid ${card.isLive ? 'var(--brick)' : isOpen ? 'rgba(21,35,27,0.35)' : 'var(--rule)'}`,
         background: 'var(--paper)',
         position: 'relative',
       }}
@@ -609,14 +711,25 @@ function MatchCard({ card, big }: { card: BracketCard; big?: boolean }) {
           Live
         </div>
       )}
+      {isResulted && card.noPoints && (
+        <div
+          className="absolute right-2 top-[-7px] bg-[var(--paper)] px-1.5 text-[7px] font-medium uppercase leading-[12px] tracking-[0.18em] text-[var(--ink-3)]"
+          style={{ border: '1px solid var(--rule)' }}
+        >
+          No points
+        </div>
+      )}
       <BracketRow
         name={card.player1}
         won={p1Won}
         lost={isResulted && !p1Won}
         picked={card.myPick === 'player1'}
         resulted={isResulted}
+        score={p1Won ? card.score : null}
+        pending={pendingSide === 'player1'}
         big={!!big}
         isFirst
+        onPick={isOpen && onPick && isPickableName(card.player1) ? () => onPick('player1') : undefined}
       />
       <BracketRow
         name={card.player2}
@@ -624,28 +737,33 @@ function MatchCard({ card, big }: { card: BracketCard; big?: boolean }) {
         lost={isResulted && !p2Won}
         picked={card.myPick === 'player2'}
         resulted={isResulted}
+        score={p2Won ? card.score : null}
+        pending={pendingSide === 'player2'}
         big={!!big}
+        onPick={isOpen && onPick && isPickableName(card.player2) ? () => onPick('player2') : undefined}
       />
     </div>
   )
 }
 
 function BracketRow({
-  name, won, lost, picked, resulted, big, isFirst,
-}: { name: string; won: boolean; lost: boolean; picked: boolean; resulted: boolean; big: boolean; isFirst?: boolean }) {
+  name, won, lost, picked, resulted, score, pending, big, isFirst, onPick,
+}: {
+  name: string
+  won: boolean
+  lost: boolean
+  picked: boolean
+  resulted: boolean
+  score?: string | null
+  pending?: boolean
+  big: boolean
+  isFirst?: boolean
+  onPick?: () => void
+}) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
-  return (
-    <div
-      className="flex items-center justify-between gap-1.5 px-2"
-      style={{
-        padding: `${big ? 5 : 3}px 8px`,
-        borderBottom: isFirst ? '1px dotted var(--rule)' : 'none',
-        opacity: lost ? 0.45 : 1,
-        background: won ? 'rgba(0,100,60,0.07)' : 'transparent',
-        minHeight: big ? 22 : 17,
-      }}
-    >
+  const inner = (
+    <>
       <div className="flex min-w-0 items-baseline gap-1">
         <span
           className="truncate"
@@ -665,11 +783,84 @@ function BracketRow({
           <span className="font-serif italic text-[9px] text-[var(--ink-3)]">[{seed}]</span>
         )}
       </div>
-      {won && <span className="text-[9px] font-medium text-[var(--olive)]">✓</span>}
-      {picked && lost && (
+      {pending ? (
+        <svg className="size-2.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
+          <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      ) : won && score ? (
+        <span className="shrink-0 whitespace-nowrap font-serif italic text-[8px] tabular-nums text-[var(--ink-2)]">{score}</span>
+      ) : won ? (
+        <span className="text-[9px] font-medium text-[var(--olive)]">✓</span>
+      ) : picked && lost ? (
         <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[var(--brick)]">pick</span>
-      )}
+      ) : null}
+    </>
+  )
+
+  const rowStyle: React.CSSProperties = {
+    padding: `${big ? 5 : 3}px 8px`,
+    borderBottom: isFirst ? '1px dotted var(--rule)' : 'none',
+    opacity: lost ? 0.45 : 1,
+    background: won ? 'rgba(0,100,60,0.07)' : 'transparent',
+    minHeight: big ? 22 : 17,
+  }
+
+  if (onPick) {
+    return (
+      <button
+        type="button"
+        onClick={onPick}
+        aria-pressed={picked}
+        aria-label={`Pick ${display}`}
+        className="flex w-full cursor-pointer items-center justify-between gap-1.5 px-2 text-left transition-colors hover:bg-[rgba(0,100,60,0.08)] active:scale-[0.99]"
+        style={rowStyle}
+      >
+        {inner}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-1.5 px-2" style={rowStyle}>
+      {inner}
     </div>
+  )
+}
+
+function MobilePickButton({
+  name, myPick, pending, onPick,
+}: { name: string; myPick: boolean; pending: boolean; onPick: () => void }) {
+  const display = stripSeed(name)
+  const seed = parseSeed(name)
+  const pickable = isPickableName(name)
+  return (
+    <button
+      type="button"
+      onClick={pickable ? onPick : undefined}
+      disabled={!pickable}
+      aria-pressed={myPick}
+      aria-label={pickable ? `Pick ${display}` : undefined}
+      // min-h-[44px] keeps the tap target at the mobile minimum.
+      className="flex min-h-[44px] flex-1 items-center justify-between gap-1.5 px-2.5 text-left transition-colors active:scale-[0.99] disabled:opacity-50"
+      style={{
+        border: `1px solid ${myPick ? 'var(--brick)' : 'var(--rule)'}`,
+        background: myPick ? 'rgba(0,100,60,0.06)' : 'transparent',
+      }}
+    >
+      <span className="flex min-w-0 items-baseline gap-1 font-serif text-[15px] leading-[1.2]">
+        <span className="truncate" style={{ fontWeight: myPick ? 500 : 400 }}>{display || '—'}</span>
+        {seed && <span className="font-serif italic text-[10px] text-[var(--ink-3)]">[{seed}]</span>}
+      </span>
+      {pending ? (
+        <svg className="size-3 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
+          <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      ) : myPick ? (
+        <span className="shrink-0 text-[11px] font-bold text-[var(--brick)]">✓</span>
+      ) : null}
+    </button>
   )
 }
 

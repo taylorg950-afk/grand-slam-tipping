@@ -21,6 +21,8 @@ export interface PicksMatch {
   player2_name: string
   scheduled_start: string
   winner: string | null
+  score: string | null
+  no_points: boolean
   draw: string
 }
 
@@ -53,7 +55,7 @@ interface RoundMeta {
   hasMatches: boolean
 }
 
-type MatchState = 'correct' | 'wrong' | 'locked' | 'no-pick' | 'picked' | 'open'
+type MatchState = 'correct' | 'wrong' | 'void' | 'locked' | 'no-pick' | 'picked' | 'open'
 
 function statusVerb(meta: RoundMeta, now: Date): string {
   const total = meta.matches.length
@@ -88,6 +90,7 @@ function parseSeed(name: string): string | null {
 function classifyMatch(m: PicksMatch, pick: string | undefined, now: Date): MatchState {
   const resulted = !!m.winner
   const locked = new Date(m.scheduled_start) <= now
+  if (resulted && m.no_points) return 'void'
   if (resulted && pick && m.winner === pick) return 'correct'
   if (resulted && pick && m.winner !== pick) return 'wrong'
   if (resulted && !pick) return 'wrong' // counts as a missed/wrong outcome
@@ -131,7 +134,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
     const picked = rm.filter(m => tipMap[m.id]).length
     const earned = rm.reduce((sum, m) => {
       const t = tipMap[m.id]
-      return sum + (m.winner && t === m.winner ? round.points_per_correct_tip : 0)
+      return sum + (m.winner && !m.no_points && t === m.winner ? round.points_per_correct_tip : 0)
     }, 0)
     let state: RoundState = 'pending'
     if (rm.length > 0 && resulted === rm.length) state = 'done'
@@ -418,6 +421,7 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
           won={wonP1}
           lost={resulted && !wonP1}
           state={state}
+          score={wonP1 ? match.score : null}
           pending={pendingSide === 'player1'}
           onPick={interactive ? () => onPick('player1') : undefined}
         />
@@ -428,6 +432,7 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
           won={wonP2}
           lost={resulted && !wonP2}
           state={state}
+          score={wonP2 ? match.score : null}
           pending={pendingSide === 'player2'}
           onPick={interactive ? () => onPick('player2') : undefined}
         />
@@ -445,6 +450,7 @@ function StatusDot({ state }: { state: MatchState }) {
   const styles: Record<MatchState, { bg: string; border?: string; symbol?: React.ReactNode; color: string }> = {
     correct: { bg: 'var(--olive)', symbol: '✓', color: 'var(--paper)' },
     wrong:   { bg: 'var(--brick)', symbol: '✗', color: 'var(--paper)' },
+    void:    { bg: 'rgba(21,35,27,0.08)', symbol: '—', color: 'var(--ink-3)' },
     locked:  { bg: 'rgba(21,35,27,0.12)', color: 'var(--ink-2)' },
     'no-pick': { bg: 'rgba(21,35,27,0.06)', color: 'var(--ink-3)' },
     picked:  { bg: 'rgba(21,35,27,0.08)', color: 'var(--ink-2)' },
@@ -466,6 +472,7 @@ function StatePill({ state, pts }: { state: MatchState; pts: number }) {
   const styles: Record<MatchState, { label: string; color: string; fill?: string }> = {
     correct: { label: `+${pts}`, color: 'var(--olive)', fill: 'rgba(0,100,60,0.1)' },
     wrong:   { label: '0', color: 'var(--brick)', fill: 'rgba(0,100,60,0.1)' },
+    void:    { label: 'no points', color: 'var(--ink-3)' },
     locked:  { label: 'pending', color: 'var(--ink-3)' },
     'no-pick': { label: 'no pick', color: 'var(--ink-3)' },
     picked:  { label: 'picked', color: 'var(--ink-2)' },
@@ -492,11 +499,12 @@ interface PlayerLineProps {
   won: boolean
   lost: boolean
   state: MatchState
+  score?: string | null
   pending: boolean
   onPick?: () => void
 }
 
-function PlayerLine({ name, picked, won, lost, state, pending, onPick }: PlayerLineProps) {
+function PlayerLine({ name, picked, won, lost, state, score, pending, onPick }: PlayerLineProps) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
   const color = won ? 'var(--olive)' : lost ? 'var(--ink-3)' : picked ? 'var(--ink)' : 'var(--ink-2)'
@@ -519,6 +527,9 @@ function PlayerLine({ name, picked, won, lost, state, pending, onPick }: PlayerL
       {seed && <span className="font-serif italic text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
       {won && (
         <span className="ml-1 text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--olive)]">won</span>
+      )}
+      {won && score && (
+        <span className="ml-1 font-serif italic text-[11px] tabular-nums text-[var(--ink-3)]">{score}</span>
       )}
       {showHint && !pending && (
         <span className="ml-1 font-serif italic text-[11px] text-[var(--brick)]">← your pick</span>

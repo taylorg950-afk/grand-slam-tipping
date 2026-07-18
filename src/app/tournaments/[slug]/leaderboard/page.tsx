@@ -22,6 +22,7 @@ interface Match {
   id: string
   round_id: string
   winner: string | null
+  no_points: boolean
   scheduled_start: string
 }
 interface Tip {
@@ -96,11 +97,13 @@ function computeSnapshots(users: UserRow[], rounds: Round[], matches: Match[], t
     const resultedMatches = roundMatches.filter(m => m.winner)
     if (resultedMatches.length === 0) continue
 
+    // Walkovers etc. still count as resulted, but never award points.
+    const scoringMatches = resultedMatches.filter(m => !m.no_points)
     const gained: Record<string, number> = {}
     for (const u of users) {
-      const userTips = tips.filter(t => t.user_id === u.id && resultedMatches.some(m => m.id === t.match_id))
+      const userTips = tips.filter(t => t.user_id === u.id && scoringMatches.some(m => m.id === t.match_id))
       const correct = userTips.filter(t => {
-        const match = resultedMatches.find(m => m.id === t.match_id)!
+        const match = scoringMatches.find(m => m.id === t.match_id)!
         return match.winner === t.predicted_winner
       }).length
       const pts = correct * round.points_per_correct_tip
@@ -151,7 +154,7 @@ function computeRows(users: UserRow[], rounds: Round[], matches: Match[], tips: 
     let correct = 0
 
     for (const round of orderedRounds) {
-      const roundMatches = matches.filter(m => m.round_id === round.id && m.winner)
+      const roundMatches = matches.filter(m => m.round_id === round.id && m.winner && !m.no_points)
       const myTips = userTips.filter(t => roundMatches.some(m => m.id === t.match_id))
       const c = myTips.filter(t => {
         const match = roundMatches.find(m => m.id === t.match_id)!
@@ -249,7 +252,7 @@ function computeMovers(
 
   function buildSignals(userId: string): MoverSignals {
     const roundMatchesAll = matches.filter(m => m.round_id === latestResultedRound.id)
-    const resulted = roundMatchesAll.filter(m => m.winner)
+    const resulted = roundMatchesAll.filter(m => m.winner && !m.no_points)
     if (resulted.length === 0) {
       return {
         consecutiveCorrectInLatestRound: 0,
@@ -376,7 +379,7 @@ export default async function LeaderboardPage({
   const roundIds = orderedRounds.map(r => r.id)
 
   const [{ data: matchData }, { data: users }] = await Promise.all([
-    supabase.from('matches').select('id, round_id, winner, scheduled_start').in('round_id', roundIds),
+    supabase.from('matches').select('id, round_id, winner, no_points, scheduled_start').in('round_id', roundIds),
     supabase.from('users').select('id, display_name').order('display_name'),
   ])
   const matches: Match[] = matchData ?? []

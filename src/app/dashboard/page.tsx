@@ -20,6 +20,7 @@ interface Match {
   id: string
   round_id: string
   winner: string | null
+  no_points: boolean
   scheduled_start: string
   player1_name: string
   player2_name: string
@@ -103,7 +104,7 @@ function computeRoundBreakdown(
     const myTips = tips.filter(t => t.user_id === userId && roundMatches.some(m => m.id === t.match_id))
     const correct = myTips.filter(t => {
       const match = resulted.find(m => m.id === t.match_id)
-      return match && t.predicted_winner === match.winner
+      return match && !match.no_points && t.predicted_winner === match.winner
     })
 
     let state: 'done' | 'live' | 'pending' = 'pending'
@@ -137,7 +138,7 @@ function buildChartData(
   names.forEach(n => { running[n] = 0 })
 
   for (const round of [...rounds].sort((a, b) => a.sort_order - b.sort_order)) {
-    const roundMatches = matches.filter(m => m.round_id === round.id && m.winner)
+    const roundMatches = matches.filter(m => m.round_id === round.id && m.winner && !m.no_points)
     if (roundMatches.length === 0) continue
 
     for (const user of users) {
@@ -159,7 +160,7 @@ function buildChartData(
 
 function streakFor(userId: string, matches: Match[], tips: Tip[]): number {
   const resulted = matches
-    .filter(m => m.winner)
+    .filter(m => m.winner && !m.no_points)
     .sort((a, b) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
   let streak = 0
   for (const m of resulted) {
@@ -239,7 +240,7 @@ export default async function DashboardPage() {
   const roundIds = rounds.map(r => r.id)
   const { data: matchData } = await supabase
     .from('matches')
-    .select('id, round_id, winner, scheduled_start, player1_name, player2_name')
+    .select('id, round_id, winner, no_points, scheduled_start, player1_name, player2_name')
     .in('round_id', roundIds)
     .order('scheduled_start')
   const matches: Match[] = matchData ?? []

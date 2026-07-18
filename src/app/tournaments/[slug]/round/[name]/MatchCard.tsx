@@ -11,6 +11,8 @@ interface Match {
   player2_name: string
   scheduled_start: string
   winner: 'player1' | 'player2' | null
+  score: string | null
+  no_points: boolean
 }
 
 export default function MatchCard({
@@ -83,9 +85,22 @@ export default function MatchCard({
               </div>
               <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--ink-2)] mt-0.5">
                 {picked && !locked && <span className="text-[var(--brick)] font-semibold">your call</span>}
-                {picked && won && <span className="text-[var(--olive)] font-semibold">+{pointsIfCorrect} pts</span>}
-                {picked && lost && <span className="text-[var(--brick-dark)] font-semibold">no points</span>}
+                {picked && won && (
+                  match.no_points
+                    ? <span className="text-[var(--ink-2)] font-semibold">no points · walkover</span>
+                    : <span className="text-[var(--olive)] font-semibold">+{pointsIfCorrect} pts</span>
+                )}
+                {picked && lost && (
+                  <span className="text-[var(--brick-dark)] font-semibold">
+                    {match.no_points ? 'no points · walkover' : 'no points'}
+                  </span>
+                )}
                 {!picked && won && <span className="text-[var(--olive)]">won</span>}
+                {won && match.score && (
+                  <span className="ml-1.5 normal-case tracking-normal font-serif italic text-[11px] text-[var(--ink-2)]">
+                    {match.score}
+                  </span>
+                )}
               </div>
             </div>
 

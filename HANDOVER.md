@@ -69,13 +69,13 @@ src/lib/require-admin.ts                      — admin auth guard for server ac
 users           — id, display_name, is_admin, avatar_url, catchphrase, created_at
 tournaments     — id, name, slug, start_date, end_date, is_active
 rounds          — id, tournament_id, name (R64/R32/R16/QF/SF/F), points_per_correct_tip, sort_order
-matches         — id, round_id, player1_name, player2_name, scheduled_start, winner, draw, bracket_position
+matches         — id, round_id, player1_name, player2_name, scheduled_start, winner, score, no_points, draw, bracket_position
 tips            — id, user_id, match_id, predicted_winner, created_at, updated_at
 tiebreakers     — id, user_id, tournament_id, mens_final_total_games, womens_final_total_games
 ```
 
 ## Scoring
-Points double each round: R64=2, R32=4, R16=8, QF=16, SF=32, F=64. Computed live from tips+results, never stored.
+Points double each round: R64=2, R32=4, R16=8, QF=16, SF=32, F=64 (editable per round in Admin → tournament → Rounds). Computed live from tips+results, never stored. Matches flagged `no_points` (walkovers etc., set on the admin results page) still advance the winner through the bracket but award no points to anyone.
 
 ## Bracket progression
 When admin enters a result via the results page, `advanceBracket()` in `results/actions.ts` automatically populates the winner's name into the correct slot of the next round's match, using `bracket_position`. Formula: `next_position = floor(current_position / 2)`, slot = even → player1, odd → player2.

@@ -36,5 +36,7 @@ export async function submitTip(
   if (error) return { error: error.message }
 
   revalidatePath(`/tournaments/${slug}/round/${roundName}`)
+  revalidatePath(`/tournaments/${slug}/bracket`)
+  revalidatePath(`/tournaments/${slug}/picks`)
   return null
 }

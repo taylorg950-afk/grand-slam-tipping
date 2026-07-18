@@ -24,9 +24,43 @@ export async function setResult(
   // Advance winner into the next round's match
   await advanceBracket(supabase, matchId, winner)
 
+  revalidateResultPages(slug, roundName)
+  return null
+}
+
+// Score line and the no-points (walkover) flag, saved independently of the winner.
+export async function setMatchExtras(
+  matchId: string,
+  extras: { score?: string | null; noPoints?: boolean },
+  slug: string,
+  roundName: string
+): Promise<{ error: string } | null> {
+  const authError = await requireAdmin()
+  if (authError) return authError
+  const supabase = await createClient()
+
+  const update: Record<string, string | boolean | null> = {}
+  if ('score' in extras) update.score = extras.score?.trim() || null
+  if ('noPoints' in extras) update.no_points = !!extras.noPoints
+
+  const { error } = await supabase
+    .from('matches')
+    .update(update)
+    .eq('id', matchId)
+
+  if (error) return { error: error.message }
+
+  revalidateResultPages(slug, roundName)
+  return null
+}
+
+function revalidateResultPages(slug: string, roundName: string) {
   revalidatePath(`/admin/tournaments/${slug}/rounds/${roundName}/results`)
   revalidatePath(`/tournaments/${slug}/round/${roundName}`)
-  return null
+  revalidatePath(`/tournaments/${slug}/bracket`)
+  revalidatePath(`/tournaments/${slug}/picks`)
+  revalidatePath(`/tournaments/${slug}/leaderboard`)
+  revalidatePath('/dashboard')
 }
 
 async function advanceBracket(

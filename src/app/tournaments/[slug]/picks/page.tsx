@@ -32,7 +32,7 @@ export default async function MyPicksPage({
   const { data: matchData } = roundIds.length
     ? await supabase
         .from('matches')
-        .select('id, round_id, player1_name, player2_name, scheduled_start, winner, draw')
+        .select('id, round_id, player1_name, player2_name, scheduled_start, winner, score, no_points, draw')
         .in('round_id', roundIds)
         .order('scheduled_start', { ascending: true })
     : { data: [] as PicksMatch[] }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import RoundPointsForm from './RoundPointsForm'
 
 export default async function TournamentRoundsPage({
   params,
@@ -46,7 +47,7 @@ export default async function TournamentRoundsPage({
           <div key={round.id} className="flex items-center justify-between px-4 py-3">
             <div>
               <span className="text-sm font-medium">{round.name}</span>
-              <span className="ml-2 text-xs text-zinc-400">{round.points_per_correct_tip} pts per correct tip</span>
+              <RoundPointsForm roundId={round.id} slug={slug} initialPoints={round.points_per_correct_tip} />
             </div>
             <div className="flex gap-4 text-sm">
               <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/matches`} className="text-zinc-500 hover:text-zinc-900">

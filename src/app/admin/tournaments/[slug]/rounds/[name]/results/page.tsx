@@ -30,7 +30,7 @@ export default async function ResultsPage({
 
   const { data: matches } = await supabase
     .from('matches')
-    .select('id, player1_name, player2_name, scheduled_start, winner')
+    .select('id, player1_name, player2_name, scheduled_start, winner, score, no_points')
     .eq('round_id', round.id)
     .order('scheduled_start')
 

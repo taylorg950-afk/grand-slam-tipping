@@ -8,13 +8,14 @@ export interface UserScore {
 
 export function computeScores(
   users: { id: string; display_name: string }[],
-  matches: { id: string; round_id: string; winner: string | null }[],
+  matches: { id: string; round_id: string; winner: string | null; no_points?: boolean }[],
   rounds: { id: string; points_per_correct_tip: number }[],
   tips: { user_id: string; match_id: string; predicted_winner: string }[]
 ): UserScore[] {
   const pointsMap = Object.fromEntries(rounds.map(r => [r.id, r.points_per_correct_tip]))
+  // no_points matches (walkovers etc.) are void — they never award points.
   const matchMap = Object.fromEntries(
-    matches.filter(m => m.winner).map(m => [m.id, { winner: m.winner!, round_id: m.round_id }])
+    matches.filter(m => m.winner && !m.no_points).map(m => [m.id, { winner: m.winner!, round_id: m.round_id }])
   )
 
   const scores = users.map(user => {

@@ -30,7 +30,7 @@ export default async function BracketPage({
 
   const { data: matches } = await supabase
     .from('matches')
-    .select('id, round_id, player1_name, player2_name, scheduled_start, winner, draw, created_at, bracket_position')
+    .select('id, round_id, player1_name, player2_name, scheduled_start, winner, score, no_points, draw, created_at, bracket_position')
     .in('round_id', roundIds)
     .order('created_at')
 
