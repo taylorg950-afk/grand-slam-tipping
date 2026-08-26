@@ -202,96 +202,103 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
     if (locksAt) statusBits.push(`locks ${locksAt}`)
   }
 
-  return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Compact masthead */}
-      <header className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-3 md:px-8">
-        <Link href="/dashboard" className="font-serif italic text-[20px] leading-none tracking-tight md:text-[26px]">
-          The Tipping Post
+  const heroTitle =
+    bannerVerb === 'to come'
+      ? `${bannerRoundName} — coming up.`
+      : bannerVerb === 'complete'
+        ? `${bannerRoundName} — that's a wrap.`
+        : `${bannerRoundName} — make your call.`
+  const ghostWord = bannerMeta?.round.name ?? cityGhost
+
+  return (
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
+          <span className="hidden rounded-full bg-[var(--brick-surface)] px-2.5 py-1 font-serif text-[12px] font-semibold uppercase leading-none tracking-[0.14em] text-[var(--brick)] sm:inline">
+            {tournament.name}
+          </span>
         </Link>
-        <div className="tp-eyebrow flex items-center gap-5">
-          <span className="hidden md:inline">{tournament.name}</span>
-          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
-        </div>
+        <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--ink)]">
+          Profile
+        </Link>
       </header>
 
-      {/* Banner */}
+      {/* Hero */}
       {bannerMeta && (
-        <section className="relative z-10 overflow-hidden bg-[var(--brick)] px-4 py-5 text-[var(--paper)] md:px-8 md:py-6">
-          <div
+        <section className="uso-hero relative overflow-hidden px-5 py-7 text-white md:px-8 md:py-9">
+          <span
             aria-hidden
-            className="pointer-events-none absolute -top-3 -right-6 select-none whitespace-nowrap font-serif italic text-white/[0.07] md:-top-4 md:-right-8"
-            style={{ fontSize: 'clamp(110px, 24vw, 220px)', lineHeight: 1, letterSpacing: '-0.04em' }}
+            className="pointer-events-none absolute -top-6 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+            style={{ fontSize: 'clamp(120px, 22vw, 190px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
           >
-            {bannerMeta.round.name === 'R16' ? 'R16' : bannerMeta.round.name === 'R32' ? 'R32' : cityGhost}
-          </div>
-          <div className="text-[9px] uppercase tracking-[0.22em] opacity-85 md:text-[10px]">
-            Your picks · {tournament.name}
-          </div>
-          <h1 className="mt-1 font-serif text-[30px] leading-[1.04] tracking-tight md:text-[48px] md:mt-2">
-            {bannerRoundName} <span className="italic">{bannerVerb}.</span>
-          </h1>
-          {statusBits.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-white/90 md:gap-x-5 md:text-[13px]">
-              {statusBits.map((bit, i) => (
-                <span key={i} className="flex items-baseline gap-x-4">
-                  {i > 0 && <span className="size-[3px] rounded-full bg-white/40" />}
-                  <span>{bit}</span>
-                </span>
-              ))}
+            {ghostWord}
+          </span>
+          <div className="relative">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+              Your picks · {tournament.name}
             </div>
-          )}
+            <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">{heroTitle}</h1>
+            {statusBits.length > 0 && (
+              <div className="mt-3 text-[14px]" style={{ color: '#DDE6FA' }}>
+                {statusBits.join(' · ')}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
-      {/* Round nav tape */}
+      {/* Round tape */}
       {meta.length > 0 && (
-        <section className="relative z-10 border-b border-[var(--rule)] px-4 py-4 md:px-8 md:py-5">
-          <div className="flex gap-2.5 overflow-x-auto md:gap-3">
+        <section className="px-5 pt-5 md:px-8">
+          <div className="tp-scroll flex gap-2.5 overflow-x-auto pb-1.5">
             {meta.map(m => {
-              const isActive = m.round.id === active?.round.id
-              const isPending = m.state === 'pending'
+              const selected = m.round.id === active?.round.id
+              const long = ROUND_LONG[m.round.name] ?? m.round.name
+              let value = 'to come'
+              if (m.state === 'done') value = `+${m.earned}`
+              else if (m.state === 'live') value = 'Live'
               return (
                 <button
                   key={m.round.id}
                   type="button"
                   onClick={() => setActiveRoundId(m.round.id)}
-                  className="shrink-0 min-w-[72px] px-3 py-2 text-left transition-colors md:min-w-[92px] md:px-4 md:py-2.5"
+                  aria-pressed={selected}
+                  title={long}
+                  className="tp-tap shrink-0 rounded-[12px] px-3.5 py-2.5 text-left"
                   style={{
-                    border: `1px solid ${isActive ? 'var(--ink)' : 'var(--rule)'}`,
-                    background: isActive ? 'var(--ink)' : 'transparent',
-                    color: isActive ? 'var(--paper)' : isPending ? 'var(--ink-3)' : 'var(--ink)',
-                    opacity: isPending ? 0.65 : 1,
+                    minWidth: 96,
+                    border: `1px solid ${selected ? 'var(--brick)' : 'var(--rule)'}`,
+                    background: selected ? 'var(--brick)' : 'var(--paper-2)',
                   }}
                 >
-                  <div className="text-[10px] font-medium uppercase tracking-[0.18em]">{m.round.name}</div>
                   <div
-                    className="mt-1 font-serif italic text-[11px]"
-                    style={{ color: isActive ? 'rgba(246,242,230, 0.6)' : 'var(--ink-3)' }}
+                    className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: selected ? '#fff' : m.state === 'pending' ? 'var(--ink-3)' : 'var(--ink)' }}
                   >
+                    {m.round.name}
+                  </div>
+                  <div className="mt-0.5 text-[11px]" style={{ color: selected ? '#B9CBF2' : 'var(--ink-3)' }}>
                     {m.round.points_per_correct_tip}pt each
                   </div>
-                  {m.state === 'done' && (
-                    <div
-                      className="mt-1.5 font-serif text-[18px] leading-none tabular-nums md:text-[24px]"
-                      style={{ color: isActive ? 'var(--paper)' : 'var(--ink)' }}
-                    >
-                      +{m.earned}
-                    </div>
-                  )}
-                  {m.state === 'live' && (
-                    <div
-                      className="mt-1.5 text-[9px] font-medium uppercase tracking-[0.18em]"
-                      style={{ color: isActive ? 'var(--paper-2)' : 'var(--brick)' }}
-                    >
-                      Live
-                    </div>
-                  )}
-                  {m.state === 'pending' && (
-                    <div className="mt-1.5 font-serif italic text-[12px] text-[var(--ink-3)]">to come</div>
-                  )}
+                  <div
+                    className="mt-1.5 font-serif text-[20px] font-bold leading-none tabular-nums"
+                    style={{
+                      color:
+                        m.state === 'live'
+                          ? 'var(--spark)'
+                          : selected
+                            ? '#fff'
+                            : m.state === 'pending'
+                              ? 'var(--ink-3)'
+                              : 'var(--ink)',
+                    }}
+                  >
+                    {value}
+                  </div>
                 </button>
               )
             })}
@@ -299,33 +306,28 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
         </section>
       )}
 
-      {/* Round summary header */}
+      {/* Round summary */}
       {active && (
-        <section className="relative z-10 px-4 pt-5 md:px-8 md:pt-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-b-2 border-[var(--ink)] pb-2">
-            <div className="flex items-baseline gap-3.5">
-              <h2 className="m-0 font-serif text-[22px] tracking-tight md:text-[28px]">
-                The card · {ROUND_LONG[active.round.name] ?? active.round.name}
-              </h2>
-              <span className="tp-eyebrow">{active.round.points_per_correct_tip} points per correct call</span>
-            </div>
-            <div className="flex items-baseline gap-5 md:gap-6">
+        <section className="px-5 pt-4 md:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b-2 border-[var(--ink)] pb-2.5">
+            <h2 className="m-0 font-serif text-[22px] font-bold uppercase tracking-[0.02em] md:text-[24px]">
+              The card · {ROUND_LONG[active.round.name] ?? active.round.name}
+            </h2>
+            <div className="flex gap-6">
               <RoundStat label="Filed" value={`${active.picked}/${active.matches.length}`} />
               <RoundStat label="Resulted" value={`${active.resulted}/${active.matches.length}`} />
-              <RoundStat label="Earned" value={`+${active.earned}`} colour="var(--brick)" />
+              <RoundStat label="Earned" value={`+${active.earned}`} colour="var(--blue)" />
             </div>
           </div>
         </section>
       )}
 
       {/* Match cards */}
-      <section className="relative z-10 flex-1 px-4 pb-8 pt-3 md:px-8">
+      <section className="flex-1 px-5 pb-8 pt-4 md:px-8">
         {!active || active.matches.length === 0 ? (
-          <div className="py-8 text-center font-serif italic text-[var(--ink-2)]">
-            No fixtures yet for this round.
-          </div>
+          <div className="py-10 text-center text-[14px] text-[var(--ink-2)]">No fixtures yet for this round.</div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-3">
             {active.matches.map(m => {
               const tip = tipMap[m.id] as 'player1' | 'player2' | undefined
               const state = classifyMatch(m, tip, now)
@@ -336,7 +338,6 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   state={state}
                   tip={tip}
                   pointsPerCorrect={active.round.points_per_correct_tip}
-                  roundName={active.round.name}
                   onPick={(side) => placePick(m.id, active.round.name, side)}
                   pendingSide={pendingPicks[m.id] ?? null}
                   now={now}
@@ -355,8 +356,8 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
 function RoundStat({ label, value, colour }: { label: string; value: string; colour?: string }) {
   return (
     <div>
-      <div className="tp-eyebrow mb-1">{label}</div>
-      <div className="font-serif text-[20px] leading-none tabular-nums md:text-[22px]" style={{ color: colour }}>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">{label}</div>
+      <div className="mt-0.5 font-serif text-[20px] font-bold leading-none tabular-nums" style={{ color: colour ?? 'var(--ink)' }}>
         {value}
       </div>
     </div>
@@ -368,193 +369,147 @@ interface MatchCardProps {
   state: MatchState
   tip: 'player1' | 'player2' | undefined
   pointsPerCorrect: number
-  roundName: string
   pendingSide: 'player1' | 'player2' | null
   onPick: (side: 'player1' | 'player2') => void
   now: Date
 }
 
 function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, now }: MatchCardProps) {
-  const myP1 = tip === 'player1'
-  const myP2 = tip === 'player2'
-  const wonP1 = match.winner === 'player1'
-  const wonP2 = match.winner === 'player2'
   const resulted = !!match.winner
   const locked = new Date(match.scheduled_start) <= now
   const interactive = !locked && !resulted
 
-  let borderColor = 'var(--rule)'
-  let bgColor: string | undefined
-  if (state === 'correct') { borderColor = 'rgba(0,100,60,0.4)'; bgColor = 'rgba(0,100,60,0.04)' }
-  else if (state === 'wrong') { borderColor = 'rgba(0,100,60,0.4)'; bgColor = 'rgba(0,100,60,0.04)' }
+  const cardBorder = locked && !resulted ? '#D6DEF0' : 'var(--rule)'
+
+  const myName = tip ? stripSeed(tip === 'player1' ? match.player1_name : match.player2_name) : null
+  let line = ''
+  let lineColor = 'var(--ink-3)'
+  if (state === 'correct') { line = `You called it. +${pointsPerCorrect} points.`; lineColor = 'var(--olive)' }
+  else if (state === 'wrong') { line = myName ? `You had ${myName}.` : 'No pick filed.'; lineColor = myName ? 'var(--ink-3)' : 'var(--down)' }
+  else if (state === 'void') { line = 'Walkover — no points awarded.' }
+  else if (state === 'locked') { line = `Locked in ${myName}.` }
+  else if (state === 'no-pick') { line = 'Locked with no pick in.'; lineColor = 'var(--down)' }
+  else if (state === 'open') { line = 'Tap a name to pick — no tip in yet.' }
+  else if (state === 'picked') { line = 'Filed. Tap the other name to change.' }
 
   return (
-    <div
-      className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-3 md:grid-cols-[90px_36px_1fr_140px] md:gap-5 md:px-5 md:py-4"
-      style={{ border: `1px solid ${borderColor}`, background: bgColor ?? 'transparent' }}
-    >
-      {/* Mobile header row: time + state pill */}
-      <div className="flex items-baseline justify-between md:hidden col-span-2">
-        <span className="font-serif italic text-[12px] tabular-nums text-[var(--ink-2)]">
+    <div style={{ background: 'var(--paper-2)', border: `1px solid ${cardBorder}`, borderRadius: 16, padding: '16px 18px' }}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className="font-serif text-[13px] font-semibold tabular-nums text-[var(--ink-3)]">
           {fmtTimeOrDay(new Date(match.scheduled_start), now)}
         </span>
         <StatePill state={state} pts={pointsPerCorrect} />
       </div>
-
-      {/* Desktop: time + court */}
-      <div className="hidden md:block">
-        <div className="font-serif italic text-[15px] leading-none tabular-nums text-[var(--ink)]">
-          {fmtTimeOrDay(new Date(match.scheduled_start), now)}
-        </div>
+      <div className="grid grid-cols-2 gap-3">
+        <PlayerButton side="player1" match={match} tip={tip} pendingSide={pendingSide} interactive={interactive} resulted={resulted} onPick={onPick} />
+        <PlayerButton side="player2" match={match} tip={tip} pendingSide={pendingSide} interactive={interactive} resulted={resulted} onPick={onPick} />
       </div>
-
-      {/* Desktop: status dot */}
-      <div className="hidden md:flex md:justify-center">
-        <StatusDot state={state} />
-      </div>
-
-      {/* Players */}
-      <div className="md:col-auto col-span-2">
-        <PlayerLine
-          name={match.player1_name}
-          picked={myP1}
-          won={wonP1}
-          lost={resulted && !wonP1}
-          state={state}
-          score={wonP1 ? match.score : null}
-          pending={pendingSide === 'player1'}
-          onPick={interactive ? () => onPick('player1') : undefined}
-        />
-        <div className="text-[8px] font-medium uppercase tracking-[0.18em] text-[var(--ink-3)] md:text-[9px]">v</div>
-        <PlayerLine
-          name={match.player2_name}
-          picked={myP2}
-          won={wonP2}
-          lost={resulted && !wonP2}
-          state={state}
-          score={wonP2 ? match.score : null}
-          pending={pendingSide === 'player2'}
-          onPick={interactive ? () => onPick('player2') : undefined}
-        />
-      </div>
-
-      {/* Desktop right-side pill */}
-      <div className="hidden md:block md:text-right">
-        <StatePill state={state} pts={pointsPerCorrect} />
-      </div>
-    </div>
-  )
-}
-
-function StatusDot({ state }: { state: MatchState }) {
-  const styles: Record<MatchState, { bg: string; border?: string; symbol?: React.ReactNode; color: string }> = {
-    correct: { bg: 'var(--olive)', symbol: '✓', color: 'var(--paper)' },
-    wrong:   { bg: 'var(--brick)', symbol: '✗', color: 'var(--paper)' },
-    void:    { bg: 'rgba(21,35,27,0.08)', symbol: '—', color: 'var(--ink-3)' },
-    locked:  { bg: 'rgba(21,35,27,0.12)', color: 'var(--ink-2)' },
-    'no-pick': { bg: 'rgba(21,35,27,0.06)', color: 'var(--ink-3)' },
-    picked:  { bg: 'rgba(21,35,27,0.08)', color: 'var(--ink-2)' },
-    open:    { bg: 'transparent', border: '1px dashed var(--brick)', symbol: '+', color: 'var(--brick)' },
-  }
-  const s = styles[state]
-  return (
-    <div
-      className="flex size-[30px] items-center justify-center rounded-full text-[14px]"
-      style={{ background: s.bg, border: s.border, color: s.color, fontWeight: 500 }}
-      aria-hidden
-    >
-      {s.symbol}
+      {line && <div className="mt-3 text-[12px]" style={{ color: lineColor }}>{line}</div>}
     </div>
   )
 }
 
 function StatePill({ state, pts }: { state: MatchState; pts: number }) {
-  const styles: Record<MatchState, { label: string; color: string; fill?: string }> = {
-    correct: { label: `+${pts}`, color: 'var(--olive)', fill: 'rgba(0,100,60,0.1)' },
-    wrong:   { label: '0', color: 'var(--brick)', fill: 'rgba(0,100,60,0.1)' },
-    void:    { label: 'no points', color: 'var(--ink-3)' },
-    locked:  { label: 'pending', color: 'var(--ink-3)' },
-    'no-pick': { label: 'no pick', color: 'var(--ink-3)' },
-    picked:  { label: 'picked', color: 'var(--ink-2)' },
-    open:    { label: 'tap to pick', color: 'var(--brick)' },
+  const styles: Record<MatchState, { label: string; color: string; bg: string }> = {
+    correct: { label: `+${pts}`, color: 'var(--olive)', bg: '#E7F3EC' },
+    wrong:   { label: '0', color: 'var(--ink-3)', bg: 'var(--paper-3)' },
+    void:    { label: 'no points', color: 'var(--ink-3)', bg: 'var(--paper-3)' },
+    locked:  { label: 'Live', color: 'var(--spark-ink)', bg: 'var(--spark)' },
+    'no-pick': { label: 'no pick', color: 'var(--down)', bg: 'var(--paper-3)' },
+    picked:  { label: 'Filed', color: 'var(--olive)', bg: '#E7F3EC' },
+    open:    { label: 'Tap to pick', color: 'var(--blue)', bg: 'var(--brick-surface)' },
   }
   const s = styles[state]
   return (
     <span
-      className="inline-block whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.18em] tabular-nums"
-      style={{
-        color: s.color,
-        background: s.fill,
-        padding: s.fill ? '4px 8px' : 0,
-      }}
+      className="shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] tabular-nums"
+      style={{ color: s.color, background: s.bg }}
     >
       {s.label}
     </span>
   )
 }
 
-interface PlayerLineProps {
-  name: string
-  picked: boolean
-  won: boolean
-  lost: boolean
-  state: MatchState
-  score?: string | null
-  pending: boolean
-  onPick?: () => void
+interface PlayerButtonProps {
+  side: 'player1' | 'player2'
+  match: PicksMatch
+  tip: 'player1' | 'player2' | undefined
+  pendingSide: 'player1' | 'player2' | null
+  interactive: boolean
+  resulted: boolean
+  onPick: (side: 'player1' | 'player2') => void
 }
 
-function PlayerLine({ name, picked, won, lost, state, score, pending, onPick }: PlayerLineProps) {
-  const display = stripSeed(name)
-  const seed = parseSeed(name)
-  const color = won ? 'var(--olive)' : lost ? 'var(--ink-3)' : picked ? 'var(--ink)' : 'var(--ink-2)'
-  const showHint = picked && (state === 'open' || state === 'picked')
+function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, onPick }: PlayerButtonProps) {
+  const rawName = side === 'player1' ? match.player1_name : match.player2_name
+  const display = stripSeed(rawName)
+  const seed = parseSeed(rawName)
+  const isMine = tip === side
+  const isWinner = match.winner === side
+  const isLoser = resulted && !isWinner
+  const pending = pendingSide === side
+
+  let border = '#D6DEF0'
+  let bg = 'var(--paper-3)'
+  let nameColor = 'var(--ink)'
+  let nameWeight = 500
+  let tick = ''
+  let tickColor = 'var(--brick)'
+  let opacity = 1
+
+  if (isWinner) {
+    border = 'rgba(28,122,75,0.5)'; bg = '#E7F3EC'; nameColor = 'var(--olive)'; nameWeight = 700
+    tick = match.score ? `WON · ${match.score}` : 'WON'; tickColor = 'var(--olive)'
+  } else if (isMine && !resulted) {
+    border = 'var(--brick)'; bg = '#EEF2FC'; nameColor = 'var(--brick)'; nameWeight = 700
+    tick = '✓ your call'
+  } else if (isMine && resulted) {
+    border = 'rgba(192,73,46,0.35)'; nameColor = 'var(--ink-2)'; tick = 'your call'; tickColor = 'var(--down)'
+  } else if (isLoser) {
+    nameColor = 'var(--ink-3)'; opacity = 0.6
+  }
+
   const inner = (
-    <div
-      className="flex items-baseline gap-2"
-      style={{
-        fontFamily: 'var(--font-serif)',
-        fontSize: 17,
-        lineHeight: 1.15,
-        fontWeight: picked ? 500 : 400,
-        color,
-        textDecoration: picked && !won && !lost ? 'underline var(--brick) 1.5px' : 'none',
-        textUnderlineOffset: 4,
-        opacity: lost ? 0.55 : 1,
-      }}
-    >
-      <span className="truncate">{display}</span>
-      {seed && <span className="font-serif italic text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
-      {won && (
-        <span className="ml-1 text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--olive)]">won</span>
-      )}
-      {won && score && (
-        <span className="ml-1 font-serif italic text-[11px] tabular-nums text-[var(--ink-3)]">{score}</span>
-      )}
-      {showHint && !pending && (
-        <span className="ml-1 font-serif italic text-[11px] text-[var(--brick)]">← your pick</span>
-      )}
-      {pending && (
-        <svg className="ml-1 size-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <>
+      <span className="flex min-w-0 items-baseline gap-1.5">
+        <span className="truncate" style={{ fontSize: 18, fontWeight: nameWeight, color: nameColor }}>{display}</span>
+        {seed && <span className="text-[12px] text-[var(--ink-3)]">[{seed}]</span>}
+      </span>
+      {pending ? (
+        <svg className="size-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
-      )}
-    </div>
+      ) : tick ? (
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: tickColor }}>{tick}</span>
+      ) : null}
+    </>
   )
 
-  if (!onPick) return inner
+  const commonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    textAlign: 'left',
+    padding: '13px 15px',
+    borderRadius: 12,
+    border: `1.5px solid ${border}`,
+    background: bg,
+    opacity,
+  }
 
+  if (!interactive) {
+    return <div style={commonStyle}>{inner}</div>
+  }
   return (
     <button
       type="button"
-      onClick={onPick}
-      aria-pressed={picked}
+      onClick={() => onPick(side)}
+      aria-pressed={isMine}
       aria-label={`Pick ${display}`}
-      // min-h-[44px] keeps the tap target at the mobile minimum even though the
-      // text line is only ~20px — small targets here caused missed taps.
-      className="flex min-h-[44px] w-full items-center text-left transition-colors hover:bg-[rgba(0,100,60,0.06)] active:scale-[0.99]"
-      style={{ padding: '6px 6px', margin: '0 -6px' }}
+      className="tp-tap min-h-[52px]"
+      style={commonStyle}
     >
       {inner}
     </button>

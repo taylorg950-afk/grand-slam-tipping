@@ -296,136 +296,106 @@ export default function BracketView({
   const firstRoundName = built.cols[0]?.name ?? 'the draw'
   const finalLabel = built.finalCard ? 'the Final' : 'the latest round'
 
-  return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Compact masthead */}
-      <header className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-3 md:px-8">
-        <Link href="/dashboard" className="font-serif italic text-[20px] leading-none tracking-tight md:text-[26px]">
-          The Tipping Post
+  return (
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
+          <span className="hidden rounded-full bg-[var(--brick-surface)] px-2.5 py-1 font-serif text-[12px] font-semibold uppercase leading-none tracking-[0.14em] text-[var(--brick)] sm:inline">
+            {tournament.name}
+          </span>
         </Link>
-        <div className="tp-eyebrow flex items-center gap-5">
-          <span className="hidden md:inline">{tournament.name}</span>
-          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
-        </div>
+        <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--ink)]">
+          Profile
+        </Link>
       </header>
 
-      {/* Banner */}
-      <section className="relative z-10 overflow-hidden bg-[var(--brick)] px-4 py-5 text-[var(--paper)] md:px-8 md:py-6">
-        <div
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-7 text-white md:px-8 md:py-9">
+        <span
           aria-hidden
-          className="pointer-events-none absolute -top-3 -right-6 select-none whitespace-nowrap font-serif italic text-white/[0.07] md:-top-4 md:-right-8"
-          style={{ fontSize: 'clamp(110px, 24vw, 200px)', lineHeight: 1, letterSpacing: '-0.04em' }}
+          className="pointer-events-none absolute -top-5 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+          style={{ fontSize: 'clamp(120px, 22vw, 180px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
         >
           DRAW
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            The draw · {tournament.name}
+          </div>
+          <h1 className="mt-2 font-serif text-[28px] font-bold leading-[1] md:text-[40px]">
+            {drawLabel} — {firstRoundName} to {finalLabel}.
+          </h1>
         </div>
-        <div className="text-[9px] uppercase tracking-[0.22em] opacity-85 md:text-[10px]">
-          The Draw · {tournament.name}
-        </div>
-        <h1 className="mt-1 font-serif text-[28px] leading-[1.04] tracking-tight md:text-[44px] md:mt-2">
-          {drawLabel}, <span className="italic">{firstRoundName} to {finalLabel}.</span>
-        </h1>
       </section>
 
-      {/* Controls strip — draw toggle + round labels */}
-      <section className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rule)] px-4 py-3 md:px-8">
+      {/* Controls — draw toggle + alive summary */}
+      <section className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--rule)] px-5 py-4 md:px-8">
         {hasWomens ? (
-          <div className="flex">
-            {(['mens', 'womens'] as const).map((d, i) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDraw(d)}
-                className="px-4 py-2 text-[10px] font-medium uppercase tracking-[0.18em] transition-colors"
-                style={{
-                  border: `1px solid ${draw === d ? 'var(--ink)' : 'var(--rule)'}`,
-                  borderLeft: i === 0 ? `1px solid ${draw === d ? 'var(--ink)' : 'var(--rule)'}` : 'none',
-                  background: draw === d ? 'var(--ink)' : 'transparent',
-                  color: draw === d ? 'var(--paper)' : 'var(--ink-2)',
-                }}
-              >
-                {d === 'mens' ? "Men's" : "Women's"}
-              </button>
-            ))}
+          <div className="inline-flex overflow-hidden rounded-[10px]" style={{ border: '1px solid #D6DEF0' }}>
+            {(['mens', 'womens'] as const).map(d => {
+              const on = draw === d
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDraw(d)}
+                  className="tp-tap px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em]"
+                  style={{ background: on ? 'var(--brick)' : 'transparent', color: on ? '#fff' : 'var(--ink-2)' }}
+                >
+                  {d === 'mens' ? "Men's" : "Women's"}
+                </button>
+              )
+            })}
           </div>
         ) : <div />}
 
-        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
-          {orderedRounds.map(r => {
-            const state = roundStates[r.name]
-            return (
-              <span
-                key={r.id}
-                className="text-[10px] font-medium uppercase tracking-[0.18em]"
-                style={{
-                  color: state === 'live' ? 'var(--brick)' : state === 'pending' ? 'var(--ink-3)' : 'var(--ink-2)',
-                }}
-              >
-                {r.name}
-                <span className="ml-1 font-serif italic normal-case tracking-normal text-[var(--ink-3)]">
-                  · {r.points_per_correct_tip}pt
-                </span>
-              </span>
-            )
-          })}
-        </div>
+        {(aliveOut.alive.length > 0 || aliveOut.out.length > 0) && (
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+            {aliveOut.alive.length > 0 && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--olive)]">
+                  {aliveOut.alive.length} alive
+                </div>
+                <div className="mt-0.5 text-[14px] text-[var(--ink)]">{aliveOut.alive.join(', ')}.</div>
+              </div>
+            )}
+            {aliveOut.out.length > 0 && (
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+                  {aliveOut.out.length} out
+                </div>
+                <div
+                  className="mt-0.5 text-[13px] text-[var(--ink-3)]"
+                  style={{ textDecoration: 'line-through rgba(136,146,184,0.7) 1px', textUnderlineOffset: 3 }}
+                >
+                  {aliveOut.out.join(', ')}.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
-      {/* Your picks summary */}
-      {(aliveOut.alive.length > 0 || aliveOut.out.length > 0) && (
-        <section className="relative z-10 flex flex-wrap items-baseline gap-x-6 gap-y-3 border-b border-[var(--rule)] px-4 py-4 md:px-8 md:py-5">
-          {aliveOut.alive.length > 0 && (
-            <div className="min-w-0 flex-1">
-              <div className="tp-eyebrow tp-eyebrow--brick">
-                Your picks · {aliveOut.alive.length} alive
-              </div>
-              <div className="mt-1.5 font-serif italic text-[14px] leading-[1.4] text-[var(--ink)] md:text-[16px]">
-                {aliveOut.alive.join(', ')}.
-              </div>
-            </div>
-          )}
-          {aliveOut.out.length > 0 && (
-            <div className="md:text-right">
-              <div className="tp-eyebrow">{aliveOut.out.length} out</div>
-              <div
-                className="mt-1.5 font-serif italic text-[13px] leading-[1.4] text-[var(--ink-3)] md:text-[14px]"
-                style={{ textDecoration: 'line-through var(--ink-3) 1px', textUnderlineOffset: 3 }}
-              >
-                {aliveOut.out.join(', ')}.
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
       {/* Desktop: full bracket — top half / Final / bottom half */}
-      <section className="relative z-10 hidden flex-1 px-4 py-6 md:block md:px-8 md:py-8">
+      <section className="hidden flex-1 px-4 py-8 md:block md:px-8">
         {built.cards.length === 0 ? (
-          <div className="py-12 text-center font-serif italic text-[var(--ink-2)]">
+          <div className="py-12 text-center text-[14px] text-[var(--ink-2)]">
             No {drawLabel.toLowerCase()} fixtures yet.
           </div>
         ) : (
-          <div className="overflow-x-auto pb-3">
+          <div className="tp-scroll overflow-x-auto pb-3">
             <div style={{ width: built.halfW, margin: '0 auto', position: 'relative' }}>
               {/* Top half */}
               <div className="relative" style={{ height: built.halfH }}>
                 <HalfLabel text={`Top half · into ${built.cols[built.cols.length - 1]?.name ?? 'SF'}`} />
                 <HalfConnectors halfH={built.halfH} halfW={built.halfW} cards={built.cards} half="top" cols={built.cols.length} />
                 {built.cards.filter(c => c.half === 'top').map(c => (
-                  <div
-                    key={c.id}
-                    style={{
-                      position: 'absolute',
-                      left: c.col * (MW + GC),
-                      top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2,
-                    }}
-                  >
-                    <MatchCard
-                      card={c}
-                      pendingSide={pendingPicks[c.id] ?? null}
-                      onPick={side => placePick(c.id, c.roundName, side)}
-                    />
+                  <div key={c.id} style={{ position: 'absolute', left: c.col * (MW + GC), top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2 }}>
+                    <MatchCard card={c} pendingSide={pendingPicks[c.id] ?? null} onPick={side => placePick(c.id, c.roundName, side)} />
                   </div>
                 ))}
               </div>
@@ -433,23 +403,16 @@ export default function BracketView({
               {/* The Final, centred */}
               {built.finalCard && (
                 <div className="relative my-10">
-                  <div className="absolute inset-x-0 top-1/2 h-px" style={{ borderTop: '1px dotted var(--rule)' }} />
+                  <div className="absolute inset-x-0 top-1/2 h-px" style={{ borderTop: '1px solid var(--rule)' }} />
                   <div className="relative mx-auto flex flex-col items-center gap-2.5">
-                    <div
-                      className="bg-[var(--paper)] px-3 text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--brick)]"
-                    >
-                      · The Final ·
+                    <div className="bg-[var(--paper)] px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--blue)]">
+                      · The Final · {orderedRounds.find(r => r.name === 'F')?.points_per_correct_tip ?? 64}pt
                     </div>
                     <div className="bg-[var(--paper)] px-3">
-                      <MatchCard
-                        card={built.finalCard}
-                        big
-                        pendingSide={pendingPicks[built.finalCard.id] ?? null}
-                        onPick={side => placePick(built.finalCard!.id, built.finalCard!.roundName, side)}
-                      />
+                      <MatchCard card={built.finalCard} big pendingSide={pendingPicks[built.finalCard.id] ?? null} onPick={side => placePick(built.finalCard!.id, built.finalCard!.roundName, side)} />
                     </div>
-                    <div className="bg-[var(--paper)] px-3 font-serif italic text-[12px] text-[var(--ink-3)]">
-                      Worth {orderedRounds.find(r => r.name === 'F')?.points_per_correct_tip ?? 64} points · earliest predicted total games wins ties.
+                    <div className="bg-[var(--paper)] px-3 text-[12px] text-[var(--ink-3)]">
+                      Worth {orderedRounds.find(r => r.name === 'F')?.points_per_correct_tip ?? 64} points · tiebreaker settles a dead heat.
                     </div>
                   </div>
                 </div>
@@ -460,19 +423,8 @@ export default function BracketView({
                 <HalfLabel text={`Bottom half · into ${built.cols[built.cols.length - 1]?.name ?? 'SF'}`} />
                 <HalfConnectors halfH={built.halfH} halfW={built.halfW} cards={built.cards} half="bottom" cols={built.cols.length} />
                 {built.cards.filter(c => c.half === 'bottom').map(c => (
-                  <div
-                    key={c.id}
-                    style={{
-                      position: 'absolute',
-                      left: c.col * (MW + GC),
-                      top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2,
-                    }}
-                  >
-                    <MatchCard
-                      card={c}
-                      pendingSide={pendingPicks[c.id] ?? null}
-                      onPick={side => placePick(c.id, c.roundName, side)}
-                    />
+                  <div key={c.id} style={{ position: 'absolute', left: c.col * (MW + GC), top: yForHalfMatch(c.positionInHalf, c.col) - MH / 2 }}>
+                    <MatchCard card={c} pendingSide={pendingPicks[c.id] ?? null} onPick={side => placePick(c.id, c.roundName, side)} />
                   </div>
                 ))}
               </div>
@@ -482,29 +434,25 @@ export default function BracketView({
       </section>
 
       {/* Mobile: round navigator + match list */}
-      <section className="relative z-10 flex-1 md:hidden">
+      <section className="flex-1 md:hidden">
         {orderedRounds.length === 0 ? (
-          <div className="py-12 text-center font-serif italic text-[var(--ink-2)]">
-            No fixtures yet.
-          </div>
+          <div className="py-12 text-center text-[14px] text-[var(--ink-2)]">No fixtures yet.</div>
         ) : (
           <>
-            <div className="flex gap-2 overflow-x-auto border-b border-[var(--rule)] px-4 py-3">
+            <div className="tp-scroll flex gap-2 overflow-x-auto border-b border-[var(--rule)] px-5 py-3">
               {orderedRounds.map(r => {
                 const isActive = (mobileActive?.id ?? null) === r.id
-                const state = roundStates[r.name]
-                const isPending = state === 'pending'
+                const isPending = roundStates[r.name] === 'pending'
                 return (
                   <button
                     key={r.id}
                     type="button"
                     onClick={() => setActiveRoundName(r.name)}
-                    className="shrink-0 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] transition-colors"
+                    className="tp-tap shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
                     style={{
-                      border: `1px solid ${isActive ? 'var(--ink)' : 'var(--rule)'}`,
-                      background: isActive ? 'var(--ink)' : 'transparent',
-                      color: isActive ? 'var(--paper)' : isPending ? 'var(--ink-3)' : 'var(--ink)',
-                      opacity: isPending ? 0.65 : 1,
+                      border: `1px solid ${isActive ? 'var(--brick)' : 'var(--rule)'}`,
+                      background: isActive ? 'var(--brick)' : 'var(--paper-2)',
+                      color: isActive ? '#fff' : isPending ? 'var(--ink-3)' : 'var(--ink)',
                     }}
                   >
                     {r.name}
@@ -514,92 +462,59 @@ export default function BracketView({
             </div>
 
             {mobileActive && (
-              <section className="px-4 pb-8 pt-4">
-                <div className="mb-1 border-b-2 border-[var(--ink)] pb-2">
-                  <h2 className="m-0 font-serif text-[20px] tracking-tight">
-                    {mobileActive.name} · {mobileMatches.length} match{mobileMatches.length === 1 ? '' : 'es'}
+              <section className="px-5 pb-8 pt-4">
+                <div className="mb-3 flex items-end justify-between border-b-2 border-[var(--ink)] pb-2.5">
+                  <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.02em]">
+                    {ROUND_LONG[mobileActive.name] ?? mobileActive.name}
                   </h2>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+                    {mobileMatches.length} match{mobileMatches.length === 1 ? '' : 'es'}
+                  </span>
                 </div>
                 {mobileMatches.length === 0 ? (
-                  <div className="py-6 font-serif italic text-[var(--ink-2)]">
-                    No fixtures listed yet.
-                  </div>
+                  <div className="py-6 text-[14px] text-[var(--ink-2)]">No fixtures listed yet.</div>
                 ) : (
-                  mobileMatches.map((m, i) => {
-                    const tip = tipMap[m.id]
-                    const isResulted = !!m.winner
-                    const isLocked = new Date(m.scheduled_start) <= now
-                    const wonP1 = m.winner === 'player1'
-                    const wonP2 = m.winner === 'player2'
-                    const myP1 = tip === 'player1'
-                    const myP2 = tip === 'player2'
-                    const isLive = isLocked && !isResulted
-                    const isOpen = !isLocked && !isResulted
-                    const roundName = roundNameById[m.round_id] ?? mobileActive.name
-                    return (
-                      <div
-                        key={m.id}
-                        className="py-3"
-                        style={{
-                          borderBottom: i === mobileMatches.length - 1 ? 'none' : '1px dotted var(--rule)',
-                        }}
-                      >
-                        {isOpen ? (
-                          <div className="flex items-stretch gap-1.5">
-                            <MobilePickButton
-                              name={m.player1_name}
-                              myPick={myP1}
-                              pending={pendingPicks[m.id] === 'player1'}
-                              onPick={() => placePick(m.id, roundName, 'player1')}
-                            />
-                            <span className="self-center font-serif italic text-[12px] text-[var(--ink-3)]">v</span>
-                            <MobilePickButton
-                              name={m.player2_name}
-                              myPick={myP2}
-                              pending={pendingPicks[m.id] === 'player2'}
-                              onPick={() => placePick(m.id, roundName, 'player2')}
-                            />
-                          </div>
-                        ) : (
-                          <div className="font-serif text-[15px] leading-[1.2]">
-                            <MobilePlayer
-                              name={m.player1_name}
-                              myPick={myP1}
-                              won={wonP1}
-                              lost={isResulted && !wonP1}
-                              resulted={isResulted}
-                            />
-                            <span className="mx-1.5 italic text-[var(--ink-3)]">v</span>
-                            <MobilePlayer
-                              name={m.player2_name}
-                              myPick={myP2}
-                              won={wonP2}
-                              lost={isResulted && !wonP2}
-                              resulted={isResulted}
-                            />
-                          </div>
-                        )}
-                        <div
-                          className="mt-1 text-[9px] font-medium uppercase tracking-[0.18em]"
-                          style={{
-                            color: isLive ? 'var(--brick)' : isResulted ? 'var(--olive)' : 'var(--ink-3)',
-                          }}
-                        >
-                          {isLive
-                            ? '· Live'
-                            : isResulted
-                            ? <>
-                                {stripSeed(wonP1 ? m.player1_name : m.player2_name)} into next
-                                {m.score && <span className="ml-1.5 normal-case tracking-normal font-serif italic text-[11px] text-[var(--ink-2)]">{m.score}</span>}
-                                {m.no_points && <span className="ml-1.5 text-[var(--ink-3)]">· no points</span>}
-                              </>
-                            : tip
-                            ? <>your call: {stripSeed(tip === 'player1' ? m.player1_name : m.player2_name)}</>
-                            : 'tap a player to tip'}
+                  <div className="flex flex-col gap-3">
+                    {mobileMatches.map(m => {
+                      const tip = tipMap[m.id]
+                      const isResulted = !!m.winner
+                      const isLocked = new Date(m.scheduled_start) <= now
+                      const wonP1 = m.winner === 'player1'
+                      const wonP2 = m.winner === 'player2'
+                      const myP1 = tip === 'player1'
+                      const myP2 = tip === 'player2'
+                      const isLive = isLocked && !isResulted
+                      const isOpen = !isLocked && !isResulted
+                      const roundName = roundNameById[m.round_id] ?? mobileActive.name
+                      let statusEl: React.ReactNode = null
+                      if (isLive) statusEl = <span className="rounded-full bg-[var(--spark)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--spark-ink)]">Live</span>
+                      else if (isResulted) statusEl = (
+                        <span className="text-[12px] text-[var(--olive)]">
+                          {stripSeed(wonP1 ? m.player1_name : m.player2_name)} through
+                          {m.score && <span className="ml-1.5 tabular-nums text-[var(--ink-3)]">{m.score}</span>}
+                          {m.no_points && <span className="ml-1.5 text-[var(--ink-3)]">· no points</span>}
+                        </span>
+                      )
+                      else if (tip) statusEl = <span className="text-[12px] text-[var(--ink-3)]">Your call: {stripSeed(tip === 'player1' ? m.player1_name : m.player2_name)}.</span>
+                      else statusEl = <span className="text-[12px] text-[var(--ink-3)]">Tap a name to pick.</span>
+                      return (
+                        <div key={m.id} style={{ background: 'var(--paper-2)', border: '1px solid var(--rule)', borderRadius: 16, padding: '14px 16px' }}>
+                          {isOpen ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              <MobilePickButton name={m.player1_name} myPick={myP1} pending={pendingPicks[m.id] === 'player1'} onPick={() => placePick(m.id, roundName, 'player1')} />
+                              <MobilePickButton name={m.player2_name} myPick={myP2} pending={pendingPicks[m.id] === 'player2'} onPick={() => placePick(m.id, roundName, 'player2')} />
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-3">
+                              <MobileStaticSide name={m.player1_name} myPick={myP1} won={wonP1} lost={isResulted && !wonP1} resulted={isResulted} score={wonP1 ? m.score : null} />
+                              <MobileStaticSide name={m.player2_name} myPick={myP2} won={wonP2} lost={isResulted && !wonP2} resulted={isResulted} score={wonP2 ? m.score : null} />
+                            </div>
+                          )}
+                          <div className="mt-2.5">{statusEl}</div>
                         </div>
-                      </div>
-                    )
-                  })
+                      )
+                    })}
+                  </div>
                 )}
               </section>
             )}
@@ -616,9 +531,7 @@ export default function BracketView({
 
 function HalfLabel({ text }: { text: string }) {
   return (
-    <div
-      className="absolute left-0 top-[-22px] text-[9px] font-medium uppercase tracking-[0.22em] text-[var(--ink-3)]"
-    >
+    <div className="absolute left-0 top-[-24px] text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-3)]">
       {text}
     </div>
   )
@@ -627,21 +540,16 @@ function HalfLabel({ text }: { text: string }) {
 function HalfConnectors({
   halfH, halfW, cards, half, cols,
 }: { halfH: number; halfW: number; cards: BracketCard[]; half: 'top' | 'bottom'; cols: number }) {
-  // For each card with a parent in this half, draw a connector to the parent.
-  // We need a stable lookup of cards by half/col/positionInHalf.
   const byKey = new Map<string, BracketCard>()
   for (const c of cards) byKey.set(`${c.half}-${c.col}-${c.positionInHalf}`, c)
 
   const paths: string[] = []
   for (let col = 0; col < cols - 1; col++) {
     const slotsAtCol = cards.filter(c => c.half === half && c.col === col).length
-    // Iterate parent slots in the next column
     for (let pPos = 0; pPos < Math.ceil(slotsAtCol / 2); pPos++) {
-      const childA = `${half}-${col}-${pPos * 2}`
-      const childB = `${half}-${col}-${pPos * 2 + 1}`
       const parentKey = `${half}-${col + 1}-${pPos}`
-      const a = byKey.get(childA)
-      const b = byKey.get(childB)
+      const a = byKey.get(`${half}-${col}-${pPos * 2}`)
+      const b = byKey.get(`${half}-${col}-${pPos * 2 + 1}`)
       const p = byKey.get(parentKey)
       if (!p) continue
       const x1 = col * (MW + GC) + MW
@@ -663,14 +571,9 @@ function HalfConnectors({
   }
 
   return (
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0"
-      width={halfW}
-      height={halfH}
-    >
+    <svg aria-hidden className="pointer-events-none absolute inset-0" width={halfW} height={halfH}>
       {paths.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="rgba(21,35,27,0.18)" strokeWidth="1" strokeDasharray="2 3" />
+        <path key={i} d={d} fill="none" stroke="rgba(11,20,55,0.16)" strokeWidth="1.5" />
       ))}
     </svg>
   )
@@ -694,29 +597,24 @@ function MatchCard({
   const isResulted = card.isResulted
   const isOpen = !card.isLocked && !isResulted
 
+  const border = big ? 'var(--brick)' : card.isLive ? 'var(--brick)' : '#D6DEF0'
+  const shadow = big ? '0 14px 30px -20px rgba(0,48,143,0.55)' : '0 6px 14px -12px rgba(11,20,55,0.4)'
+
   return (
     <div
       style={{
         width: MW,
-        height: big ? MH + 16 : MH,
-        border: `1px solid ${card.isLive ? 'var(--brick)' : isOpen ? 'rgba(21,35,27,0.35)' : 'var(--rule)'}`,
-        background: 'var(--paper)',
+        border: `${big ? 1.5 : 1}px solid ${border}`,
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: 'var(--paper-2)',
+        boxShadow: shadow,
         position: 'relative',
       }}
     >
       {card.isLive && (
-        <div
-          className="absolute left-2 top-[-7px] bg-[var(--brick)] px-1.5 text-[7px] font-medium uppercase leading-[12px] tracking-[0.18em] text-[var(--paper)]"
-        >
+        <div className="absolute right-1.5 top-1.5 rounded-full bg-[var(--spark)] px-1.5 text-[8px] font-semibold uppercase leading-[14px] tracking-[0.12em] text-[var(--spark-ink)]">
           Live
-        </div>
-      )}
-      {isResulted && card.noPoints && (
-        <div
-          className="absolute right-2 top-[-7px] bg-[var(--paper)] px-1.5 text-[7px] font-medium uppercase leading-[12px] tracking-[0.18em] text-[var(--ink-3)]"
-          style={{ border: '1px solid var(--rule)' }}
-        >
-          No points
         </div>
       )}
       <BracketRow
@@ -762,48 +660,41 @@ function BracketRow({
 }) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
+  const nameColor = won ? 'var(--olive)' : picked && !resulted ? 'var(--brick)' : 'var(--ink)'
   const inner = (
     <>
-      <div className="flex min-w-0 items-baseline gap-1">
+      <span className="flex min-w-0 items-baseline gap-1">
         <span
           className="truncate"
-          style={{
-            fontFamily: 'var(--font-serif)',
-            fontWeight: picked || won ? 500 : 400,
-            fontSize: big ? 14 : 12,
-            lineHeight: 1.1,
-            color: won ? 'var(--olive)' : 'var(--ink)',
-            textDecoration: picked && !resulted ? 'underline var(--brick) 1.5px' : 'none',
-            textUnderlineOffset: 3,
-          }}
+          style={{ fontWeight: picked || won ? 700 : 400, fontSize: big ? 14 : 13, lineHeight: 1.1, color: nameColor }}
         >
           {display || '—'}
         </span>
-        {seed && (
-          <span className="font-serif italic text-[9px] text-[var(--ink-3)]">[{seed}]</span>
-        )}
-      </div>
+        {seed && <span className="text-[10px] text-[var(--ink-3)]">[{seed}]</span>}
+      </span>
       {pending ? (
         <svg className="size-2.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
       ) : won && score ? (
-        <span className="shrink-0 whitespace-nowrap font-serif italic text-[8px] tabular-nums text-[var(--ink-2)]">{score}</span>
+        <span className="shrink-0 whitespace-nowrap text-[9px] tabular-nums text-[var(--ink-3)]">{score}</span>
       ) : won ? (
-        <span className="text-[9px] font-medium text-[var(--olive)]">✓</span>
+        <span className="shrink-0 text-[10px] font-semibold text-[var(--olive)]">✓</span>
+      ) : picked && !resulted ? (
+        <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.08em] text-[var(--blue)]">PICK</span>
       ) : picked && lost ? (
-        <span className="text-[7px] font-medium uppercase tracking-[0.18em] text-[var(--brick)]">pick</span>
+        <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.12em] text-[var(--down)]">pick</span>
       ) : null}
     </>
   )
 
   const rowStyle: React.CSSProperties = {
-    padding: `${big ? 5 : 3}px 8px`,
-    borderBottom: isFirst ? '1px dotted var(--rule)' : 'none',
-    opacity: lost ? 0.45 : 1,
-    background: won ? 'rgba(0,100,60,0.07)' : 'transparent',
-    minHeight: big ? 22 : 17,
+    padding: `${big ? 7 : 5}px 10px`,
+    borderBottom: isFirst ? '1px solid var(--rule)' : 'none',
+    opacity: lost ? 0.5 : 1,
+    background: won ? '#E7F3EC' : picked && !resulted ? '#EEF2FC' : 'transparent',
+    minHeight: big ? 24 : 19,
   }
 
   if (onPick) {
@@ -813,7 +704,7 @@ function BracketRow({
         onClick={onPick}
         aria-pressed={picked}
         aria-label={`Pick ${display}`}
-        className="flex w-full cursor-pointer items-center justify-between gap-1.5 px-2 text-left transition-colors hover:bg-[rgba(0,100,60,0.08)] active:scale-[0.99]"
+        className="tp-tap flex w-full items-center justify-between gap-1.5 text-left"
         style={rowStyle}
       >
         {inner}
@@ -822,7 +713,7 @@ function BracketRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-1.5 px-2" style={rowStyle}>
+    <div className="flex items-center justify-between gap-1.5" style={rowStyle}>
       {inner}
     </div>
   )
@@ -841,46 +732,54 @@ function MobilePickButton({
       disabled={!pickable}
       aria-pressed={myPick}
       aria-label={pickable ? `Pick ${display}` : undefined}
-      // min-h-[44px] keeps the tap target at the mobile minimum.
-      className="flex min-h-[44px] flex-1 items-center justify-between gap-1.5 px-2.5 text-left transition-colors active:scale-[0.99] disabled:opacity-50"
+      className="tp-tap flex min-h-[52px] items-center justify-between gap-2 text-left disabled:opacity-50"
       style={{
-        border: `1px solid ${myPick ? 'var(--brick)' : 'var(--rule)'}`,
-        background: myPick ? 'rgba(0,100,60,0.06)' : 'transparent',
+        padding: '13px 15px',
+        borderRadius: 12,
+        border: `1.5px solid ${myPick ? 'var(--brick)' : '#D6DEF0'}`,
+        background: myPick ? '#EEF2FC' : 'var(--paper-3)',
       }}
     >
-      <span className="flex min-w-0 items-baseline gap-1 font-serif text-[15px] leading-[1.2]">
-        <span className="truncate" style={{ fontWeight: myPick ? 500 : 400 }}>{display || '—'}</span>
-        {seed && <span className="font-serif italic text-[10px] text-[var(--ink-3)]">[{seed}]</span>}
+      <span className="flex min-w-0 items-baseline gap-1.5">
+        <span className="truncate" style={{ fontSize: 16, fontWeight: myPick ? 700 : 500, color: myPick ? 'var(--brick)' : 'var(--ink)' }}>{display || '—'}</span>
+        {seed && <span className="text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
       </span>
       {pending ? (
-        <svg className="size-3 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <svg className="size-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
       ) : myPick ? (
-        <span className="shrink-0 text-[11px] font-bold text-[var(--brick)]">✓</span>
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brick)]">✓ pick</span>
       ) : null}
     </button>
   )
 }
 
-function MobilePlayer({
-  name, myPick, won, lost, resulted,
-}: { name: string; myPick: boolean; won: boolean; lost: boolean; resulted: boolean }) {
+function MobileStaticSide({
+  name, myPick, won, lost, resulted, score,
+}: { name: string; myPick: boolean; won: boolean; lost: boolean; resulted: boolean; score?: string | null }) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
+  const border = won ? 'rgba(28,122,75,0.5)' : myPick ? 'var(--brick)' : '#D6DEF0'
+  const bg = won ? '#E7F3EC' : 'var(--paper-3)'
+  const nameColor = won ? 'var(--olive)' : lost ? 'var(--ink-3)' : myPick ? 'var(--brick)' : 'var(--ink)'
   return (
-    <span
-      style={{
-        fontWeight: myPick ? 500 : 400,
-        color: won ? 'var(--olive)' : resulted ? 'var(--ink-3)' : 'var(--ink)',
-        textDecoration: myPick && !resulted ? 'underline var(--brick) 1.5px' : 'none',
-        textUnderlineOffset: 3,
-        opacity: lost ? 0.55 : 1,
-      }}
+    <div
+      className="flex items-center justify-between gap-2"
+      style={{ padding: '13px 15px', borderRadius: 12, border: `1.5px solid ${border}`, background: bg, opacity: lost ? 0.6 : 1 }}
     >
-      {display}
-      {seed && <span className="ml-1 font-serif italic text-[10px] text-[var(--ink-3)]">[{seed}]</span>}
-    </span>
+      <span className="flex min-w-0 items-baseline gap-1.5">
+        <span className="truncate" style={{ fontSize: 16, fontWeight: won || myPick ? 700 : 500, color: nameColor }}>{display || '—'}</span>
+        {seed && <span className="text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
+      </span>
+      {won && score ? (
+        <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink-3)]">{score}</span>
+      ) : won ? (
+        <span className="shrink-0 text-[12px] font-semibold text-[var(--olive)]">✓</span>
+      ) : myPick ? (
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--down)]">pick</span>
+      ) : null}
+    </div>
   )
 }

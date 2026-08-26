@@ -19,37 +19,31 @@ export default async function ProfilePage() {
   if (!profile) redirect('/login')
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] relative">
-      <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
-           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--ink) 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
-
-      <header className="relative z-10 border-b border-[#15231B20] px-5 py-3.5 flex items-center gap-3">
-        <Link href="/dashboard" className="flex items-center gap-3 text-[var(--ink-2)]">
+    <div className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)]">
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-2.5 text-[var(--ink-2)] hover:text-[var(--ink)]">
           <span className="text-lg leading-none">‹</span>
-          <span className="text-[10px] uppercase tracking-[0.18em]">Dashboard</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">Dashboard</span>
         </Link>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-[#15231B30]">·</span>
-        <span className="font-serif italic text-[18px] leading-none">My Profile</span>
+        <span className="font-serif text-[18px] font-bold uppercase leading-none tracking-[0.06em]">My Profile</span>
       </header>
 
-      <section className="relative z-10 px-5 py-5 overflow-hidden text-[var(--paper)]"
-               style={{ background: 'linear-gradient(180deg, var(--brick) 0%, var(--brick-dark) 100%)' }}>
-        <div aria-hidden className="absolute -right-8 -top-3 text-[140px] leading-none italic
-                                    font-serif text-white/[0.06] select-none pointer-events-none">
+      <section className="uso-hero relative overflow-hidden px-5 py-8 text-white md:px-8">
+        <span aria-hidden className="pointer-events-none absolute -top-6 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+              style={{ fontSize: 'clamp(110px, 22vw, 170px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}>
           ME
-        </div>
-        <div className="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-1">Your account</div>
-        <h1 className="font-serif text-3xl leading-[1.05] tracking-tight">
-          {profile.display_name}
-          <br />
-          <span className="italic text-[var(--paper-2)] text-xl">
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>Your account</div>
+          <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1.05] md:text-[38px]">{profile.display_name}</h1>
+          <div className="mt-1.5 text-[15px] italic" style={{ color: '#DDE6FA' }}>
             {profile.catchphrase ?? 'No catchphrase yet.'}
-          </span>
-        </h1>
-        <p className="mt-2 text-[10px] text-white/60">{user.email}</p>
+          </div>
+          <p className="mt-2 text-[11px]" style={{ color: '#B9CBF2' }}>{user.email}</p>
+        </div>
       </section>
 
-      <main className="relative z-10 flex-1 px-5 pt-6 pb-10">
+      <main className="mx-auto w-full max-w-lg flex-1 px-5 pt-6 pb-10 md:px-8">
         <ProfileForm
           userId={user.id}
           initial={{
@@ -63,18 +57,18 @@ export default async function ProfilePage() {
           <ChangePasswordForm />
         </div>
 
-        <form action={signOut} className="mt-8 border-t border-dotted border-[#15231B20] pt-6">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] font-semibold mb-3">
+        <form action={signOut} className="mt-8 border-t border-[var(--rule)] pt-6">
+          <div className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-3)] font-semibold mb-2">
             Sign out
           </div>
-          <p className="text-[12px] text-[var(--ink-2)] opacity-70 mb-3">
+          <p className="text-[12px] text-[var(--ink-2)] mb-3">
             End this session on this device.
           </p>
           <button
             type="submit"
-            className="w-full py-3 rounded-[2px] text-[11px] uppercase tracking-[0.2em] font-semibold
+            className="w-full rounded-[12px] py-3 text-[11px] font-bold uppercase tracking-[0.16em]
                        border border-[var(--brick)] text-[var(--brick)] bg-transparent
-                       hover:bg-[var(--brick)] hover:text-[var(--paper)] transition-colors"
+                       hover:bg-[var(--brick)] hover:text-white transition-colors"
           >
             Sign out
           </button>

@@ -89,63 +89,37 @@ export default async function TiebreakerPage({
   const averages = history ? historyAverages(history) : null
 
   return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
-
-      {/* Compact masthead */}
-      <header className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-3 md:px-8">
-        <Link href="/dashboard" className="font-serif italic text-[20px] leading-none tracking-tight md:text-[26px]">
-          The Tipping Post
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
+          <span className="hidden rounded-full bg-[var(--brick-surface)] px-2.5 py-1 font-serif text-[12px] font-semibold uppercase leading-none tracking-[0.14em] text-[var(--brick)] sm:inline">
+            {tournament.name}
+          </span>
         </Link>
-        <div className="tp-eyebrow flex items-center gap-5">
-          <span className="hidden md:inline">{tournament.name}</span>
-          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
-        </div>
+        <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--ink)]">
+          Profile
+        </Link>
       </header>
 
-      {/* Banner */}
-      <section className="relative z-10 overflow-hidden bg-[var(--brick)] px-4 py-5 text-[var(--paper)] md:px-8 md:py-7">
-        <div
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-7 text-white md:px-8 md:py-9">
+        <span
           aria-hidden
-          className="pointer-events-none absolute -top-4 -right-6 select-none whitespace-nowrap font-serif italic text-white/[0.07] md:-top-8 md:-right-8"
-          style={{ fontSize: 'clamp(120px, 26vw, 240px)', lineHeight: 1, letterSpacing: '-0.04em' }}
+          className="pointer-events-none absolute -top-6 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+          style={{ fontSize: 'clamp(120px, 24vw, 190px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
         >
           FINAL
-        </div>
-        <div className="text-[9px] uppercase tracking-[0.22em] opacity-85 md:text-[10px]">
-          The Final Word · Tiebreaker
-        </div>
-        <h1 className="mt-1 font-serif text-[32px] leading-[1.04] tracking-tight md:text-[52px] md:mt-2">
-          How many games <span className="italic">in the final?</span>
-        </h1>
-        <div className="mt-3 text-[11px] text-white/90 md:text-[13px]">
-          Locks at the start of the men&apos;s final · {tournament.name}
-        </div>
-      </section>
-
-      {/* Rules — two-col on desktop */}
-      <section className="relative z-10 grid grid-cols-1 gap-6 border-b border-[var(--rule)] px-4 py-6 md:grid-cols-[7fr_5fr] md:gap-9 md:px-8 md:py-7">
-        <div>
-          <div className="tp-eyebrow mb-2.5">From the rules</div>
-          <h2 className="m-0 mb-3 font-serif text-[24px] leading-[1.15] tracking-tight md:text-[30px]">
-            Two numbers to break a tie at the line.
-          </h2>
-          <p className="m-0 max-w-[600px] font-sans text-[14px] leading-[1.55] text-[var(--ink-2)]">
-            Predict the total number of games played in each singles final.
-            A 6–4, 6–3, 6–2 final is 27 games. The men&apos;s number is the
-            primary tiebreaker; the women&apos;s number is the backup; if
-            you&apos;re still level, earliest filed wins.
-          </p>
-        </div>
-        <div className="tp-card p-4 md:p-5">
-          <div className="tp-eyebrow tp-eyebrow--brick mb-2.5">How it counts</div>
-          <ol className="m-0 list-decimal space-y-1.5 pl-5 font-sans text-[13px] leading-[1.6] text-[var(--ink-2)]">
-            <li><b className="font-medium text-[var(--ink)]">Closest to actual</b> men&apos;s final total games.</li>
-            <li>If still tied, closest to actual women&apos;s final.</li>
-            <li>If still tied, earliest submission wins.</li>
-          </ol>
-          <div className="mt-3 border-t border-dotted border-[var(--rule)] pt-3 font-serif italic text-[12px] leading-[1.4] text-[var(--ink-3)]">
-            You can edit until the men&apos;s final starts. After that, it&apos;s locked.
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            The tiebreaker · {tournament.name}
+          </div>
+          <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">Call the finals.</h1>
+          <div className="mt-3 max-w-xl text-[14px] leading-[1.5]" style={{ color: '#DDE6FA' }}>
+            Total games in each final breaks a dead heat. Men&apos;s is the primary tiebreaker, women&apos;s the backup, then earliest filed. Edit until the men&apos;s final starts.
           </div>
         </div>
       </section>
@@ -165,35 +139,22 @@ export default async function TiebreakerPage({
 
       {/* History strip */}
       {history && (
-        <section className="relative z-10 px-4 pb-6 pt-2 md:px-8 md:pb-8">
-          <div className="mb-3 border-b-2 border-[var(--ink)] pb-2">
-            <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">
-              Last ten {tournament.name.replace(/\s*\d{4}\s*$/, '')} finals
-            </h2>
-          </div>
-          <div className="grid grid-cols-5 gap-y-3 md:grid-cols-10 md:gap-y-0">
-            {history.map((y, i) => (
-              <div
-                key={y.year}
-                className="px-2 py-2.5 text-center md:px-2 md:py-3"
-                style={{
-                  borderRight:
-                    i === history.length - 1
-                      ? 'none'
-                      : (i + 1) % 5 === 0
-                        ? 'none' // mobile row break — last in the row
-                        : '1px solid var(--rule)',
-                }}
-              >
-                <div className="tp-eyebrow">{y.year}</div>
-                <div className="mt-2 font-serif text-[24px] leading-none tabular-nums md:text-[28px]">
-                  {y.mens}
+        <section className="px-5 pb-8 pt-3 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--ink-3)]">
+              Last ten {tournament.name.replace(/\s*\d{4}\s*$/, '')} finals · total games
+            </div>
+            <div className="grid grid-cols-5 gap-2.5 md:grid-cols-10">
+              {history.map(y => (
+                <div key={y.year} className="rounded-[12px] py-3 text-center" style={{ background: 'var(--paper-3)' }}>
+                  <div className="text-[12px] font-semibold text-[var(--ink-3)]">{y.year}</div>
+                  <div className="mt-1 font-serif text-[24px] font-bold leading-none tabular-nums text-[var(--ink)] md:text-[26px]">
+                    {y.mens}
+                  </div>
+                  <div className="mt-1 text-[10px] text-[var(--ink-3)]">{y.womens}W</div>
                 </div>
-                <div className="mt-1 font-serif italic text-[11px] text-[var(--ink-3)]">
-                  men · {y.womens} W
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       )}

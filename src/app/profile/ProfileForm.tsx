@@ -103,7 +103,7 @@ export default function ProfileForm({ userId, initial }: Props) {
           defaultValue={initial.display_name}
           maxLength={30}
           required
-          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
+          className="w-full rounded-[12px] border border-[#D6DEF0] bg-[var(--paper-2)] px-3.5 py-2.5
                      text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
         <p className="text-[10px] text-[var(--ink-2)] opacity-60">This is how you appear in the standings.</p>
@@ -122,21 +122,21 @@ export default function ProfileForm({ userId, initial }: Props) {
           defaultValue={initial.catchphrase ?? ''}
           maxLength={80}
           placeholder="e.g. Always back the Serb."
-          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
-                     text-[15px] text-[var(--ink)] placeholder-[#15231B40]
+          className="w-full rounded-[12px] border border-[#D6DEF0] bg-[var(--paper-2)] px-3.5 py-2.5
+                     text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-3)]
                      focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
         <p className="text-[10px] text-[var(--ink-2)] opacity-60">Shown on your profile. Keep it short.</p>
       </div>
 
-      {state?.error && <p className="text-sm text-[var(--brick)]">{state.error}</p>}
+      {state?.error && <p className="text-sm text-[var(--down)]">{state.error}</p>}
       {state?.ok && <p className="text-sm text-[var(--olive)] font-medium">Saved.</p>}
 
       <button
         type="submit"
         disabled={pending || uploading}
-        className="w-full py-3 rounded-[2px] text-[11px] uppercase tracking-[0.2em] font-semibold
-                   bg-[var(--ink)] text-[var(--paper)] disabled:opacity-50 transition-opacity"
+        className="w-full rounded-[12px] py-3 text-[11px] font-bold uppercase tracking-[0.16em]
+                   bg-[var(--brick)] text-white disabled:opacity-50 transition-opacity"
       >
         {pending ? 'Saving…' : 'Save profile'}
       </button>

@@ -38,40 +38,33 @@ export default async function RulesPage() {
     : DEFAULT_POINTS
 
   return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
-
-      {/* Compact masthead */}
-      <header className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-3 md:px-8">
-        <Link href="/dashboard" className="font-serif italic text-[20px] leading-none tracking-tight md:text-[26px]">
-          The Tipping Post
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
         </Link>
-        <div className="tp-eyebrow flex items-center gap-5">
-          {tournament && <span className="hidden md:inline">{tournament.name}</span>}
-          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
-        </div>
+        <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--ink)]">Profile</Link>
       </header>
 
-      {/* Banner */}
-      <section className="relative z-10 overflow-hidden bg-[var(--brick)] px-4 py-5 text-[var(--paper)] md:px-8 md:py-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-3 -right-6 select-none whitespace-nowrap font-serif italic text-white/[0.07] md:-top-4 md:-right-8"
-          style={{ fontSize: 'clamp(110px, 24vw, 200px)', lineHeight: 1, letterSpacing: '-0.04em' }}
-        >
-          LAW
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-7 text-white md:px-8 md:py-9">
+        <span aria-hidden className="pointer-events-none absolute -top-5 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+              style={{ fontSize: 'clamp(120px, 22vw, 180px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}>
+          RULES
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            The house rules{tournament ? ` · ${tournament.name}` : ''}
+          </div>
+          <h1 className="mt-2 font-serif text-[28px] font-bold leading-[1] md:text-[40px]">How the comp works, in plain English.</h1>
         </div>
-        <div className="text-[9px] uppercase tracking-[0.22em] opacity-85 md:text-[10px]">
-          The house rules
-        </div>
-        <h1 className="mt-1 font-serif text-[28px] leading-[1.04] tracking-tight md:text-[44px] md:mt-2">
-          How the comp works, <span className="italic">in plain English.</span>
-        </h1>
       </section>
 
       {/* Rules — two columns on desktop */}
-      <section className="relative z-10 flex-1 px-4 pb-10 pt-6 md:px-8 md:pt-8">
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-x-14 gap-y-8 md:grid-cols-2">
+      <section className="flex-1 px-5 pb-10 pt-6 md:px-8 md:pt-7">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
           <Rule heading="The basics" eyebrow="Rule I">
             <p>
               Each round, pick a winner for every tie — men&apos;s and women&apos;s draws.
@@ -139,9 +132,9 @@ export default async function RulesPage() {
           </Rule>
         </div>
 
-        <div className="tp-pull mx-auto mt-10 max-w-5xl">
-          That&apos;s the lot. <span className="tp-pull__punch">Now go and file your picks.</span>
-        </div>
+        <p className="mx-auto mt-8 max-w-5xl text-[14px] text-[var(--ink-2)]">
+          That&apos;s the lot. <span className="font-semibold text-[var(--brick)]">Now go and file your picks.</span>
+        </p>
       </section>
 
       <TabBar tournamentSlug={tournament?.slug} />
@@ -151,12 +144,12 @@ export default async function RulesPage() {
 
 function Rule({ heading, eyebrow, children }: { heading: string; eyebrow: string; children: React.ReactNode }) {
   return (
-    <article>
-      <div className="flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
-        <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">{heading}</h2>
-        <span className="tp-eyebrow">{eyebrow}</span>
+    <article className="tp-card p-5 md:p-6">
+      <div className="flex items-baseline justify-between border-b border-[var(--rule)] pb-2.5">
+        <h2 className="m-0 font-serif text-[19px] font-bold uppercase tracking-[0.03em] md:text-[20px]">{heading}</h2>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--blue)]">{eyebrow}</span>
       </div>
-      <div className="mt-3 font-sans text-[14px] leading-[1.6] text-[var(--ink-2)] [&>p]:m-0">
+      <div className="mt-3 text-[14px] leading-[1.6] text-[var(--ink-2)] [&>p]:m-0">
         {children}
       </div>
     </article>

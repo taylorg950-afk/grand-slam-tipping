@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-serif: var(--font-newsreader);
+  --font-serif: var(--font-saira);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -179,59 +179,70 @@ a:active {
   100% { width: 100%; opacity: 0; }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   The Tipping Post — Wimbledon edition · design tokens  ("The Lawn")
-   Re-skin of the terracotta edition. Same variable/class names so every
-   component keeps working — only the VALUES (and the serif face) change.
-   See DESIGN.md (Wimbledon) and wimbledon-handoff/CHANGES.md for the mapping.
-   ─────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────────────────
+   The Tipping Post — US OPEN LIGHT tokens
+   Reskin of the Wimbledon edition. Same variable/class NAMES so every component
+   keeps working — only the VALUES (and the type faces) change. Values pasted
+   from handoff/us-open-tokens.css. Structural helper classes below are retained
+   from the previous edition; they inherit the new token values automatically.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Paper — page surfaces (cream, retuned slightly cooler) */
-  --paper:          #F6F2E6;
-  --paper-2:        #EFE9D7;
-  --paper-3:        #E7E0CA;
+  /* ── Surfaces — light hard-court ──────────────────────────────── */
+  --paper:   #EEF1FA;   /* page background (was warm cream) */
+  --paper-2: #FFFFFF;   /* cards / pulled-out blocks */
+  --paper-3: #F5F7FD;   /* subtle inset surface */
 
-  /* Ink — green-black text, rules, borders */
-  --ink:            #15231B;
-  --ink-2:          #3B473E;
-  --ink-3:          rgba(21, 35, 27, 0.55);
-  --ink-4:          rgba(21, 35, 27, 0.28);
-  --rule:           rgba(21, 35, 27, 0.18);
-  --rule-soft:      rgba(21, 35, 27, 0.10);
+  /* ── Ink — navy text & rules ──────────────────────────────────── */
+  --ink:       #0B1437;
+  --ink-2:     #47547E;
+  --ink-3:     #8892B8;
+  --ink-4:     rgba(11, 20, 55, 0.28);
+  --rule:      rgba(11, 20, 55, 0.12);
+  --rule-soft: rgba(11, 20, 55, 0.06);
 
-  /* Accents — green = the house colour (structure, CTA, live, "open");
-     violet = strictly "you". --olive now resolves to green ("won/correct"). */
-  --brick:          #00643C;   /* was terracotta — now Wimbledon grass green */
-  --brick-dark:     #0A3D26;   /* deep green — banner / hover */
-  --brick-surface:  #EAF1ED;   /* pale green fill (auth screens) */
-  --violet:         #4F2683;   /* NEW — Wimbledon purple, the "you" colour */
-  --violet-soft:    #EFE9F5;
-  --olive:          #00643C;   /* "won / correct" data → green */
+  /* ── Primary accent — US Open royal navy ──────────────────────────
+     Reused everywhere the old design used --brick: banner fill, the one
+     primary CTA, "this is you", live indicators, pick underlines.        */
+  --brick:         #00308F;
+  --brick-dark:    #0A2E9E;   /* hover; avatar fill */
+  --brick-surface: #E4EAF9;   /* pale accent fill */
 
-  /* Chart palette — assigned by stable player order (series 1 = leader/you) */
-  --chart-1:        #00643C;   /* grass green */
-  --chart-2:        #4F2683;   /* violet */
-  --chart-3:        #1C7A4E;   /* light green */
-  --chart-4:        #8E6BB0;   /* muted violet */
-  --chart-5:        #B08A3E;   /* brass */
-  --chart-6:        #4A8C6A;   /* sage */
+  /* ── Success / "won" / leader data ────────────────────────────── */
+  --olive: #1C7A4B;           /* court green (replaces the old olive) */
 
-  /* Typography — serif swaps to Newsreader (loaded via next/font in layout) */
-  --font-serif:     'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-sans:      'DM Sans', system-ui, sans-serif;
-  --font-mono:      'JetBrains Mono', ui-monospace, monospace;
+  /* ── Extra accents the mockups use (optional but recommended) ───── */
+  --blue:      #1B4DD8;       /* electric structural accent */
+  --spark:     #D9EC3C;       /* tennis-ball spark: live / lock moments */
+  --spark-ink: #25320A;       /* text on a spark fill */
+  --you-bg:    #FBF6D9;       /* soft highlight fill for your own row */
+  --you-line:  #C9DB2E;       /* lime rail on your own row */
+  --down:      #C0492E;       /* faller / dropped-spots indicator */
 
-  /* Sizes (use sparingly — most type is set inline at the component level) */
-  --eyebrow-size:   10px;
-  --eyebrow-track:  0.18em;
-  --body-size:      14px;
-  --body-line:      1.55;
+  /* ── Chart palette — assign by stable player order ────────────── */
+  --chart-1: #1C7A4B;   /* olive/green   */
+  --chart-2: #1B4DD8;   /* electric blue */
+  --chart-3: #6C5CE7;   /* violet        */
+  --chart-4: #C58A2E;   /* ochre         */
+  --chart-5: #1F9E8A;   /* teal          */
+  --chart-6: #C24B2C;   /* clay          */
 
-  /* NEW — mown-lawn banner stripe (Wimbledon signature) */
-  --lawn-stripe:    repeating-linear-gradient(90deg,
-                      var(--brick-dark) 0, var(--brick-dark) 46px,
-                      #0C432B 46px, #0C432B 92px);
+  /* ── Type — condensed grotesque + humanist sans ───────────────── */
+  --font-serif: var(--font-saira), 'Saira Condensed', 'Arial Narrow', sans-serif;  /* display, headlines, numbers, rank */
+  --font-sans:  var(--font-archivo), 'Archivo', system-ui, sans-serif;             /* body / UI / labels */
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+
+  --eyebrow-size:  11px;
+  --eyebrow-track: 0.14em;
+  --body-size:     14px;
+  --body-line:     1.55;
+
+  /* ── Compat aliases — vars still referenced inline by components that the
+     US Open set renames/drops. Kept so the token swap needs zero page edits;
+     Step 3 polish can migrate call-sites to the named tokens.            */
+  --violet:      var(--blue);          /* old "you" accent → electric blue */
+  --violet-soft: var(--brick-surface);
+  --lawn-stripe: var(--brick);         /* old banner fill → flat navy (Step 3 → uso-hero) */
 }
 
 /* Subtle paper grain — drop into the page root as an aria-hidden layer */
@@ -356,4 +367,52 @@ body {
 .tp-no-spinner {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   US Open helper overrides (from handoff/us-open-tokens.css).
+   Placed after the retained base classes so their radius/colour rules win the
+   cascade. The base classes above still supply backgrounds/borders/type.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Corners: the new direction is rounded, not sharp ─────────────── */
+.tp-card { border-radius: 16px; border-color: var(--border, var(--rule)); }
+.tp-cta  { border-radius: 12px; }
+.tp-ghost { border-radius: 8px; }
+
+/* ── Hero banner helper ───────────────────────────────────────────
+   Each page banner is currently a flat `bg-[var(--brick)]` <section>.
+   Add the class `uso-hero` to those sections for the navy gradient. */
+.uso-hero {
+  background: linear-gradient(120deg, #002B7F 0%, #00308F 55%, #0A4BC4 100%) !important;
+}
+
+/* ── Kill the paper grain (the light direction is clean, no texture) ── */
+.tp-paper-grain { opacity: 0 !important; }
+
+/* ── Eyebrow: sentence-spaced small caps, unchanged mechanics ─────── */
+.tp-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--eyebrow-size);
+  line-height: 1;
+  letter-spacing: var(--eyebrow-track);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tp-eyebrow--brick { color: var(--blue); font-weight: 600; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* ── Dashboard layout grids ───────────────────────────────────────
+   This Tailwind build does not emit arbitrary multi-value grid-cols
+   utilities (e.g. grid-cols-[1.35fr_1fr]), so the two-column block is
+   defined explicitly here. */
+.uso-two-col { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 768px) {
+  .uso-two-col { grid-template-columns: 1.35fr 1fr; align-items: start; }
 }

@@ -37,8 +37,8 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 border-t border-dotted border-[#15231B20] pt-6">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--ink-2)] font-semibold">
+    <form onSubmit={submit} className="space-y-4 border-t border-[var(--rule)] pt-6">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-3)] font-semibold">
         Change password
       </div>
 
@@ -54,7 +54,7 @@ export default function ChangePasswordForm() {
           onChange={(e) => setPassword(e.target.value)}
           minLength={6}
           autoComplete="new-password"
-          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
+          className="w-full rounded-[12px] border border-[#D6DEF0] bg-[var(--paper-2)] px-3.5 py-2.5
                      text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
       </div>
@@ -71,19 +71,19 @@ export default function ChangePasswordForm() {
           onChange={(e) => setConfirm(e.target.value)}
           minLength={6}
           autoComplete="new-password"
-          className="w-full rounded-[2px] border border-[#15231B30] bg-white px-3 py-2.5
+          className="w-full rounded-[12px] border border-[#D6DEF0] bg-[var(--paper-2)] px-3.5 py-2.5
                      text-[15px] text-[var(--ink)] focus:outline-none focus:border-[var(--brick)] transition-colors"
         />
       </div>
 
-      {error && <p className="text-sm text-[var(--brick)]">{error}</p>}
+      {error && <p className="text-sm text-[var(--down)]">{error}</p>}
       {ok && <p className="text-sm text-[var(--olive)] font-medium">Password updated.</p>}
 
       <button
         type="submit"
         disabled={loading || !password || !confirm}
-        className="w-full py-3 rounded-[2px] text-[11px] uppercase tracking-[0.2em] font-semibold
-                   bg-[var(--ink)] text-[var(--paper)] disabled:opacity-50 transition-opacity"
+        className="w-full rounded-[12px] py-3 text-[11px] font-bold uppercase tracking-[0.16em]
+                   bg-[var(--brick)] text-white disabled:opacity-50 transition-opacity"
       >
         {loading ? 'Updating…' : 'Update password'}
       </button>

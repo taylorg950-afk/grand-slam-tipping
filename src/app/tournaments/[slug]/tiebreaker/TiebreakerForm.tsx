@@ -81,16 +81,16 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
       </section>
 
       {/* Your call + Save */}
-      <section className="relative z-10 grid grid-cols-1 items-center gap-4 border-t border-[var(--rule)] px-4 py-5 md:grid-cols-[7fr_5fr] md:gap-9 md:px-8 md:py-6">
-        <div>
+      <section className="flex flex-col gap-4 border-t border-[var(--rule)] px-5 py-5 md:flex-row md:items-center md:justify-between md:gap-9 md:px-8 md:py-6">
+        <div className="md:flex-1 md:pr-6">
           <div className="tp-eyebrow mb-1.5">Your call</div>
-          <div className="font-serif text-[20px] leading-[1.3] md:text-[26px]">
-            <span className="text-[var(--brick)]">{mens}</span> games for the men.{' '}
-            <span className="text-[var(--brick)]">{womens}</span> for the women.{' '}
-            <span className="italic text-[var(--ink-2)]">{filedLabel}</span>
+          <div className="font-serif text-[20px] font-semibold leading-[1.25] md:text-[26px]">
+            <span className="tabular-nums text-[var(--blue)]">{mens}</span> games for the men.{' '}
+            <span className="tabular-nums text-[var(--blue)]">{womens}</span> for the women.{' '}
+            <span className="text-[15px] font-normal italic text-[var(--ink-3)]">{filedLabel}</span>
           </div>
           {state?.error && (
-            <p className="mt-2 text-[12px] text-[var(--brick)]">{state.error}</p>
+            <p className="mt-2 text-[12px] text-[var(--down)]">{state.error}</p>
           )}
         </div>
         <div className="md:text-right">
@@ -138,11 +138,11 @@ interface ScrubberProps {
 function Scrubber({ label, sublabel, value, onChange, min, max, hint, locked }: ScrubberProps) {
   const clamp = (v: number) => Math.max(min, Math.min(max, v))
   return (
-    <div className="tp-card px-5 py-6 md:px-8 md:py-7">
-      <div className="text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--brick)] md:text-[10px]">
+    <div className="tp-card px-6 py-6 md:px-7 md:py-7">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--blue)]">
         {label}
       </div>
-      <div className="mt-1.5 mb-6 max-w-[380px] font-serif italic text-[14px] leading-[1.4] text-[var(--ink-2)] md:text-[17px]">
+      <div className="mt-1.5 mb-5 max-w-[380px] text-[14px] italic leading-[1.4] text-[var(--ink-2)]">
         {sublabel}
       </div>
 
@@ -185,7 +185,7 @@ function Scrubber({ label, sublabel, value, onChange, min, max, hint, locked }: 
         </ScrubberButton>
       </div>
 
-      <div className="mt-3 font-serif italic text-[12px] leading-[1.5] text-[var(--ink-2)] md:text-[13px]">
+      <div className="mt-3 text-[12px] italic leading-[1.5] text-[var(--ink-3)] md:text-[13px]">
         {hint}
       </div>
     </div>
@@ -200,8 +200,8 @@ function ScrubberButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex size-[44px] items-center justify-center border bg-[var(--paper)] font-serif text-[28px] leading-none text-[var(--ink-2)] transition-colors hover:border-[var(--ink)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40 md:size-[56px] md:text-[32px]"
-      style={{ borderColor: 'var(--rule)' }}
+      className="tp-tap flex size-[48px] items-center justify-center rounded-[12px] text-[26px] leading-none text-[var(--ink-2)] disabled:cursor-not-allowed disabled:opacity-40 md:size-[52px]"
+      style={{ background: 'var(--paper-3)', border: '1px solid #D6DEF0' }}
       {...rest}
     >
       {children}

@@ -92,36 +92,38 @@ export default async function RoundPage({
   const nextPickHref = firstUnpickedGroupIdx >= 0 ? `#group-${firstUnpickedGroupIdx}` : undefined
 
   return (
-    <main className="min-h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)] relative">
-      <div aria-hidden className="fixed inset-0 opacity-[0.06] pointer-events-none"
-           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, var(--ink) 0.5px, transparent 0)', backgroundSize: '3px 3px' }} />
-
+    <main className="relative flex min-h-screen flex-col bg-[var(--paper)] text-[var(--ink)]">
       {/* Sticky header */}
-      <header className="sticky top-0 z-20 bg-[var(--paper)] border-b border-[#15231B20] px-5 pt-3.5 pb-3">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Link href="/dashboard" className="flex items-center gap-2 text-[var(--ink-2)]">
+      <header className="sticky top-0 z-20 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 pb-3 pt-3.5 md:px-8">
+        <div className="mb-1.5 flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2 text-[var(--ink-2)] hover:text-[var(--ink)]">
             <span className="text-lg leading-none">‹</span>
-            <span className="text-[10px] uppercase tracking-[0.18em]">{tournament.name}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">{tournament.name}</span>
           </Link>
         </div>
         <div className="flex items-baseline justify-between">
-          <h1 className="font-serif text-[28px] leading-none tracking-tight">
+          <h1 className="font-serif text-[26px] font-bold uppercase leading-none tracking-[0.02em] md:text-[30px]">
             {roundLongName(roundName)}
           </h1>
-          <span className={`text-xs font-semibold tracking-wide ${fullyLocked ? 'text-[var(--ink-2)]' : 'text-[var(--brick)]'}`}>
-            ● {fullyLocked ? 'Locked' : `Locks ${fmtCountdown(lockMs)}`}
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em]"
+            style={fullyLocked
+              ? { background: 'var(--paper-3)', color: 'var(--ink-3)' }
+              : { background: 'var(--spark)', color: 'var(--spark-ink)' }}
+          >
+            {fullyLocked ? 'Locked' : `Locks ${fmtCountdown(lockMs)}`}
           </span>
         </div>
         {/* Round tab strip */}
-        <div className="flex gap-3.5 mt-3 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-2)] overflow-x-auto pb-px">
+        <div className="tp-scroll mt-3 flex gap-3.5 overflow-x-auto pb-px text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-3)]">
           {(allRounds ?? []).map(r => {
             const active = r.name === roundName
             return (
               <Link
                 key={r.name}
                 href={`/tournaments/${slug}/round/${r.name}`}
-                className={`shrink-0 pb-1 border-b-2 ${active
-                  ? 'text-[var(--ink)] font-bold border-[var(--brick)]'
+                className={`shrink-0 border-b-2 pb-1.5 ${active
+                  ? 'border-[var(--brick)] font-bold text-[var(--ink)]'
                   : 'border-transparent hover:text-[var(--ink)]'}`}
               >
                 {r.name}
@@ -161,12 +163,11 @@ export default async function RoundPage({
                   />
                 ))}
                 <svg viewBox="0 0 100 20" preserveAspectRatio="none"
-                     className="block w-full h-5 -mt-px" aria-hidden>
+                     className="-mt-px block h-5 w-full" aria-hidden>
                   <path d="M 8 0 L 8 10 L 92 10 L 92 0 M 50 10 L 50 20"
-                        stroke="#15231B20" strokeWidth="1" fill="none" />
+                        stroke="rgba(11,20,55,0.16)" strokeWidth="1" fill="none" />
                 </svg>
-                <div className="text-center -mt-0.5 text-[10px] uppercase tracking-[0.14em] text-[var(--ink-2)]
-                                italic font-serif">
+                <div className="-mt-0.5 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
                   → {nextRoundName} {gi + 1}
                 </div>
               </div>
@@ -175,8 +176,8 @@ export default async function RoundPage({
         )}
 
         {groups.length > 0 && (
-          <div className="mt-3 p-4 border border-dashed border-[#15231B20]
-                          font-serif italic text-[var(--ink-2)] text-center tracking-tight text-base leading-snug">
+          <div className="mt-3 rounded-[14px] border border-dashed p-4 text-center text-[14px] leading-snug text-[var(--ink-2)]"
+               style={{ borderColor: '#D6DEF0' }}>
             {remaining === 0
               ? `All in. ${fullyLocked ? 'Sit back, watch the carnage.' : 'Now we wait for the lock.'}`
               : `${remaining} still to call. Don't sleep on it.`}
@@ -186,12 +187,12 @@ export default async function RoundPage({
 
       {/* Lock bar + tab nav stacked at bottom */}
       <div className="fixed bottom-0 left-0 right-0 z-20">
-        <div className="bg-[var(--ink)] text-[var(--paper)] px-5 pt-3.5 pb-3.5 flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--paper-2)]/70">
+        <div className="uso-hero flex items-center justify-between gap-4 px-5 py-3.5 text-white md:px-8">
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: '#B9CBF2' }}>
               {picked} of {total} picked
             </div>
-            <div className="font-serif italic text-lg leading-tight">
+            <div className="font-serif text-[18px] font-bold leading-tight">
               {fullyLocked
                 ? 'Round locked.'
                 : remaining === 0
@@ -202,9 +203,8 @@ export default async function RoundPage({
           {!fullyLocked && remaining > 0 && nextPickHref && (
             <Link
               href={nextPickHref}
-              className="bg-[var(--brick)] hover:bg-[var(--brick-dark)] text-[var(--paper)] px-4 py-3
-                         text-[11px] uppercase tracking-[0.18em] font-semibold rounded-[2px]
-                         transition-colors"
+              className="shrink-0 rounded-[12px] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--spark-ink)] transition-transform active:scale-95"
+              style={{ background: 'var(--spark)' }}
             >
               Next pick →
             </Link>

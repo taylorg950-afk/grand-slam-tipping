@@ -67,8 +67,24 @@ function ordinalSuffix(n: number) {
 
 function heatBg(v: number, max: number) {
   if (v === 0 || max === 0) return 'transparent'
-  const a = 0.08 + (v / max) * 0.22
-  return `rgba(0,100,60, ${a.toFixed(2)})`
+  const a = 0.1 + (v / max) * 0.32
+  return `rgba(28,122,75, ${a.toFixed(2)})`
+}
+
+const AVATAR_COLORS = [
+  '#1B4DD8', '#6C5CE7', '#C58A2E', '#C24B2C', '#1F9E8A',
+  '#D6497E', '#00643C', '#B08A3E', '#4A8C6A', '#8E6BB0',
+]
+
+function avatarColor(id: string) {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || name[0]?.toUpperCase() || '?'
 }
 
 // ─── Round-by-round snapshot ────────────────────────────────────────
@@ -424,226 +440,149 @@ export default async function LeaderboardPage({
     : (headlineRound ? `After ${ROUND_LONG[headlineRound.name] ?? headlineRound.name}.` : 'Full table.')
 
   const movers = computeMovers(snapshots, userRows, orderedRounds, matches, tips)
-  const moversSinceLabel = movers.baselineRoundName ? `Since ${movers.baselineRoundName}` : null
   const cityGhost = cityFor(tournament.slug)
 
-  return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Compact masthead */}
-      <header className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] px-4 py-3 md:px-8">
-        <Link href="/dashboard" className="font-serif italic text-[20px] leading-none tracking-tight md:text-[26px]">
-          The Tipping Post
+  return (
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
+          <span className="hidden rounded-full bg-[var(--brick-surface)] px-2.5 py-1 font-serif text-[12px] font-semibold uppercase leading-none tracking-[0.14em] text-[var(--brick)] sm:inline">
+            {tournament.name}
+          </span>
         </Link>
-        <div className="tp-eyebrow flex items-center gap-5">
-          <span className="hidden md:inline">{tournament.name}</span>
-          <Link href="/profile" className="hover:text-[var(--ink)]">Profile</Link>
-        </div>
+        <Link href="/profile" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--ink)]">
+          Profile
+        </Link>
       </header>
 
-      {/* Clay banner */}
-      <section className="relative z-10 overflow-hidden bg-[var(--brick)] px-4 py-5 text-[var(--paper)] md:px-8 md:py-6">
-        <div
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-7 text-white md:px-8 md:py-9">
+        <span
           aria-hidden
-          className="pointer-events-none absolute -top-3 -right-6 select-none whitespace-nowrap font-serif italic text-white/[0.07] md:-top-4 md:-right-8"
-          style={{ fontSize: 'clamp(110px, 24vw, 220px)', lineHeight: 1, letterSpacing: '-0.04em' }}
+          className="pointer-events-none absolute -top-5 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+          style={{ fontSize: 'clamp(120px, 22vw, 180px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
         >
           {cityGhost}
-        </div>
-        <div className="text-[9px] uppercase tracking-[0.22em] opacity-85 md:text-[10px]">
-          The Standings · {tournament.name}
-        </div>
-        <h1 className="mt-1 font-serif text-[30px] leading-[1.04] tracking-tight md:text-[48px] md:mt-2">
-          Full table, <span className="italic">{headlineKicker.toLowerCase()}</span>
-        </h1>
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-white/90 md:gap-x-5 md:text-[13px]">
-          <span><b className="font-semibold text-white">{resultedMatchCount}</b> matches resulted</span>
-          <span className="size-[3px] rounded-full bg-white/40" />
-          <span>{rows.length} tippers in</span>
-          {myRank > 0 && (
-            <>
-              <span className="size-[3px] rounded-full bg-white/40" />
-              <span>You&apos;re <b className="font-semibold text-white">{myRank}{ordinalSuffix(myRank)}</b> of {rows.length}</span>
-            </>
-          )}
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            The standings · {tournament.name}
+          </div>
+          <h1 className="mt-2 font-serif text-[28px] font-bold leading-[1] md:text-[40px]">
+            Full table, {headlineKicker.toLowerCase()}
+          </h1>
+          <div className="mt-3 text-[14px]" style={{ color: '#DDE6FA' }}>
+            {resultedMatchCount} matches resulted · {rows.length} tippers in
+            {myRank > 0 && <> · you&apos;re {myRank}{ordinalSuffix(myRank)} of {rows.length}</>}
+          </div>
         </div>
       </section>
 
-      {/* Leaderboard — table on lg+, card list below */}
-      <section className="relative z-10 px-4 pb-2 pt-6 md:px-8">
-        <div className="flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
-          <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">The leaderboard</h2>
-          <span className="tp-eyebrow">{moversSinceLabel ?? 'Live'}</span>
-        </div>
-
+      {/* Table */}
+      <section className="px-5 pt-6 md:px-8">
         {rows.length === 0 ? (
-          <div className="py-8 text-center font-serif italic text-[var(--ink-2)]">
-            No tippers yet.
-          </div>
+          <div className="tp-card p-10 text-center text-[14px] text-[var(--ink-2)]">No tippers yet.</div>
         ) : (
           <>
-            {/* ── Desktop table ───────────────────────────────── */}
-            <div className="hidden lg:block">
-              <div
-                className="grid items-baseline gap-2 px-2 pb-2 pt-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--ink-2)]"
-                style={{ gridTemplateColumns: tableGridCols(orderedRounds.length) }}
-              >
-                <span>#</span>
-                <span></span>
-                <span>Tipper</span>
-                <span className="text-center">Move</span>
-                {orderedRounds.map(r => (
-                  <span key={r.id} className="text-center">
-                    {r.name}
-                    <div className="mt-0.5 font-serif text-[9px] italic normal-case tracking-normal text-[var(--ink-3)]">
-                      {r.points_per_correct_tip}pt
-                    </div>
-                  </span>
-                ))}
-                <span className="text-right">Hits</span>
-                <span className="text-right">%</span>
-                <span className="text-right">Run</span>
-                <span className="text-right">Points</span>
-              </div>
+            {/* Desktop table */}
+            <div className="tp-card tp-scroll hidden overflow-x-auto p-4 lg:block">
+              <div style={{ minWidth: 680 }}>
+                <div
+                  className="grid items-end gap-2 border-b-2 border-[var(--ink)] px-1.5 pb-2.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-3)]"
+                  style={{ gridTemplateColumns: tableGridCols(orderedRounds.length) }}
+                >
+                  <span className="text-center">#</span>
+                  <span></span>
+                  <span>Tipper</span>
+                  {orderedRounds.map(r => (
+                    <span key={r.id} className="text-center">
+                      {r.name}
+                      <div className="mt-0.5 font-medium normal-case tracking-normal text-[var(--ink-3)]">{r.points_per_correct_tip}pt</div>
+                    </span>
+                  ))}
+                  <span className="text-right">Hits</span>
+                  <span className="text-right">%</span>
+                  <span className="text-right">Points</span>
+                </div>
 
-              {rows.map((row, i) => {
-                const isMe = row.userId === user.id
-                const isLast = i === rows.length - 1
-                const accuracy = row.tipped > 0 ? Math.round((row.correct / row.tipped) * 100) : 0
-                return (
-                  <div
-                    key={row.userId}
-                    className={`grid items-center gap-2 px-2 py-3.5 ${
-                      isLast ? '' : 'border-b border-dotted border-[var(--rule)]'
-                    }`}
-                    style={{
-                      gridTemplateColumns: tableGridCols(orderedRounds.length),
-                      background: isMe ? 'rgba(0,100,60,0.04)' : 'transparent',
-                    }}
-                  >
+                {rows.map((row, i) => {
+                  const isMe = row.userId === user.id
+                  const accuracy = row.tipped > 0 ? Math.round((row.correct / row.tipped) * 100) : 0
+                  return (
                     <div
-                      className="font-serif italic text-[22px] leading-none"
-                      style={{ color: isMe ? 'var(--brick)' : i === 0 ? 'var(--brick)' : 'var(--ink-2)' }}
+                      key={row.userId}
+                      className="grid items-center gap-2 rounded-[8px] px-1.5 py-2.5"
+                      style={{ gridTemplateColumns: tableGridCols(orderedRounds.length), background: isMe ? 'var(--you-bg)' : 'transparent' }}
                     >
-                      {i + 1}
+                      <span className="text-center font-serif text-[16px] font-semibold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink-3)' }}>
+                        {i + 1}
+                      </span>
+                      <Avatar name={row.display_name} color={avatarColor(row.userId)} size={26} />
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-[14px]" style={{ fontWeight: isMe ? 700 : 500, color: 'var(--ink)' }}>
+                          {row.display_name}{isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
+                        </span>
+                        <MoveIndicator move={row.move} />
+                      </span>
+                      {orderedRounds.map(r => {
+                        const v = row.perRound[r.id] ?? 0
+                        return (
+                          <span
+                            key={r.id}
+                            className="rounded-[8px] text-center font-serif text-[15px] tabular-nums"
+                            style={{ padding: '7px 0', background: heatBg(v, maxByRound[r.id] ?? 0), color: v === 0 ? 'var(--ink-3)' : 'var(--ink)' }}
+                          >
+                            {v === 0 ? '—' : v}
+                          </span>
+                        )
+                      })}
+                      <span className="text-right text-[13px] tabular-nums text-[var(--ink-2)]">{row.correct}/{row.tipped}</span>
+                      <span className="text-right text-[13px] tabular-nums text-[var(--ink-3)]">{row.tipped > 0 ? `${accuracy}%` : '—'}</span>
+                      <span className="text-right font-serif text-[20px] font-bold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink)' }}>{row.total}</span>
                     </div>
-                    <Avatar name={row.display_name} size={26} />
-                    <div
-                      className="min-w-0 truncate text-[15px] leading-[1.2]"
-                      style={{
-                        fontWeight: isMe ? 500 : 400,
-                        color: isMe ? 'var(--brick)' : 'var(--ink)',
-                      }}
-                    >
-                      {row.display_name}
-                      {isMe && <span className="ml-1.5 italic font-normal text-[var(--ink-2)]">· you</span>}
-                    </div>
-                    <div className="text-center">
-                      <MoveIndicator move={row.move} />
-                    </div>
-                    {orderedRounds.map(r => {
-                      const v = row.perRound[r.id] ?? 0
-                      return (
-                        <div
-                          key={r.id}
-                          className="text-center font-serif text-[17px] leading-none tabular-nums"
-                          style={{
-                            padding: '8px 0',
-                            background: heatBg(v, maxByRound[r.id] ?? 0),
-                            color: v === 0 ? 'var(--ink-4)' : 'var(--ink)',
-                          }}
-                        >
-                          {v === 0 ? '—' : v}
-                        </div>
-                      )
-                    })}
-                    <div className="text-right tabular-nums text-[13px] text-[var(--ink-2)]">
-                      {row.correct}/{row.tipped}
-                    </div>
-                    <div className="text-right tabular-nums text-[13px] text-[var(--ink-3)]">
-                      {row.tipped > 0 ? `${accuracy}%` : '—'}
-                    </div>
-                    <div className="flex justify-end">
-                      <Sparkline data={row.spark} color={isMe ? 'var(--olive)' : 'var(--ink-2)'} width={56} height={22} />
-                    </div>
-                    <div
-                      className="text-right font-serif leading-none tabular-nums text-[26px]"
-                      style={{ color: isMe ? 'var(--brick)' : 'var(--ink)' }}
-                    >
-                      {row.total}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
 
-            {/* ── Card list (small + medium) ──────────────────── */}
-            <div className="lg:hidden">
+            {/* Mobile card list */}
+            <div className="flex flex-col gap-3 lg:hidden">
               {rows.map((row, i) => {
                 const isMe = row.userId === user.id
                 const accuracy = row.tipped > 0 ? Math.round((row.correct / row.tipped) * 100) : 0
                 return (
                   <div
                     key={row.userId}
-                    className="mt-2 p-3"
-                    style={{
-                      border: `1px solid ${isMe ? 'var(--brick)' : 'var(--rule)'}`,
-                      background: isMe ? 'rgba(0,100,60,0.04)' : 'transparent',
-                    }}
+                    className="tp-card p-4"
+                    style={isMe ? { background: 'var(--you-bg)', boxShadow: 'inset 3px 0 0 var(--you-line)' } : undefined}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="w-6 font-serif italic text-[22px] leading-none"
-                        style={{ color: isMe ? 'var(--brick)' : i === 0 ? 'var(--brick)' : 'var(--ink-2)' }}
-                      >
-                        {i + 1}
-                      </div>
-                      <Avatar name={row.display_name} size={24} />
-                      <div
-                        className="min-w-0 flex-1 truncate text-[15px] leading-[1.2]"
-                        style={{
-                          fontWeight: isMe ? 500 : 400,
-                          color: isMe ? 'var(--brick)' : 'var(--ink)',
-                        }}
-                      >
-                        {row.display_name}
-                        {isMe && <span className="ml-1 italic font-normal text-[var(--ink-2)]">· you</span>}
-                      </div>
-                      <MoveIndicator move={row.move} />
-                      <div
-                        className="min-w-[50px] text-right font-serif leading-none tabular-nums text-[26px]"
-                        style={{ color: isMe ? 'var(--brick)' : 'var(--ink)' }}
-                      >
-                        {row.total}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 text-center font-serif text-[17px] font-semibold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink-3)' }}>{i + 1}</span>
+                      <Avatar name={row.display_name} color={avatarColor(row.userId)} size={30} />
+                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span className="truncate text-[15px]" style={{ fontWeight: isMe ? 700 : 500, color: 'var(--ink)' }}>
+                          {row.display_name}{isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
+                        </span>
+                        <MoveIndicator move={row.move} />
+                      </span>
+                      <span className="font-serif text-[22px] font-bold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink)' }}>{row.total}</span>
                     </div>
-
-                    <div className="mt-2 grid grid-cols-6 gap-0.5">
+                    <div className="mt-3 grid grid-cols-6 gap-1.5">
                       {orderedRounds.slice(0, 6).map(r => {
                         const v = row.perRound[r.id] ?? 0
                         return (
-                          <div
-                            key={r.id}
-                            className="text-center py-1"
-                            style={{
-                              background: heatBg(v, maxByRound[r.id] ?? 0),
-                              border: v === 0 ? '1px solid var(--rule-soft)' : '1px solid transparent',
-                            }}
-                          >
-                            <div className="text-[8px] font-medium uppercase tracking-[0.14em] text-[var(--ink-3)]">{r.name}</div>
-                            <div
-                              className="mt-0.5 font-serif text-[14px] leading-none tabular-nums"
-                              style={{ color: v === 0 ? 'var(--ink-4)' : 'var(--ink)' }}
-                            >
-                              {v || '—'}
-                            </div>
+                          <div key={r.id} className="rounded-[8px] py-1.5 text-center" style={{ background: heatBg(v, maxByRound[r.id] ?? 0) }}>
+                            <div className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">{r.name}</div>
+                            <div className="mt-0.5 font-serif text-[14px] font-semibold tabular-nums" style={{ color: v === 0 ? 'var(--ink-3)' : 'var(--ink)' }}>{v || '—'}</div>
                           </div>
                         )
                       })}
                     </div>
-
-                    <div className="mt-2 flex justify-between text-[11px] tabular-nums text-[var(--ink-3)]">
+                    <div className="mt-3 flex justify-between text-[12px] tabular-nums text-[var(--ink-3)]">
                       <span>{row.correct}/{row.tipped} hits</span>
                       <span>{row.tipped > 0 ? `${accuracy}% accuracy` : '—'}</span>
                     </div>
@@ -655,55 +594,20 @@ export default async function LeaderboardPage({
         )}
       </section>
 
-      {/* Movers + Round detail */}
-      {(movers.gainer || movers.faller || movers.stuck || orderedRounds.length > 0) && (
-        <section className="relative z-10 grid grid-cols-1 gap-9 px-4 pb-8 pt-5 md:grid-cols-[7fr_5fr] md:px-8">
-          {/* Movers */}
-          <div>
-            <div className="mb-3 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
-              <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">
+      {/* Movers */}
+      {(movers.gainer || movers.faller || movers.stuck) && (
+        <section className="px-5 pb-8 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-1 flex items-center justify-between border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">
                 Movers {movers.baselineRoundName ? `since ${movers.baselineRoundName}` : ''}
               </h2>
-              <span className="tp-eyebrow">biggest swings</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">biggest swings</span>
             </div>
-            {!movers.gainer && !movers.faller && !movers.stuck ? (
-              <div className="py-4 font-serif italic text-[var(--ink-2)]">
-                Movers panel kicks in after the second resulted round.
-              </div>
-            ) : (
-              <div>
-                {movers.gainer && <MoverRow panel={movers.gainer} kind="gainer" />}
-                {movers.faller && <MoverRow panel={movers.faller} kind="faller" />}
-                {movers.stuck && <MoverRow panel={movers.stuck} kind="stuck" isLast />}
-              </div>
-            )}
+            {movers.gainer && <MoverRow panel={movers.gainer} kind="gainer" />}
+            {movers.faller && <MoverRow panel={movers.faller} kind="faller" />}
+            {movers.stuck && <MoverRow panel={movers.stuck} kind="stuck" isLast />}
           </div>
-
-          {/* Round detail */}
-          {orderedRounds.length > 0 && (
-            <div>
-              <div className="mb-3 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
-                <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">Round detail</h2>
-              </div>
-              <div className="flex flex-wrap gap-2.5">
-                {orderedRounds.map(r => (
-                  <Link
-                    key={r.id}
-                    href={`/tournaments/${slug}/round/${r.name}`}
-                    className="min-w-[110px] border border-[var(--rule)] px-4 py-3 transition-colors hover:border-[var(--ink)]"
-                  >
-                    <div className="tp-eyebrow">{r.name}</div>
-                    <div className="mt-1 font-serif italic text-[11px] text-[var(--ink-3)]">{r.points_per_correct_tip}pt each</div>
-                    <div className="mt-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--brick)]">Open →</div>
-                  </Link>
-                ))}
-              </div>
-              <div className="tp-pull mt-5">
-                Round views show every tipper&apos;s pick on every match — visible only after each match locks.{' '}
-                <span className="tp-pull__punch">No peeking before then.</span>
-              </div>
-            </div>
-          )}
         </section>
       )}
 
@@ -713,55 +617,30 @@ export default async function LeaderboardPage({
 }
 
 function tableGridCols(numRounds: number) {
-  // 32 # · 28 avatar · 1.6fr tipper · 50 move · numRounds × 60 · 70 hits · 56 % · 60 run · 70 points
-  return `32px 28px 1.6fr 50px repeat(${numRounds}, 60px) 70px 56px 60px 70px`
+  // # · avatar · tipper(+move) · rounds · hits · % · points
+  return `30px 30px 1.5fr repeat(${numRounds}, 46px) 56px 44px 62px`
 }
 
 // ─── Small primitives ─────────────────────────────────────────────
 
-function Avatar({ name, size }: { name: string; size: number }) {
-  const initial = name[0]?.toUpperCase() ?? '?'
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full bg-[var(--brick-dark)] text-[var(--paper)]"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.4), fontWeight: 500 }}
-    >
-      {initial}
-    </div>
-  )
-}
-
-function MoveIndicator({ move }: { move: number }) {
-  if (move === 0) {
-    return <span className="text-[11px] text-[var(--ink-4)]">—</span>
-  }
-  const up = move > 0
+function Avatar({ name, color, size }: { name: string; color: string; size: number }) {
   return (
     <span
-      className="text-[11px] font-medium tabular-nums"
-      style={{ color: up ? 'var(--olive)' : 'var(--brick)' }}
+      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.4), background: color }}
     >
-      {up ? '▲' : '▼'} {Math.abs(move)}
+      {initials(name)}
     </span>
   )
 }
 
-function Sparkline({ data, color, width, height }: { data: number[]; color: string; width: number; height: number }) {
-  if (data.length < 2) return <span className="text-[11px] text-[var(--ink-4)]">—</span>
-  const max = Math.max(...data, 1)
-  const stepX = width / (data.length - 1)
-  const pts = data.map((v, i) => {
-    const x = i * stepX
-    const y = height - (v / max) * (height - 2) - 1
-    return [x, y] as const
-  })
-  const d = pts.map(([x, y], i) => (i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`)).join(' ')
-  const last = pts[pts.length - 1]
+function MoveIndicator({ move }: { move: number }) {
+  if (move === 0) return <span className="shrink-0 text-[11px] text-[var(--ink-3)]">—</span>
+  const up = move > 0
   return (
-    <svg width={width} height={height} style={{ display: 'block', overflow: 'visible' }} aria-hidden>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={last[0]} cy={last[1]} r="2" fill={color} />
-    </svg>
+    <span className="shrink-0 text-[11px] font-semibold tabular-nums" style={{ color: up ? 'var(--olive)' : 'var(--down)' }}>
+      {up ? '▲' : '▼'}{Math.abs(move)}
+    </span>
   )
 }
 
@@ -775,23 +654,19 @@ function MoverRow({ panel, kind, isLast }: { panel: MoverPanel; kind: 'gainer' |
   } else if (kind === 'faller') {
     const ptsPhrase = panel.pointsDelta === 0 ? 'same points' : `${panel.pointsDelta > 0 ? '+' : ''}${panel.pointsDelta} points`
     movePhrase = `−${spots} ${pluralSpots(spots)} · ${ptsPhrase}`
-    color = 'var(--brick)'
+    color = 'var(--down)'
   } else {
     movePhrase = `± 0 spots · stuck for ${panel.stuckRounds} ${pluralRounds(panel.stuckRounds ?? 0)}`
-    color = 'var(--ink-2)'
+    color = 'var(--ink-3)'
   }
   return (
-    <div className={`py-3.5 ${isLast ? '' : 'border-b border-dotted border-[var(--rule)]'}`}>
+    <div className={`py-3.5 ${isLast ? '' : 'border-b border-[var(--rule)]'}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <div className="font-serif text-[18px] leading-[1.2] md:text-[19px]">{panel.name}</div>
-        <div className="text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color }}>
-          {movePhrase}
-        </div>
+        <div className="text-[16px] font-semibold text-[var(--ink)]">{panel.name}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.06em]" style={{ color }}>{movePhrase}</div>
       </div>
       {panel.narrative && panel.narrative !== '—' && (
-        <div className="mt-1.5 font-serif italic text-[13px] leading-[1.3] text-[var(--ink-2)]">
-          {panel.narrative}
-        </div>
+        <div className="mt-1.5 text-[13px] leading-[1.4] text-[var(--ink-2)]">{panel.narrative}</div>
       )}
     </div>
   )

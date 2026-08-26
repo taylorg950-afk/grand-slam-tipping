@@ -54,95 +54,59 @@ export default function SignupPage() {
     }
   }
 
-  return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Broadsheet masthead */}
-      <header className="relative z-10 border-b-[3px] border-double border-[var(--ink)] px-4 pt-6 md:px-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[var(--rule)] pb-3 text-[9px] uppercase tracking-[0.2em] text-[var(--ink-2)] md:text-[10px]">
-          <span>Vol. I · The doors</span>
-          <span className="hidden md:inline">A private sports broadsheet</span>
-          <span>New subscribers</span>
+  return (
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <div className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
         </div>
-        <h1 className="m-0 mb-1.5 mt-4 text-center font-serif italic leading-none tracking-tight text-[42px] md:mb-2 md:mt-5 md:text-[84px]">
-          The Tipping Post
-        </h1>
-        <div className="pb-3 text-center text-[8px] uppercase tracking-[0.28em] text-[var(--ink-2)] md:pb-4 md:text-[10px] md:tracking-[0.35em]">
-          Grand Slam tipping for the room
-        </div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-3)]">New subscribers</span>
       </header>
 
-      {/* Above the fold — lead + form */}
-      <div className="relative z-10 flex-1 px-4 py-8 md:px-8 md:py-12">
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 md:grid-cols-[3fr_2fr] md:gap-14">
-          {/* Lead column */}
-          <article>
-            <div className="tp-eyebrow tp-eyebrow--brick mb-3">Join the room</div>
-            <h2 className="m-0 mb-5 font-serif tracking-tight text-[34px] leading-[1.05] md:text-[52px] md:leading-[1.04]">
-              Pull up a chair.
-              <br />
-              <span className="italic">The comp opens its doors.</span>
-            </h2>
-            <p className="m-0 mb-4 font-serif italic text-[15px] leading-[1.4] text-[var(--ink-2)] md:text-[17px]">
-              Eight tippers, one trophy, four Slams a year — clay, grass, hard, repeat.
-            </p>
-            <p className="m-0 max-w-[520px] font-sans text-[14px] leading-[1.55] text-[var(--ink-2)]">
-              Create an account to file your first picks before the next round locks. Each match scores 2–64 points depending on the round; tiebreakers settle ties at the line. Sentence case, no chirpy banners, no notifications you didn&apos;t ask for.
-            </p>
-          </article>
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-9 text-white md:px-8 md:py-12">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-6 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+          style={{ fontSize: 'clamp(120px, 22vw, 190px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
+        >
+          JOIN
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            Join the room · the four majors
+          </div>
+          <h1 className="mt-2 font-serif text-[34px] font-bold leading-[1] md:text-[48px]">Pull up a chair.</h1>
+          <div className="mt-3 max-w-xl text-[14px] leading-[1.5]" style={{ color: '#DDE6FA' }}>
+            Create an account to file your first picks before the next round locks. Each match scores 2–64 points by round; tiebreakers settle ties at the line.
+          </div>
+        </div>
+      </section>
 
-          {/* Form column */}
-          <aside className="tp-card self-start p-5 md:p-7">
-            <div className="tp-eyebrow mb-1 border-b-2 border-[var(--ink)] pb-2">Create account</div>
+      {/* Form */}
+      <section className="flex-1 px-5 py-8 md:px-8">
+        <div className="mx-auto w-full max-w-md">
+          <div className="tp-card p-6 md:p-7">
+            <h2 className="m-0 border-b border-[var(--rule)] pb-3 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Create account</h2>
 
             {verifySent ? (
-              <div className="pt-4 text-center">
-                <div className="mb-1 font-serif italic text-[20px] text-[var(--ink)]">Almost there.</div>
-                <p className="m-0 text-[13px] text-[var(--ink-2)]">
-                  We sent a verification link to <b className="font-medium text-[var(--ink)]">{email}</b>. Click it to finish signing up.
+              <div className="pt-5 text-center">
+                <div className="mb-1.5 font-serif text-[22px] font-bold text-[var(--ink)]">Almost there.</div>
+                <p className="m-0 text-[14px] text-[var(--ink-2)]">
+                  We sent a verification link to <b className="font-semibold text-[var(--ink)]">{email}</b>. Click it to finish signing up.
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-                <Field
-                  id="email"
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={setEmail}
-                  placeholder="you@example.com"
-                  autoFocus
-                  required
-                />
-                <Field
-                  id="displayName"
-                  label="Display name (optional)"
-                  type="text"
-                  value={displayName}
-                  onChange={setDisplayName}
-                  placeholder="defaults to your email name"
-                />
-                <Field
-                  id="password"
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  required
-                  minLength={6}
-                />
-                <Field
-                  id="confirm"
-                  label="Confirm password"
-                  type="password"
-                  value={confirm}
-                  onChange={setConfirm}
-                  required
-                  minLength={6}
-                />
+              <form onSubmit={handleSubmit} className="space-y-4 pt-5">
+                <Field id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoFocus required />
+                <Field id="displayName" label="Display name (optional)" type="text" value={displayName} onChange={setDisplayName} placeholder="defaults to your email name" />
+                <Field id="password" label="Password" type="password" value={password} onChange={setPassword} required minLength={6} />
+                <Field id="confirm" label="Confirm password" type="password" value={confirm} onChange={setConfirm} required minLength={6} />
 
-                {error && <p className="m-0 text-[12px] text-[var(--brick)]">{error}</p>}
+                {error && <p className="m-0 text-[12px] text-[var(--down)]">{error}</p>}
 
                 <button type="submit" disabled={loading} className="tp-cta w-full disabled:cursor-not-allowed disabled:opacity-50">
                   {loading ? 'Creating account…' : 'Create account →'}
@@ -150,24 +114,15 @@ export default function SignupPage() {
               </form>
             )}
 
-            <div className="mt-5 border-t border-dotted border-[var(--rule)] pt-4 text-center">
-              <p className="m-0 font-serif italic text-[13px] text-[var(--ink-2)]">
+            <div className="mt-5 border-t border-[var(--rule)] pt-4 text-center">
+              <p className="m-0 text-[13px] text-[var(--ink-2)]">
                 Already have an account?{' '}
-                <Link href="/login" className="text-[var(--brick)] underline underline-offset-2 hover:text-[var(--brick-dark)]">
-                  Sign in
-                </Link>
-                .
+                <Link href="/login" className="font-semibold text-[var(--blue)] hover:text-[var(--brick)]">Sign in</Link>.
               </p>
             </div>
-          </aside>
+          </div>
         </div>
-      </div>
-
-      <footer className="relative z-10 border-t border-[var(--rule)] px-4 py-5 text-center md:px-8">
-        <span className="font-serif italic text-[13px] text-[var(--ink-3)]">
-          Pull up a chair, file your picks. We&apos;ll save you a seat.
-        </span>
-      </footer>
+      </section>
     </main>
   )
 }
@@ -197,7 +152,8 @@ function Field({ id, label, type, value, onChange, placeholder, required, autoFo
         required={required}
         autoFocus={autoFocus}
         minLength={minLength}
-        className="block w-full border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-4)] focus:border-[var(--brick)] focus:outline-none"
+        className="block w-full rounded-[12px] px-3.5 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none"
+        style={{ background: 'var(--paper-2)', border: '1px solid #D6DEF0' }}
       />
     </div>
   )

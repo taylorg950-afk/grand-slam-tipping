@@ -70,56 +70,52 @@ export default function LoginForm() {
     setLoading(false)
   }
 
-  return (
-    <main className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="tp-paper-grain" />
 
-      {/* Broadsheet masthead */}
-      <header className="relative z-10 border-b-[3px] border-double border-[var(--ink)] px-4 pt-6 md:px-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[var(--rule)] pb-3 text-[9px] uppercase tracking-[0.2em] text-[var(--ink-2)] md:text-[10px]">
-          <span>Vol. I · The doors</span>
-          <span className="hidden md:inline">A private sports broadsheet</span>
-          <span>Members only</span>
+  return (
+    <main className="flex min-h-screen flex-col bg-[var(--paper)]">
+      {/* Masthead */}
+      <header className="flex items-center justify-between gap-4 border-b border-[var(--rule)] bg-[var(--paper-2)] px-5 py-4 md:px-8">
+        <div className="flex items-center gap-3">
+          <span aria-hidden className="size-[11px] rounded-full bg-[var(--spark)]" style={{ boxShadow: '0 0 0 3px rgba(217,236,60,0.25)' }} />
+          <span className="font-serif text-[20px] font-bold uppercase leading-none tracking-[0.06em] md:text-[22px]">The Tipping Post</span>
         </div>
-        <h1 className="m-0 mb-1.5 mt-4 text-center font-serif italic leading-none tracking-tight text-[42px] md:mb-2 md:mt-5 md:text-[84px]">
-          The Tipping Post
-        </h1>
-        <div className="pb-3 text-center text-[8px] uppercase tracking-[0.28em] text-[var(--ink-2)] md:pb-4 md:text-[10px] md:tracking-[0.35em]">
-          Grand Slam tipping for the room
-        </div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-3)]">Members only</span>
       </header>
 
-      {/* Above the fold — lead + form */}
-      <div className="relative z-10 flex-1 px-4 py-8 md:px-8 md:py-12">
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 md:grid-cols-[3fr_2fr] md:gap-14">
-          {/* Lead column */}
-          <article>
-            <div className="tp-eyebrow tp-eyebrow--brick mb-3">From the door</div>
-            <h2 className="m-0 mb-5 font-serif tracking-tight text-[34px] leading-[1.05] md:text-[52px] md:leading-[1.04]">
-              Welcome back.
-              <br />
-              <span className="italic">Pick up where you left off.</span>
-            </h2>
-            <p className="m-0 mb-4 font-serif italic text-[15px] leading-[1.4] text-[var(--ink-2)] md:text-[17px]">
-              A private tipping comp for the four Slams — clay, grass, hard, the lot.
-            </p>
-            <p className="m-0 max-w-[520px] font-sans text-[14px] leading-[1.55] text-[var(--ink-2)]">
-              Sign in to file your picks, check the standings, and see who&apos;s ahead. Picks lock at the start of each match; tiebreakers settle the table at the line.
-            </p>
-          </article>
+      {/* Hero */}
+      <section className="uso-hero relative overflow-hidden px-5 py-9 text-white md:px-8 md:py-12">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-6 right-0 select-none whitespace-nowrap font-serif font-bold leading-none"
+          style={{ fontSize: 'clamp(120px, 22vw, 190px)', color: '#fff', opacity: 0.08, letterSpacing: '-0.03em' }}
+        >
+          SLAM
+        </span>
+        <div className="relative">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
+            Grand Slam tipping · the four majors
+          </div>
+          <h1 className="mt-2 font-serif text-[34px] font-bold leading-[1] md:text-[48px]">Welcome back.</h1>
+          <div className="mt-3 max-w-xl text-[14px] leading-[1.5]" style={{ color: '#DDE6FA' }}>
+            File your picks, check the standings, and see who&apos;s ahead. Picks lock at first serve; tiebreakers settle the table at the line.
+          </div>
+        </div>
+      </section>
 
-          {/* Form column */}
-          <aside className="tp-card self-start p-5 md:p-7">
-            <div className="tp-eyebrow mb-1 border-b-2 border-[var(--ink)] pb-2">
+      {/* Form */}
+      <section className="flex-1 px-5 py-8 md:px-8">
+        <div className="mx-auto w-full max-w-md">
+          <div className="tp-card p-6 md:p-7">
+            <h2 className="m-0 border-b border-[var(--rule)] pb-3 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">
               {mode === 'reset' ? 'Reset password' : 'Sign in'}
-            </div>
+            </h2>
 
             {magicSent || resetSent ? (
-              <div className="pt-4 text-center">
-                <div className="mb-1 font-serif italic text-[20px] text-[var(--ink)]">Check your email.</div>
-                <p className="m-0 text-[13px] text-[var(--ink-2)]">
+              <div className="pt-5 text-center">
+                <div className="mb-1.5 font-serif text-[22px] font-bold text-[var(--ink)]">Check your email.</div>
+                <p className="m-0 text-[14px] text-[var(--ink-2)]">
                   {resetSent ? 'A password reset link' : 'A sign-in link'} is on its way to{' '}
-                  <b className="font-medium text-[var(--ink)]">{email}</b>.
+                  <b className="font-semibold text-[var(--ink)]">{email}</b>.
                 </p>
                 {resetSent && (
                   <button
@@ -138,7 +134,7 @@ export default function LoginForm() {
                   : mode === 'magic' ? sendMagicLink
                   : sendResetLink
                 }
-                className="space-y-4 pt-4"
+                className="space-y-4 pt-5"
               >
                 <Field
                   id="email"
@@ -158,7 +154,7 @@ export default function LoginForm() {
                       <button
                         type="button"
                         onClick={() => { setMode('reset'); setError('') }}
-                        className="font-serif italic text-[12px] text-[var(--brick)] hover:text-[var(--brick-dark)] underline underline-offset-2"
+                        className="text-[12px] font-semibold text-[var(--blue)] hover:text-[var(--brick)]"
                       >
                         Forgot?
                       </button>
@@ -170,12 +166,13 @@ export default function LoginForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      className="block w-full border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-4)] focus:border-[var(--brick)] focus:outline-none"
+                      className="block w-full rounded-[12px] px-3.5 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none"
+                      style={{ background: 'var(--paper-2)', border: '1px solid #D6DEF0' }}
                     />
                   </div>
                 )}
 
-                {error && <p className="m-0 text-[12px] text-[var(--brick)]">{error}</p>}
+                {error && <p className="m-0 text-[12px] text-[var(--down)]">{error}</p>}
 
                 <button type="submit" disabled={loading} className="tp-cta w-full disabled:cursor-not-allowed disabled:opacity-50">
                   {loading
@@ -207,68 +204,54 @@ export default function LoginForm() {
               </form>
             )}
 
-            <div className="mt-5 border-t border-dotted border-[var(--rule)] pt-4 text-center">
-              <p className="m-0 font-serif italic text-[13px] text-[var(--ink-2)]">
+            <div className="mt-5 border-t border-[var(--rule)] pt-4 text-center">
+              <p className="m-0 text-[13px] text-[var(--ink-2)]">
                 New here?{' '}
-                <Link href="/signup" className="text-[var(--brick)] underline underline-offset-2 hover:text-[var(--brick-dark)]">
+                <Link href="/signup" className="font-semibold text-[var(--blue)] hover:text-[var(--brick)]">
                   Pull up a chair
                 </Link>
                 .
               </p>
             </div>
-          </aside>
-        </div>
-      </div>
-
-      {/* Below the fold — how it works */}
-      <section className="relative z-10 border-t-[3px] border-double border-[var(--ink)] px-4 pb-9 pt-6 md:px-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-5 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2">
-            <h2 className="m-0 font-serif text-[20px] tracking-tight md:text-[22px]">How it works</h2>
-            <span className="tp-eyebrow">Four things to know</span>
           </div>
-          <div className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2 md:grid-cols-4">
-            <HowStep n="1" heading="Call every tie">
-              Pick a winner for each match of the round — change your mind as often
-              as you like before first serve.
-            </HowStep>
-            <HowStep n="2" heading="Points double each round">
-              A correct call early on is pocket change; a correct call in the final
-              is a small fortune.
-            </HowStep>
-            <HowStep n="3" heading="Locked at first serve">
-              Each match locks at its scheduled start. Then the room&apos;s picks go
-              on the table for everyone to see.
-            </HowStep>
-            <HowStep n="4" heading="Settled at the line">
-              Level at the end? Closest on predicted total games in the finals takes
-              the table.
-            </HowStep>
-          </div>
-          <p className="m-0 mt-6 text-center font-serif italic text-[13px] text-[var(--ink-3)]">
-            The full house rules — walkovers, tiebreakers, the umpire&apos;s chair — live under Rules once you&apos;re in.
-          </p>
         </div>
       </section>
 
-      {/* Closing line */}
-      <footer className="relative z-10 border-t border-[var(--rule)] px-4 py-5 text-center md:px-8">
-        <span className="font-serif italic text-[13px] text-[var(--ink-3)]">
-          Tipping&apos;s a long game. Glad you&apos;re back.
-        </span>
-      </footer>
+      {/* How it works */}
+      <section className="border-t border-[var(--rule)] px-5 pb-10 pt-7 md:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-5 flex items-baseline justify-between border-b-2 border-[var(--ink)] pb-2.5">
+            <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">How it works</h2>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">Four things to know</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <HowStep n="1" heading="Call every tie">
+              Pick a winner for each match of the round — change your mind as often as you like before first serve.
+            </HowStep>
+            <HowStep n="2" heading="Points double each round">
+              A correct call early on is pocket change; a correct call in the final is a small fortune.
+            </HowStep>
+            <HowStep n="3" heading="Locked at first serve">
+              Each match locks at its scheduled start. Then the room&apos;s picks go on the table for everyone to see.
+            </HowStep>
+            <HowStep n="4" heading="Settled at the line">
+              Level at the end? Closest on predicted total games in the finals takes the table.
+            </HowStep>
+          </div>
+        </div>
+      </section>
     </main>
   )
 }
 
 function HowStep({ n, heading, children }: { n: string; heading: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="tp-card p-4">
       <div className="flex items-baseline gap-2.5">
-        <span className="font-serif italic text-[26px] leading-none text-[var(--brick)]">{n}</span>
-        <h3 className="m-0 font-serif text-[16px] leading-tight tracking-tight">{heading}</h3>
+        <span className="font-serif text-[26px] font-bold leading-none text-[var(--blue)]">{n}</span>
+        <h3 className="m-0 text-[15px] font-semibold leading-tight text-[var(--ink)]">{heading}</h3>
       </div>
-      <p className="m-0 mt-2 font-sans text-[13px] leading-[1.55] text-[var(--ink-2)]">{children}</p>
+      <p className="m-0 mt-2 text-[13px] leading-[1.55] text-[var(--ink-2)]">{children}</p>
     </div>
   )
 }
@@ -298,7 +281,8 @@ function Field({ id, label, type, value, onChange, placeholder, required, autoFo
         required={required}
         autoFocus={autoFocus}
         minLength={minLength}
-        className="block w-full border border-[var(--rule)] bg-[var(--paper)] px-3 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-4)] focus:border-[var(--brick)] focus:outline-none"
+        className="block w-full rounded-[12px] px-3.5 py-2.5 text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none"
+        style={{ background: 'var(--paper-2)', border: '1px solid #D6DEF0' }}
       />
     </div>
   )
