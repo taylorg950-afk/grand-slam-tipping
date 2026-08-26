@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
+import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
@@ -132,6 +133,42 @@ function initials(name: string) {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || name[0]?.toUpperCase() || '?'
 }
 
+// Cumulative points per tipper, round by round — the "progress over time" chart.
+function buildChartData(
+  users: Array<{ id: string; display_name: string }>,
+  rounds: Round[],
+  matches: Match[],
+  tips: Tip[],
+): CumulativePointsData[] {
+  const names = users.map(u => u.display_name)
+  const start: CumulativePointsData = { round: 'Start' }
+  names.forEach(n => { start[n] = 0 })
+
+  const rows: CumulativePointsData[] = [start]
+  const running: Record<string, number> = {}
+  names.forEach(n => { running[n] = 0 })
+
+  for (const round of [...rounds].sort((a, b) => a.sort_order - b.sort_order)) {
+    const roundMatches = matches.filter(m => m.round_id === round.id && m.winner && !m.no_points)
+    if (roundMatches.length === 0) continue
+
+    for (const user of users) {
+      const myTips = tips.filter(t => t.user_id === user.id && roundMatches.some(m => m.id === t.match_id))
+      const correct = myTips.filter(t => {
+        const match = roundMatches.find(m => m.id === t.match_id)
+        return match && t.predicted_winner === match.winner
+      })
+      running[user.display_name] = (running[user.display_name] ?? 0) + correct.length * round.points_per_correct_tip
+    }
+
+    const row: CumulativePointsData = { round: round.name }
+    names.forEach(n => { row[n] = running[n] })
+    rows.push(row)
+  }
+
+  return rows.length > 1 ? rows : []
+}
+
 function consensusOf(matchId: string, tips: Tip[]) {
   const ts = tips.filter(t => t.match_id === matchId)
   if (ts.length === 0) return null
@@ -220,6 +257,7 @@ export default async function DashboardPage() {
 
   const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
   const roundBreakdown = computeRoundBreakdown(user.id, orderedRounds, matches, tips, now)
+  const chartData = buildChartData(users, rounds, matches, tips)
 
   // Current round = first round with matches that isn't fully resulted
   const currentRound =
@@ -564,6 +602,19 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </section>
+
+      {/* Points by round */}
+      {chartData.length > 0 && (
+        <section className="px-5 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-4 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Points by round</h2>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">cumulative · you in blue</span>
+            </div>
+            <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
+          </div>
+        </section>
+      )}
 
       {/* Order of play */}
       <section className="px-5 pb-6 pt-5 md:px-8">
