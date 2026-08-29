@@ -33,6 +33,7 @@ interface Tip {
 interface UserRow {
   id: string
   display_name: string
+  avatar_url?: string | null
 }
 
 const ROUND_LONG: Record<string, string> = {
@@ -152,6 +153,7 @@ function computeSnapshots(users: UserRow[], rounds: Round[], matches: Match[], t
 interface RoundPointsRow {
   userId: string
   display_name: string
+  avatar_url: string | null
   total: number
   tipped: number
   correct: number
@@ -185,6 +187,7 @@ function computeRows(users: UserRow[], rounds: Round[], matches: Match[], tips: 
     return {
       userId: u.id,
       display_name: u.display_name,
+      avatar_url: u.avatar_url ?? null,
       total: running,
       tipped: userTips.length,
       correct,
@@ -250,7 +253,10 @@ function computeMovers(
     .filter(s => s.spotsDelta < 0)
     .sort((a, b) => a.spotsDelta - b.spotsDelta || a.pointsDelta - b.pointsDelta)[0]
 
-  // Stuck: longest run of identical rank ending at latest. Compute per user.
+  // Stuck: longest run of identical rank ending at latest. Only counts someone
+  // actually playing — a tipper who has never filed sits frozen at the bottom
+  // forever, and billing that as the room's biggest swing is nonsense.
+  const hasTipped = new Set(tips.map(t => t.user_id))
   const stuckRunPerUser = users.map(u => {
     let run = 0
     for (let i = snapshots.length - 1; i > 0; i--) {
@@ -260,6 +266,7 @@ function computeMovers(
     return { user: u, run }
   })
   const stuckEntry = [...stuckRunPerUser]
+    .filter(s => hasTipped.has(s.user.id))
     .sort((a, b) => b.run - a.run)[0]
 
   // Build narrative signals for the latest round per chosen user
@@ -347,7 +354,7 @@ function computeMovers(
       }
     : null
 
-  const stuck: MoverPanel | null = stuckEntry && stuckEntry.run > 0
+  const stuck: MoverPanel | null = stuckEntry && stuckEntry.run >= 2
     ? {
         name: stuckEntry.user.display_name,
         spotsDelta: 0,
@@ -396,7 +403,7 @@ export default async function LeaderboardPage({
 
   const [{ data: matchData }, { data: users }] = await Promise.all([
     supabase.from('matches').select('id, round_id, winner, no_points, scheduled_start').in('round_id', roundIds),
-    supabase.from('users').select('id, display_name').order('display_name'),
+    supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
   ])
   const matches: Match[] = matchData ?? []
   const userRows: UserRow[] = users ?? []
@@ -521,7 +528,7 @@ export default async function LeaderboardPage({
                       <span className="text-center font-serif text-[16px] font-semibold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink-3)' }}>
                         {i + 1}
                       </span>
-                      <Avatar name={row.display_name} color={avatarColor(row.userId)} size={26} />
+                      <Avatar name={row.display_name} avatarUrl={row.avatar_url} color={avatarColor(row.userId)} size={26} />
                       <span className="flex min-w-0 items-center gap-2">
                         <span className="truncate text-[14px]" style={{ fontWeight: isMe ? 700 : 500, color: 'var(--ink)' }}>
                           {row.display_name}{isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
@@ -562,7 +569,7 @@ export default async function LeaderboardPage({
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-5 text-center font-serif text-[17px] font-semibold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink-3)' }}>{i + 1}</span>
-                      <Avatar name={row.display_name} color={avatarColor(row.userId)} size={30} />
+                      <Avatar name={row.display_name} avatarUrl={row.avatar_url} color={avatarColor(row.userId)} size={30} />
                       <span className="flex min-w-0 flex-1 items-center gap-2">
                         <span className="truncate text-[15px]" style={{ fontWeight: isMe ? 700 : 500, color: 'var(--ink)' }}>
                           {row.display_name}{isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
@@ -623,7 +630,17 @@ function tableGridCols(numRounds: number) {
 
 // ─── Small primitives ─────────────────────────────────────────────
 
-function Avatar({ name, color, size }: { name: string; color: string; size: number }) {
+function Avatar({ name, avatarUrl, color, size }: { name: string; avatarUrl?: string | null; color: string; size: number }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        style={{ width: size, height: size, flexShrink: 0, objectFit: 'cover', borderRadius: '9999px' }}
+      />
+    )
+  }
   return (
     <span
       className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
