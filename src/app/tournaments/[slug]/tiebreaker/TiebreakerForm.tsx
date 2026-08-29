@@ -50,6 +50,10 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
     startTransition(() => action(fd))
   }
 
+  // Locked before anything was filed: the numbers on screen are defaults, not
+  // a prediction, so don't report them back as "your call".
+  const missedIt = locked && !savedAt
+
   const filedLabel = savedAt
     ? `Filed at ${new Date(savedAt).toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })} ${AEST_LABEL} ${dayLabel(savedAt)}.`
     : 'Not filed yet.'
@@ -84,11 +88,20 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
       <section className="flex flex-col gap-4 border-t border-[var(--rule)] px-5 py-5 md:flex-row md:items-center md:justify-between md:gap-9 md:px-8 md:py-6">
         <div className="md:flex-1 md:pr-6">
           <div className="tp-eyebrow mb-1.5">Your call</div>
-          <div className="font-serif text-[20px] font-semibold leading-[1.25] md:text-[26px]">
-            <span className="tabular-nums text-[var(--blue)]">{mens}</span> games for the men.{' '}
-            <span className="tabular-nums text-[var(--blue)]">{womens}</span> for the women.{' '}
-            <span className="text-[15px] font-normal italic text-[var(--ink-3)]">{filedLabel}</span>
-          </div>
+          {missedIt ? (
+            <div className="font-serif text-[20px] font-semibold leading-[1.25] md:text-[26px]">
+              No call filed.{' '}
+              <span className="text-[15px] font-normal text-[var(--ink-3)]">
+                You&apos;re out of the tiebreaker for this one.
+              </span>
+            </div>
+          ) : (
+            <div className="font-serif text-[20px] font-semibold leading-[1.25] md:text-[26px]">
+              <span className="tabular-nums text-[var(--blue)]">{mens}</span> games for the men.{' '}
+              <span className="tabular-nums text-[var(--blue)]">{womens}</span> for the women.{' '}
+              <span className="text-[15px] font-normal text-[var(--ink-3)]">{filedLabel}</span>
+            </div>
+          )}
           {state?.error && (
             <p className="mt-2 text-[12px] text-[var(--down)]">{state.error}</p>
           )}
@@ -102,7 +115,7 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
           >
             {locked ? 'Locked' : pending ? 'Saving…' : 'Save tiebreaker →'}
           </button>
-          <div className="mt-2 font-serif italic text-[12px] text-[var(--ink-3)] md:mt-2">
+          <div className="mt-2 font-serif text-[12px] text-[var(--ink-3)] md:mt-2">
             {locked
               ? "Men's final has started — predictions are locked."
               : "Edit any time before the men's final starts."}
@@ -142,7 +155,7 @@ function Scrubber({ label, sublabel, value, onChange, min, max, hint, locked }: 
       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--blue)]">
         {label}
       </div>
-      <div className="mt-1.5 mb-5 max-w-[380px] text-[14px] italic leading-[1.4] text-[var(--ink-2)]">
+      <div className="mt-1.5 mb-5 max-w-[380px] text-[14px] leading-[1.4] text-[var(--ink-2)]">
         {sublabel}
       </div>
 
@@ -185,7 +198,7 @@ function Scrubber({ label, sublabel, value, onChange, min, max, hint, locked }: 
         </ScrubberButton>
       </div>
 
-      <div className="mt-3 text-[12px] italic leading-[1.5] text-[var(--ink-3)] md:text-[13px]">
+      <div className="mt-3 text-[12px] leading-[1.5] text-[var(--ink-3)] md:text-[13px]">
         {hint}
       </div>
     </div>

@@ -450,7 +450,13 @@ export default async function DashboardPage() {
       label: 'Your points',
       value: hasAnyResults ? String(myScore?.totalPoints ?? 0) : '—',
       sub: '',
-      caption: currentRoundHasResults ? `+${currentRoundMyPoints} in the ${currentRoundLong}` : 'no points yet',
+      // The caption describes the current round, so it can't just say
+      // 'no points yet' when the total above it is non-zero.
+      caption: currentRoundHasResults
+        ? `+${currentRoundMyPoints} in the ${currentRoundLong}`
+        : hasAnyResults
+          ? `nothing from the ${currentRoundLong} yet`
+          : 'no points yet',
       color: 'var(--ink)',
     },
     {
