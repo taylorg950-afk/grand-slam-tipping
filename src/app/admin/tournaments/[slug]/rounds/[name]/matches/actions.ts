@@ -98,6 +98,25 @@ export async function generateFromPreviousRound(
   let created = 0
   let updated = 0
 
+  // One lookup of the target round's existing matches, then one batched insert
+  // for the new ones — the old per-position select/insert was 30+ round trips.
+  const { data: existingMatches } = await supabase
+    .from('matches')
+    .select('id, draw, bracket_position')
+    .eq('round_id', roundId)
+  const existingByKey = new Map(
+    (existingMatches ?? []).map(m => [`${m.draw}:${m.bracket_position}`, m.id])
+  )
+
+  const toInsert: {
+    round_id: string
+    player1_name: string
+    player2_name: string
+    draw: string
+    scheduled_start: string
+    bracket_position: number
+  }[] = []
+
   for (const draw of draws) {
     const drawMatches = prevMatches
       .filter(m => m.draw === draw)
@@ -116,22 +135,15 @@ export async function generateFromPreviousRound(
         ? (p2Match.winner === 'player1' ? p2Match.player1_name : p2Match.player2_name)
         : 'TBD'
 
-      const { data: existing } = await supabase
-        .from('matches')
-        .select('id')
-        .eq('round_id', roundId)
-        .eq('bracket_position', nextPos)
-        .eq('draw', draw)
-        .maybeSingle()
-
-      if (existing) {
+      const existingId = existingByKey.get(`${draw}:${nextPos}`)
+      if (existingId) {
         await supabase
           .from('matches')
           .update({ player1_name: p1Name, player2_name: p2Name })
-          .eq('id', existing.id)
+          .eq('id', existingId)
         updated++
       } else {
-        await supabase.from('matches').insert({
+        toInsert.push({
           round_id: roundId,
           player1_name: p1Name,
           player2_name: p2Name,
@@ -139,9 +151,14 @@ export async function generateFromPreviousRound(
           scheduled_start: scheduledStartISO,
           bracket_position: nextPos,
         })
-        created++
       }
     }
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from('matches').insert(toInsert)
+    if (error) return { error: error.message, created, updated }
+    created = toInsert.length
   }
 
   revalidatePath(`/admin/tournaments/${slug}/rounds/${roundName}/matches`)

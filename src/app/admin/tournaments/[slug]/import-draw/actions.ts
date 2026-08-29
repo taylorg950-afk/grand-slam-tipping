@@ -42,8 +42,9 @@ export async function parseDrawPdf(
   let responseText = ''
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-opus-4-7',
-      max_tokens: 8096,
+      model: 'claude-opus-4-8',
+      max_tokens: 16000,
+      thinking: { type: 'adaptive' },
       messages: [
         {
           role: 'user',
@@ -83,7 +84,9 @@ Rules:
       ],
     })
 
-    responseText = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+    // With thinking enabled the first block may be a thinking block — find the text block.
+    const textBlock = message.content.find(b => b.type === 'text')
+    responseText = textBlock?.type === 'text' ? textBlock.text.trim() : ''
     const data = JSON.parse(responseText) as ParsedDraw
     return { ok: true, data }
   } catch (err) {
@@ -137,10 +140,11 @@ export async function saveDrawMatches(
       roundId = newRound.id
     }
 
-    // Insert in position order so created_at reflects bracket position
+    // One batched insert per round (position-sorted so created_at reflects
+    // bracket order) — a full draw is 60+ matches, far too many round trips one at a time.
     const sorted = [...parsedRound.matches].sort((a, b) => a.position - b.position)
-    for (const match of sorted) {
-      await supabase.from('matches').insert({
+    const { error: insertError } = await supabase.from('matches').insert(
+      sorted.map(match => ({
         round_id: roundId,
         player1_name: match.player1,
         player2_name: match.player2,
@@ -148,8 +152,9 @@ export async function saveDrawMatches(
         draw,
         winner: null,
         bracket_position: match.position,
-      })
-    }
+      }))
+    )
+    if (insertError) return { ok: false, error: `${parsedRound.name}: ${insertError.message}` }
   }
 
   revalidatePath(`/admin/tournaments/${slug}/rounds`)

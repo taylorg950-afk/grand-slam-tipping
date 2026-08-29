@@ -16,6 +16,25 @@ export async function saveTiebreaker(
   const mensRaw = formData.get('mens_final_total_games') as string
   const womensRaw = formData.get('womens_final_total_games') as string
 
+  // Enforce the lock server-side — the form disables itself client-side, but
+  // nothing else stops a late submission once either final has started.
+  const { data: finalRound } = await supabase
+    .from('rounds')
+    .select('id')
+    .eq('tournament_id', tournament_id)
+    .eq('name', 'F')
+    .maybeSingle()
+  if (finalRound) {
+    const { data: finals } = await supabase
+      .from('matches')
+      .select('scheduled_start')
+      .eq('round_id', finalRound.id)
+    const now = new Date()
+    if ((finals ?? []).some(f => new Date(f.scheduled_start) <= now)) {
+      return { error: 'The tiebreaker is locked — a final has already started.' }
+    }
+  }
+
   const mens = mensRaw !== '' ? parseInt(mensRaw, 10) : null
   const womens = womensRaw !== '' ? parseInt(womensRaw, 10) : null
 
