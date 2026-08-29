@@ -46,7 +46,7 @@ const ROUND_LONG: Record<string, string> = {
   R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', F: 'The Final',
 }
 
-const MW = 188
+const MW = 230
 // A card is two rows plus its own 1px top/bottom border. Derive MH from that
 // rather than hard-coding it: the two must agree or the absolutely-positioned
 // cards overlap their neighbours, which is exactly what happened when the
@@ -243,12 +243,20 @@ export default function BracketView({
 
   // Current round: latest round with any started match (locked or resulted)
   const currentRound = useMemo(() => {
+    // The deepest round that has actually begun. A round can pass its start
+    // time while both slots are still 'TBD' — the bracket hasn't advanced into
+    // it yet — and landing there shows an empty card, so it only counts once
+    // it holds real players.
     let found: DbRound | null = null
+    let startedButEmpty: DbRound | null = null
     for (const r of orderedRounds) {
       const rm = drawMatches.filter(m => m.round_id === r.id)
-      if (rm.some(m => new Date(m.scheduled_start) <= now || m.winner)) found = r
+      const begun = rm.some(m => new Date(m.scheduled_start) <= now || m.winner)
+      if (!begun) continue
+      startedButEmpty = r
+      if (rm.some(m => isPickableName(m.player1_name) || isPickableName(m.player2_name))) found = r
     }
-    return found ?? orderedRounds[0] ?? null
+    return found ?? startedButEmpty ?? orderedRounds[0] ?? null
   }, [orderedRounds, drawMatches, now])
 
   // Round state per name (for the labels strip)
@@ -386,7 +394,7 @@ export default function BracketView({
       </section>
 
       {/* Desktop: full bracket — top half / Final / bottom half */}
-      <section className="hidden flex-1 px-4 py-8 md:block md:px-8">
+      <section className="tp-scroll hidden flex-1 overflow-x-auto px-4 py-8 md:block md:px-8">
         {built.cards.length === 0 ? (
           <div className="py-12 text-center text-[14px] text-[var(--ink-2)]">
             No {drawLabel.toLowerCase()} fixtures yet.
@@ -668,7 +676,7 @@ function BracketRow({
   const nameColor = won ? 'var(--olive)' : picked && !resulted ? 'var(--brick)' : 'var(--ink)'
   const inner = (
     <>
-      <span className="flex min-w-0 items-baseline gap-1">
+      <span className="flex min-w-0 flex-1 items-baseline gap-1">
         <span
           className="truncate"
           style={{ fontWeight: picked || won ? 700 : 400, fontSize: big ? 14 : 13, lineHeight: 1.1, color: nameColor }}
@@ -683,7 +691,11 @@ function BracketRow({
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
       ) : won && score ? (
-        <span className="shrink-0 whitespace-nowrap text-[9px] tabular-nums text-[var(--ink-3)]">{score}</span>
+        // The card is a fixed 188px and the row height is pinned, so the name
+        // can't wrap — a four-set score would otherwise truncate it to
+        // "Alex de M…". Who won is the primary information, so cap the score
+        // and keep the full string on hover.
+        <span title={score} className="max-w-[45%] truncate text-[9px] tabular-nums text-[var(--ink-3)]">{score}</span>
       ) : won ? (
         <span className="shrink-0 text-[10px] font-semibold text-[var(--olive)]">✓</span>
       ) : picked && !resulted ? (
