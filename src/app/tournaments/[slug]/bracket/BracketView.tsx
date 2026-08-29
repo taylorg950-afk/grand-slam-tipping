@@ -47,7 +47,12 @@ const ROUND_LONG: Record<string, string> = {
 }
 
 const MW = 188
-const MH = 38
+// A card is two rows plus its own 1px top/bottom border. Derive MH from that
+// rather than hard-coding it: the two must agree or the absolutely-positioned
+// cards overlap their neighbours, which is exactly what happened when the
+// reskin made the rows taller and this constant stayed at 38.
+const ROW_H = 26
+const MH = ROW_H * 2 + 2
 const GV = 3
 const GC = 26
 
@@ -694,7 +699,9 @@ function BracketRow({
     borderBottom: isFirst ? '1px solid var(--rule)' : 'none',
     opacity: lost ? 0.5 : 1,
     background: won ? '#E7F3EC' : picked && !resulted ? '#EEF2FC' : 'transparent',
-    minHeight: big ? 24 : 19,
+    // Pinned so the rendered card matches MH exactly (border-box, so the
+    // divider border is included). The final card sizes to its content.
+    ...(big ? { minHeight: 24 } : { height: ROW_H }),
   }
 
   if (onPick) {
@@ -732,7 +739,7 @@ function MobilePickButton({
       disabled={!pickable}
       aria-pressed={myPick}
       aria-label={pickable ? `Pick ${display}` : undefined}
-      className="tp-tap flex min-h-[52px] items-center justify-between gap-2 text-left disabled:opacity-50"
+      className="pick-side tp-tap flex min-h-[52px] items-center justify-between gap-2 text-left disabled:opacity-50"
       style={{
         padding: '13px 15px',
         borderRadius: 12,
@@ -741,8 +748,8 @@ function MobilePickButton({
       }}
     >
       <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="truncate" style={{ fontSize: 16, fontWeight: myPick ? 700 : 500, color: myPick ? 'var(--brick)' : 'var(--ink)' }}>{display || '—'}</span>
-        {seed && <span className="text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
+        <span className="break-words" style={{ fontSize: 16, fontWeight: myPick ? 700 : 500, color: myPick ? 'var(--brick)' : 'var(--ink)' }}>{display || '—'}</span>
+        {seed && <span className="shrink-0 text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
       </span>
       {pending ? (
         <svg className="size-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -750,7 +757,10 @@ function MobilePickButton({
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
       ) : myPick ? (
-        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brick)]">✓ pick</span>
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--brick)]">
+          <span className="pick-tick-full">✓ pick</span>
+          <span className="pick-tick-short" aria-hidden>✓</span>
+        </span>
       ) : null}
     </button>
   )
@@ -766,19 +776,22 @@ function MobileStaticSide({
   const nameColor = won ? 'var(--olive)' : lost ? 'var(--ink-3)' : myPick ? 'var(--brick)' : 'var(--ink)'
   return (
     <div
-      className="flex items-center justify-between gap-2"
+      className="pick-side flex items-center justify-between gap-2"
       style={{ padding: '13px 15px', borderRadius: 12, border: `1.5px solid ${border}`, background: bg, opacity: lost ? 0.6 : 1 }}
     >
       <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="truncate" style={{ fontSize: 16, fontWeight: won || myPick ? 700 : 500, color: nameColor }}>{display || '—'}</span>
-        {seed && <span className="text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
+        <span className="break-words" style={{ fontSize: 16, fontWeight: won || myPick ? 700 : 500, color: nameColor }}>{display || '—'}</span>
+        {seed && <span className="shrink-0 text-[11px] text-[var(--ink-3)]">[{seed}]</span>}
       </span>
       {won && score ? (
         <span className="shrink-0 text-[11px] tabular-nums text-[var(--ink-3)]">{score}</span>
       ) : won ? (
         <span className="shrink-0 text-[12px] font-semibold text-[var(--olive)]">✓</span>
       ) : myPick ? (
-        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--down)]">pick</span>
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--down)]">
+          <span className="pick-tick-full">pick</span>
+          <span className="pick-tick-short" aria-hidden>✓</span>
+        </span>
       ) : null}
     </div>
   )

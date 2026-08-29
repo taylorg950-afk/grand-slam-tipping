@@ -431,3 +431,16 @@ body {
 /* Each slam column is a query container so its name can size against the
    column, which narrows with the viewport between 1024px and the 1140px cap. */
 .slam-col { container-type: inline-size; }
+
+/* Pick buttons: the name is the point of the control, so a decorative badge
+   ("✓ your call") must give up its width before the name truncates. Each
+   button is a query container; below the threshold the badge drops to its
+   glyph and the name is free to wrap onto a second line. The threshold is a
+   *content* width (container queries exclude padding): a typical name plus
+   seed and the full badge needs ~218px, so collapse below 220px. */
+.pick-side { container-type: inline-size; }
+.pick-tick-short { display: none; }
+@container (max-width: 220px) {
+  .pick-tick-full { display: none; }
+  .pick-tick-short { display: inline; }
+}

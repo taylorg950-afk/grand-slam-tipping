@@ -284,21 +284,28 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   <div className="mt-0.5 text-[11px]" style={{ color: selected ? '#B9CBF2' : 'var(--ink-3)' }}>
                     {m.round.points_per_correct_tip}pt each
                   </div>
-                  <div
-                    className="mt-1.5 font-serif text-[20px] font-bold leading-none tabular-nums"
-                    style={{
-                      color:
-                        m.state === 'live'
-                          ? 'var(--spark)'
-                          : selected
-                            ? '#fff'
-                            : m.state === 'pending'
-                              ? 'var(--ink-3)'
-                              : 'var(--ink)',
-                    }}
-                  >
-                    {value}
-                  </div>
+                  {m.state === 'live' ? (
+                    // Spark is a fill colour, not a text colour — as text on the
+                    // white tile it sits at ~1.2:1. Match the chip the match
+                    // cards use.
+                    <div className="mt-1.5">
+                      <span
+                        className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.1em] leading-none"
+                        style={{ background: 'var(--spark)', color: 'var(--spark-ink)' }}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      className="mt-1.5 font-serif text-[20px] font-bold leading-none tabular-nums"
+                      style={{
+                        color: selected ? '#fff' : m.state === 'pending' ? 'var(--ink-3)' : 'var(--ink)',
+                      }}
+                    >
+                      {value}
+                    </div>
+                  )}
                 </button>
               )
             })}
@@ -454,6 +461,7 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
   let nameColor = 'var(--ink)'
   let nameWeight = 500
   let tick = ''
+  let tickShort = ''   // narrow-card form; '' means never collapse
   let tickColor = 'var(--brick)'
   let opacity = 1
 
@@ -462,9 +470,9 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
     tick = match.score ? `WON · ${match.score}` : 'WON'; tickColor = 'var(--olive)'
   } else if (isMine && !resulted) {
     border = 'var(--brick)'; bg = '#EEF2FC'; nameColor = 'var(--brick)'; nameWeight = 700
-    tick = '✓ your call'
+    tick = '✓ your call'; tickShort = '✓'
   } else if (isMine && resulted) {
-    border = 'rgba(192,73,46,0.35)'; nameColor = 'var(--ink-2)'; tick = 'your call'; tickColor = 'var(--down)'
+    border = 'rgba(192,73,46,0.35)'; nameColor = 'var(--ink-2)'; tick = 'your call'; tickShort = '✓'; tickColor = 'var(--down)'
   } else if (isLoser) {
     nameColor = 'var(--ink-3)'; opacity = 0.6
   }
@@ -472,8 +480,8 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
   const inner = (
     <>
       <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="truncate" style={{ fontSize: 18, fontWeight: nameWeight, color: nameColor }}>{display}</span>
-        {seed && <span className="text-[12px] text-[var(--ink-3)]">[{seed}]</span>}
+        <span className="break-words" style={{ fontSize: 18, fontWeight: nameWeight, color: nameColor }}>{display}</span>
+        {seed && <span className="shrink-0 text-[12px] text-[var(--ink-3)]">[{seed}]</span>}
       </span>
       {pending ? (
         <svg className="size-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -481,7 +489,14 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
           <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>
       ) : tick ? (
-        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: tickColor }}>{tick}</span>
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: tickColor }}>
+          {tickShort ? (
+            <>
+              <span className="pick-tick-full">{tick}</span>
+              <span className="pick-tick-short" aria-hidden>{tickShort}</span>
+            </>
+          ) : tick}
+        </span>
       ) : null}
     </>
   )
@@ -500,7 +515,7 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
   }
 
   if (!interactive) {
-    return <div style={commonStyle}>{inner}</div>
+    return <div className="pick-side" style={commonStyle}>{inner}</div>
   }
   return (
     <button
@@ -508,7 +523,7 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
       onClick={() => onPick(side)}
       aria-pressed={isMine}
       aria-label={`Pick ${display}`}
-      className="tp-tap min-h-[52px]"
+      className="pick-side tp-tap min-h-[52px]"
       style={commonStyle}
     >
       {inner}
