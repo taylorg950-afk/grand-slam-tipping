@@ -416,3 +416,18 @@ body {
 @media (min-width: 768px) {
   .uso-two-col { grid-template-columns: 1.35fr 1fr; align-items: start; }
 }
+
+/* Login / signup — two-panel slam shell (arbitrary/responsive Tailwind
+   utilities don't emit reliably in this build, so drive it explicitly). */
+.login-shell { display: grid; grid-template-columns: 1fr; }
+.login-aside { display: none; }
+.login-mobilebrand { display: flex; }
+@media (min-width: 1024px) {
+  .login-shell { grid-template-columns: 1fr 1fr; }
+  .login-aside { display: flex; }
+  .login-mobilebrand { display: none; }
+}
+
+/* Each slam column is a query container so its name can size against the
+   column, which narrows with the viewport between 1024px and the 1140px cap. */
+.slam-col { container-type: inline-size; }
