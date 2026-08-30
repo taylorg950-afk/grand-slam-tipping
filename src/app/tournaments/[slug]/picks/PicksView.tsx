@@ -31,11 +31,18 @@ interface Tournament {
   slug: string
 }
 
+export interface RoomCount {
+  player1: number
+  player2: number
+}
+
 interface Props {
   tournament: Tournament
   rounds: PicksRound[]
   matches: PicksMatch[]
   tipMap: Record<string, string>
+  /** Keyed by match id. Only locked matches are present — see picks/page.tsx. */
+  roomCounts: Record<string, RoomCount>
 }
 
 const ROUND_LONG: Record<string, string> = {
@@ -115,7 +122,7 @@ function cityFor(slug: string): string {
   return slug.split('-')[0]?.toUpperCase() ?? 'TIPPING POST'
 }
 
-export default function PicksView({ tournament, rounds, matches, tipMap: initialTipMap }: Props) {
+export default function PicksView({ tournament, rounds, matches, tipMap: initialTipMap, roomCounts }: Props) {
   const router = useRouter()
   const now = useMemo(() => new Date(), [])
   const [tipMap, setTipMap] = useState(initialTipMap)
@@ -348,6 +355,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
                   onPick={(side) => placePick(m.id, active.round.name, side)}
                   pendingSide={pendingPicks[m.id] ?? null}
                   now={now}
+                  room={roomCounts[m.id]}
                 />
               )
             })}
@@ -379,9 +387,10 @@ interface MatchCardProps {
   pendingSide: 'player1' | 'player2' | null
   onPick: (side: 'player1' | 'player2') => void
   now: Date
+  room?: RoomCount
 }
 
-function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, now }: MatchCardProps) {
+function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, now, room }: MatchCardProps) {
   const resulted = !!match.winner
   const locked = new Date(match.scheduled_start) <= now
   const interactive = !locked && !resulted
@@ -412,6 +421,50 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
         <PlayerButton side="player2" match={match} tip={tip} pendingSide={pendingSide} interactive={interactive} resulted={resulted} onPick={onPick} />
       </div>
       {line && <div className="mt-3 text-[12px]" style={{ color: lineColor }}>{line}</div>}
+      {room && <RoomSplit match={match} room={room} tip={tip} />}
+    </div>
+  )
+}
+
+/** The room's split on a locked match — counts only, never who picked what. */
+function RoomSplit({ match, room, tip }: { match: PicksMatch; room: RoomCount; tip?: 'player1' | 'player2' }) {
+  const total = room.player1 + room.player2
+  if (total === 0) {
+    return <div className="mt-2 text-[12px] text-[var(--ink-3)]">Nobody in the room tipped this one.</div>
+  }
+
+  const p1 = stripSeed(match.player1_name)
+  const p2 = stripSeed(match.player2_name)
+  const pct1 = Math.round((room.player1 / total) * 100)
+  const lead = room.player1 === room.player2 ? null : room.player1 > room.player2 ? 'player1' : 'player2'
+  const withRoom = tip && lead && tip === lead
+  const againstRoom = tip && lead && tip !== lead
+
+  return (
+    <div className="mt-2.5 border-t border-[var(--rule)] pt-2.5">
+      <div className="flex items-baseline justify-between gap-3 text-[12px]">
+        <span className="min-w-0 truncate" style={{ color: tip === 'player1' ? 'var(--brick)' : 'var(--ink-2)', fontWeight: tip === 'player1' ? 600 : 400 }}>
+          {p1} <span className="tabular-nums font-semibold">{room.player1}</span>
+        </span>
+        <span className="shrink-0 text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
+          {total === 1 ? '1 tip' : `${total} tips`}
+        </span>
+        <span className="min-w-0 truncate text-right" style={{ color: tip === 'player2' ? 'var(--brick)' : 'var(--ink-2)', fontWeight: tip === 'player2' ? 600 : 400 }}>
+          <span className="tabular-nums font-semibold">{room.player2}</span> {p2}
+        </span>
+      </div>
+      <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--rule)' }} aria-hidden>
+        <div style={{ width: `${pct1}%`, background: tip === 'player1' ? 'var(--brick)' : 'var(--ink-3)' }} />
+        <div style={{ width: `${100 - pct1}%`, background: tip === 'player2' ? 'var(--brick)' : 'var(--ink-3)' }} />
+      </div>
+      {againstRoom && (
+        <div className="mt-1.5 text-[12px] font-semibold" style={{ color: 'var(--blue)' }}>
+          Against the room.
+        </div>
+      )}
+      {withRoom && total > 2 && (
+        <div className="mt-1.5 text-[12px] text-[var(--ink-3)]">With the room.</div>
+      )}
     </div>
   )
 }

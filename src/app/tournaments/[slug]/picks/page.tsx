@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import PicksView, { type PicksMatch, type PicksRound } from './PicksView'
+import PicksView, { type PicksMatch, type PicksRound, type RoomCount } from './PicksView'
 
 export default async function MyPicksPage({
   params,
@@ -48,12 +48,42 @@ export default async function MyPicksPage({
     : { data: [] }
   const tipMap = Object.fromEntries((tipData ?? []).map(t => [t.match_id, t.predicted_winner]))
 
+  // How the room split, for locked matches only. Rule II: until a tie locks
+  // your picks are your own. Counting server-side and sending nothing for an
+  // open match means an early split isn't sitting in the payload to be read.
+  const now = new Date()
+  const lockedIds = matches.filter(m => new Date(m.scheduled_start) <= now).map(m => m.id)
+
+  const roomCounts: Record<string, RoomCount> = {}
+  if (lockedIds.length) {
+    const PAGE = 1000
+    const rows: { match_id: string; predicted_winner: string }[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data } = await supabase
+        .from('tips')
+        .select('match_id, predicted_winner')
+        .in('match_id', lockedIds)
+        .range(from, from + PAGE - 1)
+      if (!data?.length) break
+      rows.push(...data)
+      if (data.length < PAGE) break
+    }
+    for (const id of lockedIds) roomCounts[id] = { player1: 0, player2: 0 }
+    for (const r of rows) {
+      const c = roomCounts[r.match_id]
+      if (!c) continue
+      if (r.predicted_winner === 'player1') c.player1++
+      else if (r.predicted_winner === 'player2') c.player2++
+    }
+  }
+
   return (
     <PicksView
       tournament={{ name: tournament.name, slug: tournament.slug }}
       rounds={rounds}
       matches={matches}
       tipMap={tipMap}
+      roomCounts={roomCounts}
     />
   )
 }
