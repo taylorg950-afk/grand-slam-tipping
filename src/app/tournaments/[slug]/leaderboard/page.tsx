@@ -397,7 +397,10 @@ export default async function LeaderboardPage({
     .select('id, name, points_per_correct_tip, sort_order')
     .eq('tournament_id', tournament.id)
     .order('sort_order')
-  const rounds: Round[] = roundData ?? []
+  // A round worth 0 points is in the draw but not tipped, so it has no column
+  // in the table and no bearing on movers or snapshots — it would only ever be
+  // a strip of dashes.
+  const rounds: Round[] = (roundData ?? []).filter(r => r.points_per_correct_tip > 0)
   const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
   const roundIds = orderedRounds.map(r => r.id)
 
