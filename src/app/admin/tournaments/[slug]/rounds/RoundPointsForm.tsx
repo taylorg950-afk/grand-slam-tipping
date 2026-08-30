@@ -42,11 +42,11 @@ export default function RoundPointsForm({
         onBlur={save}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
         disabled={pending}
-        className="w-16 rounded-md border border-zinc-200 px-2 py-1 text-xs tabular-nums text-zinc-700 focus:border-zinc-400 focus:outline-none disabled:opacity-50"
+        className="w-16 rounded-md border border-[var(--rule)] px-2 py-1 text-xs tabular-nums text-[var(--ink-2)] focus:border-[var(--ink-3)] focus:outline-none disabled:opacity-50"
         aria-label="Points per correct tip"
       />
-      <span className="text-xs text-zinc-400">pts per correct tip</span>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      <span className="text-xs text-[var(--ink-3)]">pts per correct tip</span>
+      {error && <span className="text-xs text-[var(--down)]">{error}</span>}
     </span>
   )
 }

@@ -28,21 +28,21 @@ export default async function TournamentRoundsPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">← Admin</Link>
-        <h1 className="mt-2 text-xl font-semibold">{tournament.name}</h1>
-        <p className="text-sm text-zinc-500">Rounds</p>
+        <Link href="/admin" className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">← Admin</Link>
+        <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">{tournament.name}</h1>
+        <p className="text-sm text-[var(--ink-3)]">Rounds</p>
       </div>
 
       <div className="flex justify-end">
         <Link
           href={`/admin/tournaments/${slug}/import-draw`}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          className="tp-cta"
         >
           Import draw from PDF
         </Link>
       </div>
 
-      <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
+      <div className="divide-y divide-[var(--rule)] rounded-lg border border-[var(--rule)] bg-white">
         {rounds?.map((round) => (
           <div key={round.id} className="flex items-center justify-between px-4 py-3">
             <div>
@@ -50,10 +50,10 @@ export default async function TournamentRoundsPage({
               <RoundPointsForm roundId={round.id} slug={slug} initialPoints={round.points_per_correct_tip} />
             </div>
             <div className="flex gap-4 text-sm">
-              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/matches`} className="text-zinc-500 hover:text-zinc-900">
+              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/matches`} className="text-[var(--ink-3)] hover:text-[var(--ink)]">
                 Matches
               </Link>
-              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/results`} className="text-zinc-500 hover:text-zinc-900">
+              <Link href={`/admin/tournaments/${slug}/rounds/${round.name}/results`} className="text-[var(--ink-3)] hover:text-[var(--ink)]">
                 Results
               </Link>
             </div>

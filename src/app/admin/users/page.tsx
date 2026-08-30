@@ -24,8 +24,8 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Users</h1>
-        <p className="text-sm text-zinc-500 mt-1">Set a password for any user. They can change it later.</p>
+        <h1 className="font-serif text-[22px] font-bold uppercase tracking-[0.04em]">Users</h1>
+        <p className="text-sm text-[var(--ink-3)] mt-1">Set a password for any user. They can change it later.</p>
       </div>
 
       <UsersList users={users} />

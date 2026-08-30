@@ -43,8 +43,8 @@ export default function NewTournamentPage() {
   return (
     <div className="max-w-lg space-y-8">
       <div>
-        <Link href="/admin" className="text-sm text-zinc-500 hover:text-zinc-900">← Admin</Link>
-        <h1 className="mt-2 text-xl font-semibold">New tournament</h1>
+        <Link href="/admin" className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">← Admin</Link>
+        <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">New tournament</h1>
       </div>
 
       <form action={action} className="space-y-5">
@@ -70,7 +70,7 @@ export default function NewTournamentPage() {
             onChange={e => handleSlugChange(e.target.value)}
             required
           />
-          <p className="text-xs text-zinc-500">Used in URLs — lowercase, hyphens only.</p>
+          <p className="text-xs text-[var(--ink-3)]">Used in URLs — lowercase, hyphens only.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -85,24 +85,24 @@ export default function NewTournamentPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <input type="checkbox" id="set_active" name="set_active" className="h-4 w-4 rounded border-zinc-300" />
+          <input type="checkbox" id="set_active" name="set_active" className="h-4 w-4 rounded border-[var(--rule)]" />
           <Label htmlFor="set_active">Set as active tournament</Label>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 space-y-2">
-          <p className="text-xs font-medium text-zinc-700">Grand Slam round preset (auto-created)</p>
+        <div className="rounded-lg border border-[var(--rule)] bg-[var(--paper)] p-4 space-y-2">
+          <p className="text-xs font-medium text-[var(--ink-2)]">Grand Slam round preset (auto-created)</p>
           <div className="grid grid-cols-3 gap-1">
             {SLAM_ROUNDS.map(r => (
-              <div key={r.name} className="text-xs text-zinc-500">
-                {r.name}: <span className="font-medium text-zinc-700">{r.points} pts</span>
+              <div key={r.name} className="text-xs text-[var(--ink-3)]">
+                {r.name}: <span className="font-medium text-[var(--ink-2)]">{r.points} pts</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-zinc-400">Points are editable after creation.</p>
+          <p className="text-xs text-[var(--ink-3)]">Points are editable after creation.</p>
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600">{state.error}</p>
+          <p className="text-sm text-[var(--down)]">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} className="w-full">

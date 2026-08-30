@@ -12,9 +12,9 @@ interface User {
 
 export default function UsersList({ users }: { users: User[] }) {
   return (
-    <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
+    <div className="divide-y divide-[var(--rule)] rounded-lg border border-[var(--rule)] bg-white">
       {users.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-zinc-500">No users yet.</p>
+        <p className="px-4 py-6 text-sm text-[var(--ink-3)]">No users yet.</p>
       ) : (
         users.map(u => <UserRow key={u.id} user={u} />)
       )}
@@ -51,17 +51,17 @@ function UserRow({ user }: { user: User }) {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{user.display_name}</span>
             {user.is_admin && (
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
+              <span className="rounded-full bg-[var(--paper-3)] px-2 py-0.5 text-xs font-medium text-[var(--ink-2)]">
                 Admin
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500">{user.email || '(no email)'}</p>
+          <p className="text-xs text-[var(--ink-3)]">{user.email || '(no email)'}</p>
         </div>
         <button
           type="button"
           onClick={() => { setOpen(o => !o); setMessage(null) }}
-          className="text-sm text-zinc-500 hover:text-zinc-900"
+          className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]"
         >
           {open ? 'Cancel' : 'Set password'}
         </button>
@@ -76,12 +76,12 @@ function UserRow({ user }: { user: User }) {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:border-zinc-900"
+            className="flex-1 rounded-md border border-[var(--rule)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--ink)]"
           />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+            className="tp-cta disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
@@ -89,7 +89,7 @@ function UserRow({ user }: { user: User }) {
       )}
 
       {message && (
-        <p className={`mt-2 text-xs ${message.kind === 'ok' ? 'text-green-700' : 'text-red-700'}`}>
+        <p className={`mt-2 text-xs ${message.kind === 'ok' ? 'text-[var(--olive)]' : 'text-[var(--down)]'}`}>
           {message.text}
         </p>
       )}

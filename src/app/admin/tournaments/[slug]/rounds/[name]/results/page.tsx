@@ -40,15 +40,15 @@ export default async function ResultsPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">
           ← {tournament.name}
         </Link>
-        <h1 className="mt-2 text-xl font-semibold">{round.name} — Results</h1>
-        <p className="text-sm text-zinc-500">{resulted}/{total} results entered</p>
+        <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">{round.name} — Results</h1>
+        <p className="text-sm text-[var(--ink-3)]">{resulted}/{total} results entered</p>
       </div>
 
       {!matches?.length ? (
-        <p className="text-sm text-zinc-500">No matches in this round yet.</p>
+        <p className="text-sm text-[var(--ink-3)]">No matches in this round yet.</p>
       ) : (
         <div className="space-y-3">
           {matches.map(match => (

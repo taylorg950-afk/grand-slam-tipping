@@ -50,11 +50,11 @@ export default async function RoundMatchesPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">
           ← {tournament.name}
         </Link>
-        <h1 className="mt-2 text-xl font-semibold">{round.name}</h1>
-        <p className="text-sm text-zinc-500">{round.points_per_correct_tip} pts per correct tip</p>
+        <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">{round.name}</h1>
+        <p className="text-sm text-[var(--ink-3)]">{round.points_per_correct_tip} pts per correct tip</p>
       </div>
 
       {prevRound && (
@@ -69,9 +69,9 @@ export default async function RoundMatchesPage({
       <AddMatchForm roundId={round.id} roundName={roundName} slug={slug} />
 
       {!matches?.length ? (
-        <p className="text-sm text-zinc-500">No matches yet.</p>
+        <p className="text-sm text-[var(--ink-3)]">No matches yet.</p>
       ) : (
-        <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white">
+        <div className="divide-y divide-[var(--rule)] rounded-lg border border-[var(--rule)] bg-white">
           {matches.map((match) => {
             const locked = new Date(match.scheduled_start) <= now
             return (
@@ -79,21 +79,21 @@ export default async function RoundMatchesPage({
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {match.player1_name} <span className="font-normal text-zinc-400">vs</span> {match.player2_name}
+                      {match.player1_name} <span className="font-normal text-[var(--ink-3)]">vs</span> {match.player2_name}
                     </span>
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 capitalize">
+                    <span className="rounded-full bg-[var(--paper-3)] px-2 py-0.5 text-xs text-[var(--ink-3)] capitalize">
                       {match.draw === 'mens' ? "Men's" : "Women's"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-zinc-400">
+                  <div className="flex items-center gap-2 text-xs text-[var(--ink-3)]">
                     <span>{new Date(match.scheduled_start).toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: false })} {AEST_LABEL}</span>
                     {locked ? (
-                      <span className="text-amber-600 font-medium">Locked</span>
+                      <span className="text-[var(--down)] font-medium">Locked</span>
                     ) : (
-                      <span className="text-green-600 font-medium">Open</span>
+                      <span className="text-[var(--olive)] font-medium">Open</span>
                     )}
                     {match.winner && (
-                      <span className="text-zinc-600">
+                      <span className="text-[var(--ink-2)]">
                         Winner: {match.winner === 'player1' ? match.player1_name : match.player2_name}
                       </span>
                     )}
@@ -106,7 +106,7 @@ export default async function RoundMatchesPage({
                       await deleteMatch(match.id, slug, roundName)
                     }}
                   >
-                    <button type="submit" className="text-xs text-red-500 hover:text-red-700">
+                    <button type="submit" className="text-xs text-[var(--down)] hover:text-[var(--down)]">
                       Remove
                     </button>
                   </form>

@@ -50,17 +50,17 @@ export default function ImportDrawPage({
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link href={`/admin/tournaments/${slug}/rounds`} className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">
           ← Back to rounds
         </Link>
-        <h1 className="mt-2 text-xl font-semibold">Import draw from PDF</h1>
-        <p className="text-sm text-zinc-500 mt-1">
+        <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">Import draw from PDF</h1>
+        <p className="text-sm text-[var(--ink-3)] mt-1">
           Drop in the official draw PDF. Claude will extract all matches — check the preview before saving.
         </p>
       </div>
 
       {saved ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+        <div className="rounded-lg border border-[var(--rule)] bg-[var(--brick-surface)] p-4 text-sm text-[var(--olive)]">
           {totalMatches} matches imported successfully.{' '}
           <Link href={`/admin/tournaments/${slug}/rounds`} className="font-medium underline">
             Back to rounds →
@@ -72,7 +72,7 @@ export default function ImportDrawPage({
           {!parsed && (
             <form onSubmit={handleUpload} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="pdf" className="text-sm font-medium text-zinc-700">
+                <label htmlFor="pdf" className="text-sm font-medium text-[var(--ink-2)]">
                   Draw PDF
                 </label>
                 <input
@@ -81,16 +81,16 @@ export default function ImportDrawPage({
                   type="file"
                   accept="application/pdf"
                   required
-                  className="block w-full text-sm text-zinc-600 file:mr-4 file:rounded-md file:border file:border-zinc-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-zinc-700 hover:file:bg-zinc-50"
+                  className="block w-full text-sm text-[var(--ink-2)] file:mr-4 file:rounded-md file:border file:border-[var(--rule)] file:bg-white file:px-3 file:py-1.5 file:text-sm file:text-[var(--ink-2)] hover:file:bg-[var(--paper)]"
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-[var(--down)]">{error}</p>}
 
               <button
                 type="submit"
                 disabled={isParsing}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+                className="tp-cta disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isParsing ? 'Reading draw…' : 'Parse draw'}
               </button>
@@ -102,37 +102,37 @@ export default function ImportDrawPage({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium text-zinc-700">
+                  <span className="text-sm font-medium text-[var(--ink-2)]">
                     {parsed.draw === 'mens' ? "Men's" : "Women's"} singles —{' '}
                     {totalMatches} matches across {parsed.rounds.length} rounds
                   </span>
                 </div>
                 <button
                   onClick={() => { setParsed(null); setError('') }}
-                  className="text-sm text-zinc-400 hover:text-zinc-700"
+                  className="text-sm text-[var(--ink-3)] hover:text-[var(--ink-2)]"
                 >
                   Try again
                 </button>
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-[var(--down)]">{error}</p>}
 
               <div className="space-y-4">
                 {parsed.rounds.map(round => (
-                  <div key={round.name} className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
-                    <div className="px-4 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+                  <div key={round.name} className="rounded-lg border border-[var(--rule)] bg-white overflow-hidden">
+                    <div className="px-4 py-2 bg-[var(--paper)] border-b border-[var(--rule)] flex items-center justify-between">
                       <span className="text-sm font-medium">{round.name}</span>
-                      <span className="text-xs text-zinc-400">{round.matches.length} matches</span>
+                      <span className="text-xs text-[var(--ink-3)]">{round.matches.length} matches</span>
                     </div>
-                    <div className="divide-y divide-zinc-100">
+                    <div className="divide-y divide-[var(--paper-3)]">
                       {[...round.matches]
                         .sort((a, b) => a.position - b.position)
                         .map(match => (
                           <div key={match.position} className="flex items-center gap-3 px-4 py-2 text-sm">
-                            <span className="w-5 text-xs text-zinc-400 tabular-nums">{match.position + 1}</span>
-                            <span className="flex-1 text-zinc-700">{match.player1}</span>
-                            <span className="text-xs text-zinc-400">vs</span>
-                            <span className="flex-1 text-zinc-700 text-right">{match.player2}</span>
+                            <span className="w-5 text-xs text-[var(--ink-3)] tabular-nums">{match.position + 1}</span>
+                            <span className="flex-1 text-[var(--ink-2)]">{match.player1}</span>
+                            <span className="text-xs text-[var(--ink-3)]">vs</span>
+                            <span className="flex-1 text-[var(--ink-2)] text-right">{match.player2}</span>
                           </div>
                         ))}
                     </div>
@@ -144,13 +144,13 @@ export default function ImportDrawPage({
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+                  className="tp-cta disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSaving ? 'Saving…' : `Import ${totalMatches} matches`}
                 </button>
                 <button
                   onClick={() => { setParsed(null); setError('') }}
-                  className="rounded-md border border-zinc-200 px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50"
+                  className="rounded-md border border-[var(--rule)] px-4 py-2 text-sm text-[var(--ink-2)] hover:bg-[var(--paper)]"
                 >
                   Cancel
                 </button>

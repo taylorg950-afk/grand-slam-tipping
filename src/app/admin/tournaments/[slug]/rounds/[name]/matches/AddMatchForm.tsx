@@ -24,7 +24,7 @@ export default function AddMatchForm({
   }
 
   return (
-    <form ref={formRef} action={handleAction} className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4">
+    <form ref={formRef} action={handleAction} className="space-y-4 rounded-lg border border-[var(--rule)] bg-white p-4">
       <input type="hidden" name="round_id" value={roundId} />
       <input type="hidden" name="round_name" value={roundName} />
       <input type="hidden" name="slug" value={slug} />
@@ -55,7 +55,7 @@ export default function AddMatchForm({
         </div>
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-[var(--down)]">{state.error}</p>}
 
       <Button type="submit" disabled={pending} size="sm">
         {pending ? 'Adding…' : 'Add match'}

@@ -20,15 +20,15 @@ export default function GenerateMatchesForm({
   const [state, action, pending] = useActionState(generateFromPreviousRound, null)
 
   return (
-    <form action={action} className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+    <form action={action} className="space-y-3 rounded-lg border border-[var(--rule)] bg-[var(--brick-surface)] p-4">
       <input type="hidden" name="round_id" value={roundId} />
       <input type="hidden" name="round_name" value={roundName} />
       <input type="hidden" name="slug" value={slug} />
 
-      <h2 className="text-sm font-medium text-blue-900">
+      <h2 className="text-sm font-medium text-[var(--brick)]">
         Generate {roundName} matches from {prevRoundName} results
       </h2>
-      <p className="text-xs text-blue-700">
+      <p className="text-xs text-[var(--blue)]">
         Creates matches based on {prevRoundName} winners using bracket positions. Safe to re-run — existing matches are updated in place, not duplicated.
       </p>
 
@@ -43,9 +43,9 @@ export default function GenerateMatchesForm({
         />
       </div>
 
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-[var(--down)]">{state.error}</p>}
       {state && !state.error && (
-        <p className="text-sm text-green-700">
+        <p className="text-sm text-[var(--olive)]">
           Done — {state.created} created, {state.updated} updated.
         </p>
       )}
