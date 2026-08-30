@@ -87,7 +87,11 @@ function fmtClock(date: Date) {
 }
 
 function fmtLockTime(date: Date) {
-  return `${date.toLocaleString('en-AU', { timeZone: AEST_TZ, weekday: 'short', hour: 'numeric', hour12: true }).toLowerCase()} ${AEST_LABEL}`
+  // Lowercase the meridiem only — lowercasing the whole string took the
+  // weekday with it ("sat 11 pm").
+  const weekday = date.toLocaleDateString('en-AU', { timeZone: AEST_TZ, weekday: 'short' })
+  const time = date.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', hour12: true }).toLowerCase()
+  return `${weekday} ${time} ${AEST_LABEL}`
 }
 
 function computeRoundBreakdown(
