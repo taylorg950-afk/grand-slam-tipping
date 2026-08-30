@@ -444,3 +444,22 @@ body {
   .pick-tick-full { display: none; }
   .pick-tick-short { display: inline; }
 }
+
+/* Loading placeholders. Static by default; the shimmer is opt-in so a slow
+   page doesn't pulse at anyone who asked for reduced motion. */
+.tp-skeleton {
+  background: var(--rule);
+  position: relative;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tp-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    animation: tp-sweep 1.4s ease-in-out infinite;
+  }
+}
+@keyframes tp-sweep { to { transform: translateX(100%); } }
