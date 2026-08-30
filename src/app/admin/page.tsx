@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { setActiveTournament, deactivateAllTournaments } from './actions'
+import { aestDayKey } from '@/lib/time'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -19,7 +20,10 @@ export default async function AdminPage() {
   for (const m of matchRows ?? []) {
     const tid = tournamentOfRound.get(m.round_id)
     if (!tid || !m.scheduled_start) continue
-    const day = m.scheduled_start.slice(0, 10)
+    // Bucket by AEST day, not UTC. A 01:00 AEST lock is 15:00 UTC the day
+    // before, and slicing the raw timestamp reported every fixture as a day
+    // early — flagging drift on a correctly scheduled draw.
+    const day = aestDayKey(new Date(m.scheduled_start))
     const cur = span.get(tid)
     if (!cur) span.set(tid, { first: day, last: day })
     else {
