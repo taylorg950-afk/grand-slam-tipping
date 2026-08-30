@@ -75,7 +75,7 @@ export default async function RulesPage() {
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
           <Rule heading="The basics" eyebrow="Rule I">
             <p>
-              Each round, pick a winner for every tie — men&apos;s and women&apos;s draws.
+              Each round, pick a winner for every tie in the men&apos;s draw.
               File from the Picks page or tap a name straight on the bracket.
               You can change any pick as often as you like, right up until the tie locks.
             </p>
@@ -123,11 +123,10 @@ export default async function RulesPage() {
 
           <Rule heading="The tiebreaker" eyebrow="Rule V">
             <p>
-              Before the finals, predict the total games played in each singles final —
+              Before the final, predict the total games it will go &mdash;
               a 6&ndash;4, 6&ndash;3, 6&ndash;2 final is 27 games. If the table is level
-              when the last ball is struck: closest on the men&apos;s total takes it,
-              then the women&apos;s, and if you&apos;re somehow still level, earliest
-              filed wins.
+              when the last ball is struck, closest to that number takes it; if you&apos;re
+              somehow still level, earliest filed wins.
             </p>
           </Rule>
 

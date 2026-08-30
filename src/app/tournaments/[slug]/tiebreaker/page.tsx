@@ -7,18 +7,18 @@ import TiebreakerForm from './TiebreakerForm'
 // Seeded history per tournament. Add entries as data becomes available;
 // tournaments without a key skip the strip. Numbers are total games in
 // each singles final.
-const HISTORY: Record<string, { year: string; mens: number; womens: number }[]> = {
+const HISTORY: Record<string, { year: string; mens: number }[]> = {
   'italian-open': [
-    { year: '2016', mens: 32, womens: 21 },
-    { year: '2017', mens: 38, womens: 18 },
-    { year: '2018', mens: 36, womens: 23 },
-    { year: '2019', mens: 27, womens: 20 },
-    { year: '2020', mens: 41, womens: 22 },
-    { year: '2021', mens: 33, womens: 19 },
-    { year: '2022', mens: 30, womens: 26 },
-    { year: '2023', mens: 35, womens: 21 },
-    { year: '2024', mens: 39, womens: 18 },
-    { year: '2025', mens: 29, womens: 24 },
+    { year: '2016', mens: 32 },
+    { year: '2017', mens: 38 },
+    { year: '2018', mens: 36 },
+    { year: '2019', mens: 27 },
+    { year: '2020', mens: 41 },
+    { year: '2021', mens: 33 },
+    { year: '2022', mens: 30 },
+    { year: '2023', mens: 35 },
+    { year: '2024', mens: 39 },
+    { year: '2025', mens: 29 },
   ],
 }
 
@@ -27,17 +27,13 @@ function historyFor(slug: string) {
   return null
 }
 
-function historyAverages(rows: { mens: number; womens: number }[]) {
+function historyAverages(rows: { mens: number }[]) {
   const avg = (xs: number[]) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length)
   const mensValues = rows.map(r => r.mens)
-  const womensValues = rows.map(r => r.womens)
   return {
     mensAvg: avg(mensValues),
     mensMin: Math.min(...mensValues),
     mensMax: Math.max(...mensValues),
-    womensAvg: avg(womensValues),
-    womensMin: Math.min(...womensValues),
-    womensMax: Math.max(...womensValues),
   }
 }
 
@@ -80,7 +76,7 @@ export default async function TiebreakerPage({
 
   const { data: existing } = await supabase
     .from('tiebreakers')
-    .select('mens_final_total_games, womens_final_total_games, updated_at')
+    .select('mens_final_total_games, updated_at')
     .eq('user_id', user.id)
     .eq('tournament_id', tournament.id)
     .maybeSingle()
@@ -117,9 +113,9 @@ export default async function TiebreakerPage({
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
             The tiebreaker · {tournament.name}
           </div>
-          <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">Call the finals.</h1>
+          <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">Call the final.</h1>
           <div className="mt-3 max-w-xl text-[14px] leading-[1.5]" style={{ color: '#DDE6FA' }}>
-            Total games in each final breaks a dead heat. Men&apos;s is the primary tiebreaker, women&apos;s the backup, then earliest filed. Edit until the men&apos;s final starts.
+            Total games in the men&apos;s final breaks a dead heat — closest takes it, then earliest filed. Edit until the final starts.
           </div>
         </div>
       </section>
@@ -130,7 +126,6 @@ export default async function TiebreakerPage({
         slug={slug}
         existing={{
           mens: existing?.mens_final_total_games ?? null,
-          womens: existing?.womens_final_total_games ?? null,
           updatedAt: existing?.updated_at ?? null,
         }}
         averages={averages}
@@ -151,7 +146,6 @@ export default async function TiebreakerPage({
                   <div className="mt-1 font-serif text-[24px] font-bold leading-none tabular-nums text-[var(--ink)] md:text-[26px]">
                     {y.mens}
                   </div>
-                  <div className="mt-1 text-[10px] text-[var(--ink-3)]">{y.womens}W</div>
                 </div>
               ))}
             </div>

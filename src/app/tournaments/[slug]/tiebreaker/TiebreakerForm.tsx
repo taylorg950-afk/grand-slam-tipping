@@ -8,29 +8,22 @@ interface Averages {
   mensAvg: number
   mensMin: number
   mensMax: number
-  womensAvg: number
-  womensMin: number
-  womensMax: number
 }
 
 interface Props {
   tournamentId: string
   slug: string
-  existing: { mens: number | null; womens: number | null; updatedAt: string | null }
+  existing: { mens: number | null; updatedAt: string | null }
   averages: Averages | null
   locked: boolean
 }
 
 const DEFAULT_MENS = 34
-const DEFAULT_WOMENS = 21
 const MENS_MIN = 18
 const MENS_MAX = 80
-const WOMENS_MIN = 12
-const WOMENS_MAX = 40
 
 export default function TiebreakerForm({ tournamentId, slug, existing, averages, locked }: Props) {
   const [mens, setMens] = useState<number>(existing.mens ?? averages?.mensAvg ?? DEFAULT_MENS)
-  const [womens, setWomens] = useState<number>(existing.womens ?? averages?.womensAvg ?? DEFAULT_WOMENS)
   const [savedAt, setSavedAt] = useState<string | null>(existing.updatedAt)
   const [state, action] = useActionState(saveTiebreaker, null)
   const [pending, startTransition] = useTransition()
@@ -46,7 +39,6 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
     fd.set('tournament_id', tournamentId)
     fd.set('slug', slug)
     fd.set('mens_final_total_games', String(mens))
-    fd.set('womens_final_total_games', String(womens))
     startTransition(() => action(fd))
   }
 
@@ -61,26 +53,16 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
   return (
     <>
       {/* Scrubbers */}
-      <section className="relative z-10 grid grid-cols-1 gap-4 px-4 pt-6 md:grid-cols-2 md:gap-6 md:px-8 md:pt-7">
+      <section className="relative z-10 mx-auto w-full max-w-[560px] px-4 pt-6 md:px-8 md:pt-7">
         <Scrubber
           label="Men's final · total games"
-          sublabel="Primary tiebreaker. A 6–4, 6–3, 6–2 final = 27 games."
+          sublabel="Breaks a dead heat. A 6–4, 6–3, 6–2 final = 27 games."
           value={mens}
           onChange={setMens}
           min={MENS_MIN}
           max={MENS_MAX}
           locked={locked}
           hint={averages ? `Range typically ${averages.mensMin} to ${averages.mensMax}. Last 10 finals: avg ${averages.mensAvg} games.` : 'Five-set max is roughly 60 games.'}
-        />
-        <Scrubber
-          label="Women's final · total games"
-          sublabel="Secondary tiebreaker. A 6–4, 6–3 final = 19 games."
-          value={womens}
-          onChange={setWomens}
-          min={WOMENS_MIN}
-          max={WOMENS_MAX}
-          locked={locked}
-          hint={averages ? `Range typically ${averages.womensMin} to ${averages.womensMax}. Last 10 finals: avg ${averages.womensAvg} games.` : 'Three-set max is roughly 30 games.'}
         />
       </section>
 
@@ -97,8 +79,7 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
             </div>
           ) : (
             <div className="font-serif text-[20px] font-semibold leading-[1.25] md:text-[26px]">
-              <span className="tabular-nums text-[var(--blue)]">{mens}</span> games for the men.{' '}
-              <span className="tabular-nums text-[var(--blue)]">{womens}</span> for the women.{' '}
+              <span className="tabular-nums text-[var(--blue)]">{mens}</span> games in the final.{' '}
               <span className="text-[15px] font-normal text-[var(--ink-3)]">{filedLabel}</span>
             </div>
           )}
