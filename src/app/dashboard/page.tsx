@@ -259,9 +259,13 @@ export default async function DashboardPage() {
   const myScore = myIndex !== -1 ? scores[myIndex] : null
   const myRank = myIndex !== -1 ? myIndex + 1 : null
 
-  const orderedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order)
+  // A round worth 0 points is in the draw for the bracket but isn't tipped, so
+  // it must not become "the current round" or contribute to tips-in — the
+  // dashboard would otherwise tell everyone to go and file 64 picks they can't.
+  const tippedRounds = rounds.filter(r => r.points_per_correct_tip > 0)
+  const orderedRounds = [...tippedRounds].sort((a, b) => a.sort_order - b.sort_order)
   const roundBreakdown = computeRoundBreakdown(user.id, orderedRounds, matches, tips, now)
-  const chartData = buildChartData(users, rounds, matches, tips)
+  const chartData = buildChartData(users, tippedRounds, matches, tips)
 
   // Current round = first round with matches that isn't fully resulted
   const currentRound =

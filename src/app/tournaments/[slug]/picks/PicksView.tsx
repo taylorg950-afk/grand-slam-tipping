@@ -62,7 +62,7 @@ interface RoundMeta {
   hasMatches: boolean
 }
 
-type MatchState = 'correct' | 'wrong' | 'void' | 'locked' | 'no-pick' | 'picked' | 'open'
+type MatchState = 'correct' | 'wrong' | 'void' | 'locked' | 'no-pick' | 'picked' | 'open' | 'awaiting'
 
 function statusVerb(meta: RoundMeta, now: Date): string {
   const total = meta.matches.length
@@ -94,10 +94,17 @@ function parseSeed(name: string): string | null {
   return name.match(/\[(\d+)\]/)?.[1] ?? null
 }
 
+function isTbd(name: string) {
+  return !name || name.trim().toUpperCase() === 'TBD'
+}
+
 function classifyMatch(m: PicksMatch, pick: string | undefined, now: Date): MatchState {
   const resulted = !!m.winner
   const locked = new Date(m.scheduled_start) <= now
   if (resulted && m.no_points) return 'void'
+  // Both slots empty: the previous round hasn't produced these players yet, so
+  // there is nothing to tip. Inviting a tap here just gets it rejected.
+  if (!resulted && !locked && isTbd(m.player1_name) && isTbd(m.player2_name)) return 'awaiting'
   if (resulted && pick && m.winner === pick) return 'correct'
   if (resulted && pick && m.winner !== pick) return 'wrong'
   if (resulted && !pick) return 'wrong' // counts as a missed/wrong outcome
@@ -130,8 +137,13 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
   // Track in-flight picks per match so saving one doesn't block picking others.
   const [pendingPicks, setPendingPicks] = useState<Record<string, 'player1' | 'player2'>>({})
 
+  // A round worth 0 points is in the draw for the bracket to show, but isn't
+  // tipped — the opening round of a 128 draw is 64 picks nobody wants to file.
+  // It stays out of the tape and the card entirely.
   const orderedRounds = useMemo(
-    () => [...rounds].sort((a, b) => a.sort_order - b.sort_order),
+    () => [...rounds]
+      .filter(r => r.points_per_correct_tip > 0)
+      .sort((a, b) => a.sort_order - b.sort_order),
     [rounds]
   )
 
@@ -393,7 +405,7 @@ interface MatchCardProps {
 function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, now, room }: MatchCardProps) {
   const resulted = !!match.winner
   const locked = new Date(match.scheduled_start) <= now
-  const interactive = !locked && !resulted
+  const interactive = !locked && !resulted && state !== 'awaiting'
 
   const cardBorder = locked && !resulted ? '#D6DEF0' : 'var(--rule)'
 
@@ -405,6 +417,7 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
   else if (state === 'void') { line = 'Walkover — no points awarded.' }
   else if (state === 'locked') { line = `Locked in ${myName}.` }
   else if (state === 'no-pick') { line = 'Locked with no pick in.'; lineColor = 'var(--down)' }
+  else if (state === 'awaiting') { line = 'Waiting on the previous round.' }
   else if (state === 'open') { line = 'Tap a name to pick — no tip in yet.' }
   else if (state === 'picked') { line = 'Filed. Tap the other name to change.' }
 
@@ -478,6 +491,7 @@ function StatePill({ state, pts }: { state: MatchState; pts: number }) {
     'no-pick': { label: 'no pick', color: 'var(--down)', bg: 'var(--paper-3)' },
     picked:  { label: 'Filed', color: 'var(--olive)', bg: '#E7F3EC' },
     open:    { label: 'Tap to pick', color: 'var(--blue)', bg: 'var(--brick-surface)' },
+    awaiting: { label: 'Not set', color: 'var(--ink-3)', bg: 'var(--paper-3)' },
   }
   const s = styles[state]
   return (

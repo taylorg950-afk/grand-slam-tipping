@@ -33,8 +33,11 @@ export default async function RulesPage() {
         .order('sort_order')
     : { data: null }
 
-  const pointsRows: [string, number][] = rounds?.length
-    ? rounds.map(r => [r.name, r.points_per_correct_tip])
+  // 0 points means the round is shown in the draw but not tipped — leave it
+  // out of the scoring table.
+  const tippedRounds = (rounds ?? []).filter(r => r.points_per_correct_tip > 0)
+  const pointsRows: [string, number][] = tippedRounds.length
+    ? tippedRounds.map(r => [r.name, r.points_per_correct_tip])
     : DEFAULT_POINTS
 
   return (

@@ -86,6 +86,8 @@ interface BracketCard {
   isLocked: boolean
   isResulted: boolean
   isLive: boolean
+  /** False for a round worth 0 points — shown in the draw, but not tipped. */
+  isTipped: boolean
 }
 
 interface BuiltBracket {
@@ -158,6 +160,7 @@ function buildBracket(
         noPoints: m.no_points,
         myPick: tipMap[m.id] ?? null,
         isLocked, isResulted, isLive,
+        isTipped: round.points_per_correct_tip > 0,
       })
     }
   })
@@ -175,6 +178,7 @@ function buildBracket(
       noPoints: finalMatch.no_points,
       myPick: tipMap[finalMatch.id] ?? null,
       isLocked, isResulted, isLive: isLocked && !isResulted,
+      isTipped: finalRound.points_per_correct_tip > 0,
     }
   }
 
@@ -497,7 +501,8 @@ export default function BracketView({
                       const myP1 = tip === 'player1'
                       const myP2 = tip === 'player2'
                       const isLive = isLocked && !isResulted
-                      const isOpen = !isLocked && !isResulted
+                      const roundPts = rounds.find(r => r.id === m.round_id)?.points_per_correct_tip ?? 0
+                      const isOpen = !isLocked && !isResulted && roundPts > 0
                       const roundName = roundNameById[m.round_id] ?? mobileActive.name
                       let statusEl: React.ReactNode = null
                       if (isLive) statusEl = <span className="rounded-full bg-[var(--spark)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--spark-ink)]">Live</span>
@@ -608,7 +613,7 @@ function MatchCard({
   const p1Won = card.winner === 'player1'
   const p2Won = card.winner === 'player2'
   const isResulted = card.isResulted
-  const isOpen = !card.isLocked && !isResulted
+  const isOpen = !card.isLocked && !isResulted && card.isTipped
 
   const border = big ? 'var(--brick)' : card.isLive ? 'var(--brick)' : '#D6DEF0'
   const shadow = big ? '0 14px 30px -20px rgba(0,48,143,0.55)' : '0 6px 14px -12px rgba(11,20,55,0.4)'
