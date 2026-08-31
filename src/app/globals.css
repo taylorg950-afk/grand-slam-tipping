@@ -479,3 +479,12 @@ body {
   cursor: pointer;
 }
 .tp-cta-outline:hover { background: var(--brick-surface); }
+
+/* Content column. Section backgrounds (the navy hero) stay full-bleed; what
+   sits inside them stops at a readable width so the app doesn't span an
+   ultrawide monitor edge to edge. */
+.tp-wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}

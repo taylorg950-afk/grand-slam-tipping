@@ -109,7 +109,7 @@ export default async function TiebreakerPage({
         >
           FINAL
         </span>
-        <div className="relative">
+        <div className="tp-wrap relative">
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
             The tiebreaker · {tournament.name}
           </div>

@@ -478,7 +478,7 @@ export default async function LeaderboardPage({
         >
           {cityGhost}
         </span>
-        <div className="relative">
+        <div className="tp-wrap relative">
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
             The standings · {tournament.name}
           </div>
@@ -493,7 +493,7 @@ export default async function LeaderboardPage({
       </section>
 
       {/* Table */}
-      <section className="px-5 pt-6 md:px-8">
+      <section className="tp-wrap px-5 pt-6 md:px-8">
         {rows.length === 0 ? (
           <div className="tp-card p-10 text-center text-[14px] text-[var(--ink-2)]">No tippers yet.</div>
         ) : (
@@ -606,7 +606,7 @@ export default async function LeaderboardPage({
 
       {/* Movers */}
       {(movers.gainer || movers.faller || movers.stuck) && (
-        <section className="px-5 pb-8 pt-5 md:px-8">
+        <section className="tp-wrap px-5 pb-8 pt-5 md:px-8">
           <div className="tp-card p-5 md:px-6">
             <div className="mb-1 flex items-center justify-between border-b border-[var(--rule)] pb-3">
               <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">

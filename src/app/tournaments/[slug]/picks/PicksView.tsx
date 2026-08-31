@@ -256,7 +256,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
           >
             {ghostWord}
           </span>
-          <div className="relative">
+          <div className="tp-wrap relative">
             <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
               Your picks · {tournament.name}
             </div>
@@ -273,7 +273,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
       {/* Round tape */}
       {meta.length > 0 && (
         <section className="px-5 pt-5 md:px-8">
-          <div className="tp-scroll flex gap-2.5 overflow-x-auto pb-1.5">
+          <div className="tp-wrap tp-scroll flex gap-2.5 overflow-x-auto pb-1.5">
             {meta.map(m => {
               const selected = m.round.id === active?.round.id
               const long = ROUND_LONG[m.round.name] ?? m.round.name
@@ -335,7 +335,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
       {/* Round summary */}
       {active && (
         <section className="px-5 pt-4 md:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b-2 border-[var(--ink)] pb-2.5">
+          <div className="tp-wrap flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b-2 border-[var(--ink)] pb-2.5">
             <h2 className="m-0 font-serif text-[22px] font-bold uppercase tracking-[0.02em] md:text-[24px]">
               The card · {ROUND_LONG[active.round.name] ?? active.round.name}
             </h2>
@@ -353,7 +353,7 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
         {!active || active.matches.length === 0 ? (
           <div className="py-10 text-center text-[14px] text-[var(--ink-2)]">No fixtures yet for this round.</div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="tp-wrap flex flex-col gap-3">
             {active.matches.map(m => {
               const tip = tipMap[m.id] as 'player1' | 'player2' | undefined
               const state = classifyMatch(m, tip, now)

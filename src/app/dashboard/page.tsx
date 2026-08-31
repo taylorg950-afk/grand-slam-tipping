@@ -503,7 +503,7 @@ export default async function DashboardPage() {
             WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 55%)',
           }}
         />
-        <div className="relative flex items-start justify-between gap-4">
+        <div className="tp-wrap relative flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: '#B9CBF2' }}>
               <span>{tournament.name}</span>
@@ -531,14 +531,14 @@ export default async function DashboardPage() {
       </section>
 
       {/* Stat cards */}
-      <section className="px-5 pt-6 md:px-8">
+      <section className="tp-wrap px-5 pt-6 md:px-8">
         <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
           {stats.map(s => <StatCard key={s.label} {...s} />)}
         </div>
       </section>
 
       {/* Leaderboard + Your rounds */}
-      <section className="uso-two-col px-5 pt-5 md:px-8">
+      <section className="tp-wrap uso-two-col px-5 pt-5 md:px-8">
         {/* Leaderboard */}
         <div className="tp-card p-5">
           <div className="mb-1 flex items-center justify-between border-b border-[var(--rule)] pb-3">
@@ -619,7 +619,7 @@ export default async function DashboardPage() {
 
       {/* Points by round */}
       {chartData.length > 0 && (
-        <section className="px-5 pt-5 md:px-8">
+        <section className="tp-wrap px-5 pt-5 md:px-8">
           <div className="tp-card p-5 md:px-6">
             <div className="mb-4 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
               <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Points by round</h2>
@@ -631,7 +631,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Order of play */}
-      <section className="px-5 pb-6 pt-5 md:px-8">
+      <section className="tp-wrap px-5 pb-6 pt-5 md:px-8">
         <div className="tp-card p-5 md:px-6">
           <div className="mb-1 flex items-center justify-between border-b border-[var(--rule)] pb-3.5">
             <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Today&apos;s order of play</h2>
