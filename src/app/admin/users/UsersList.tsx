@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { setUserPassword } from './actions'
+import { setUserPassword, deleteUser } from './actions'
 
 interface User {
   id: string
   display_name: string
   email: string
   is_admin: boolean
+  tipCount: number
+  isMe: boolean
 }
 
 export default function UsersList({ users }: { users: User[] }) {
@@ -24,6 +26,10 @@ export default function UsersList({ users }: { users: User[] }) {
 
 function UserRow({ user }: { user: User }) {
   const [open, setOpen] = useState(false)
+  // Two-step in-page confirm rather than a native dialog: it states exactly
+  // what's about to be destroyed, and a stray Enter can't trigger it.
+  const [confirming, setConfirming] = useState(false)
+  const [gone, setGone] = useState(false)
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
@@ -44,6 +50,14 @@ function UserRow({ user }: { user: User }) {
     })
   }
 
+  if (gone) {
+    return (
+      <div className="px-4 py-3 text-sm text-[var(--ink-3)]">
+        <b className="text-[var(--ink-2)]">{user.display_name}</b> deleted.
+      </div>
+    )
+  }
+
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between">
@@ -58,14 +72,57 @@ function UserRow({ user }: { user: User }) {
           </div>
           <p className="text-xs text-[var(--ink-3)]">{user.email || '(no email)'}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => { setOpen(o => !o); setMessage(null) }}
-          className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]"
-        >
-          {open ? 'Cancel' : 'Set password'}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => { setOpen(o => !o); setConfirming(false); setMessage(null) }}
+            className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]"
+          >
+            {open ? 'Cancel' : 'Set password'}
+          </button>
+          {!user.isMe && (
+            <button
+              type="button"
+              onClick={() => { setConfirming(c => !c); setOpen(false); setMessage(null) }}
+              className="text-sm text-[var(--ink-3)] hover:text-[var(--down)]"
+            >
+              {confirming ? 'Cancel' : 'Delete'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {confirming && (
+        <div className="mt-3 rounded-[12px] p-3" style={{ background: 'var(--paper-3)', border: '1px solid var(--rule)' }}>
+          <p className="m-0 text-sm text-[var(--ink)]">
+            Delete <b>{user.display_name}</b>
+            {user.tipCount > 0 && <> and their {user.tipCount} {user.tipCount === 1 ? 'tip' : 'tips'}</>}?
+            {user.is_admin && <> This account is an admin.</>}
+          </p>
+          <p className="m-0 mt-1 text-xs text-[var(--ink-3)]">This can&apos;t be undone.</p>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setMessage(null)
+                startTransition(async () => {
+                  const result = await deleteUser(user.id)
+                  if ('error' in result) setMessage({ kind: 'err', text: result.error })
+                  else setGone(true)
+                })
+              }}
+              className="rounded-[12px] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ background: 'var(--down)' }}
+            >
+              {pending ? 'Deleting…' : `Yes, delete ${user.display_name}`}
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} className="text-sm text-[var(--ink-3)] hover:text-[var(--ink)]">
+              Keep them
+            </button>
+          </div>
+        </div>
+      )}
 
       {open && (
         <form onSubmit={submit} className="mt-3 flex items-center gap-2">
