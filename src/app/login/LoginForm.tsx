@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import SlamShowcase, { usFont } from '../SlamShowcase'
 
-type Mode = 'password' | 'magic' | 'reset'
+type Mode = 'password' | 'reset'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -16,7 +16,6 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [magicSent, setMagicSent] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [error, setError] = useState(initialError)
   const [loading, setLoading] = useState(false)
@@ -34,24 +33,6 @@ export default function LoginForm() {
     }
     router.push('/dashboard')
     router.refresh()
-  }
-
-  async function sendMagicLink(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-    setMagicSent(true)
-    setLoading(false)
   }
 
   async function sendResetLink(e: React.FormEvent) {
@@ -95,14 +76,14 @@ export default function LoginForm() {
           <p className="mt-2 text-[14px] leading-[1.5] text-[var(--ink-2)]">
             {mode === 'reset'
               ? 'Give us your email and we’ll send a link to set a new password.'
-              : 'Private league — members sign in below.'}
+              : 'Already a member? Sign in. First time here? Create an account.'}
           </p>
 
-          {magicSent || resetSent ? (
+          {resetSent ? (
             <div className="mt-7 rounded-[16px] p-5 text-center" style={{ background: 'var(--paper-3)' }}>
               <div className="mb-1.5 font-serif text-[22px] font-bold text-[var(--ink)]">Check your email.</div>
               <p className="m-0 text-[14px] text-[var(--ink-2)]">
-                {resetSent ? 'A password reset link' : 'A sign-in link'} is on its way to <b className="font-semibold text-[var(--ink)]">{email}</b>.
+                A password reset link is on its way to <b className="font-semibold text-[var(--ink)]">{email}</b>.
               </p>
               {resetSent && (
                 <button type="button" onClick={() => { setMode('password'); setResetSent(false) }} className="tp-ghost mt-5 block w-full text-center">
@@ -112,7 +93,7 @@ export default function LoginForm() {
             </div>
           ) : (
             <form
-              onSubmit={mode === 'password' ? signInWithPassword : mode === 'magic' ? sendMagicLink : sendResetLink}
+              onSubmit={mode === 'password' ? signInWithPassword : sendResetLink}
               className="mt-7 space-y-4"
             >
               <Field id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoFocus required />
@@ -139,16 +120,21 @@ export default function LoginForm() {
                 {loading
                   ? mode === 'password' ? 'Signing in…' : 'Sending…'
                   : mode === 'password' ? 'Sign in →'
-                  : mode === 'magic' ? 'Send sign-in link →'
                   : 'Send reset link →'}
               </button>
 
-              {mode !== 'reset' && (
-                <button type="button" onClick={() => { setMode(mode === 'password' ? 'magic' : 'password'); setError('') }} className="tp-ghost block w-full text-center">
-                  {mode === 'password' ? 'Email me a link instead' : 'Use password instead'}
-                </button>
-              )}
-              {mode === 'reset' && (
+              {mode === 'password' ? (
+                <>
+                  <div className="flex items-center gap-3 pt-1">
+                    <span className="h-px flex-1" style={{ background: 'var(--rule)' }} />
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-3)]">First time here?</span>
+                    <span className="h-px flex-1" style={{ background: 'var(--rule)' }} />
+                  </div>
+                  <Link href="/signup" className="tp-cta-outline block w-full text-center">
+                    Create an account →
+                  </Link>
+                </>
+              ) : (
                 <button type="button" onClick={() => { setMode('password'); setError('') }} className="tp-ghost block w-full text-center">
                   Back to sign in
                 </button>
@@ -166,10 +152,7 @@ export default function LoginForm() {
             </ol>
           </div>
 
-          <p className="mt-6 text-center text-[12px] text-[var(--ink-3)]">
-            Private league · invite only. New here?{' '}
-            <Link href="/signup" className="font-semibold text-[var(--blue)] hover:text-[var(--brick)]">Pull up a chair</Link>.
-          </p>
+          <p className="mt-6 text-center text-[12px] text-[var(--ink-3)]">Private league · invite only.</p>
         </div>
       </div>
     </main>
