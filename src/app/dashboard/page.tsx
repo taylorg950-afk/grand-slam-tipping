@@ -86,6 +86,10 @@ function fmtClock(date: Date) {
   return date.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })
 }
 
+function isTbdName(name: string) {
+  return !name || name.trim().toUpperCase() === 'TBD'
+}
+
 function fmtLockTime(date: Date) {
   // Lowercase the meridiem only — lowercasing the whole string took the
   // weekday with it ("sat 11 pm").
@@ -485,6 +489,35 @@ export default async function DashboardPage() {
 
   const heroStatus = `${tipsInRound}/${totalInRound} tips in${lockCountdown ? ` · locks in ${lockCountdown}` : ''}`
 
+  // How much of the room still has picks to file this round. Only counts
+  // matches you could actually file right now — not locked, and both players
+  // known — otherwise a round with TBD slots would leave everyone permanently
+  // "outstanding" and the number could never reach zero.
+  const fileableMatchIds = new Set(
+    currentRoundMatches
+      .filter(m =>
+        !m.winner &&
+        new Date(m.scheduled_start) > now &&
+        !isTbdName(m.player1_name) &&
+        !isTbdName(m.player2_name)
+      )
+      .map(m => m.id)
+  )
+  const roomProgress = fileableMatchIds.size === 0
+    ? null
+    : users
+        .map(u => {
+          const filed = new Set(
+            tips.filter(t => t.user_id === u.id && fileableMatchIds.has(t.match_id)).map(t => t.match_id)
+          ).size
+          return { id: u.id, name: u.display_name, filed, isMe: u.id === user.id }
+        })
+        // Most filed first: it reads as a race rather than a list of laggards,
+        // while still putting anyone on zero where they can see themselves.
+        .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
+  const fileableCount = fileableMatchIds.size
+  const roomOutstanding = roomProgress ? roomProgress.filter(r => r.filed < fileableCount).length : null
+
 
   return (
     <main className="flex min-h-screen flex-col bg-[var(--paper)]">
@@ -519,6 +552,13 @@ export default async function DashboardPage() {
               </p>
             )}
             <div className="mt-3 text-[13px] font-medium tabular-nums" style={{ color: '#B9CBF2' }}>{heroStatus}</div>
+            {roomOutstanding !== null && (
+              <div className="mt-1.5 text-[13px]" style={{ color: '#B9CBF2' }}>
+                {roomOutstanding === 0
+                  ? `The whole room is in — all ${users.length} tippers have filed.`
+                  : `${roomOutstanding} of ${users.length} ${roomOutstanding === 1 ? 'tipper' : 'tippers'} still to file.`}
+              </div>
+            )}
           </div>
           <span
             className="hidden shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white md:inline-flex"
@@ -536,6 +576,55 @@ export default async function DashboardPage() {
           {stats.map(s => <StatCard key={s.label} {...s} />)}
         </div>
       </section>
+
+      {/* Tips in */}
+      {roomProgress && (
+        <section className="tp-wrap px-5 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Tips in</h2>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+                {currentRoundLong} · {fileableCount} to file
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+              {roomProgress.map(r => {
+                const done = r.filed >= fileableCount
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-center gap-3 rounded-[8px] py-1.5"
+                    style={r.isMe ? { background: 'var(--you-bg)', paddingInline: 8, marginInline: -8 } : undefined}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[14px]" style={{ fontWeight: r.isMe ? 700 : 500 }}>
+                      {r.name}{r.isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
+                      style={{ background: 'var(--rule)' }}
+                    >
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: `${Math.round((r.filed / fileableCount) * 100)}%`,
+                          background: done ? 'var(--olive)' : 'var(--brick)',
+                        }}
+                      />
+                    </span>
+                    <span
+                      className="w-14 shrink-0 text-right text-[13px] font-semibold tabular-nums"
+                      style={{ color: done ? 'var(--olive)' : r.filed === 0 ? 'var(--ink-3)' : 'var(--ink-2)' }}
+                    >
+                      {r.filed}/{fileableCount}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Leaderboard + Your rounds */}
       <section className="tp-wrap uso-two-col px-5 pt-5 md:px-8">
