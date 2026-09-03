@@ -577,55 +577,6 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Tips in */}
-      {roomProgress && (
-        <section className="tp-wrap px-5 pt-5 md:px-8">
-          <div className="tp-card p-5 md:px-6">
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] pb-3">
-              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Tips in</h2>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
-                {currentRoundLong} · {fileableCount} to file
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
-              {roomProgress.map(r => {
-                const done = r.filed >= fileableCount
-                return (
-                  <div
-                    key={r.id}
-                    className="flex items-center gap-3 rounded-[8px] py-1.5"
-                    style={r.isMe ? { background: 'var(--you-bg)', paddingInline: 8, marginInline: -8 } : undefined}
-                  >
-                    <span className="min-w-0 flex-1 truncate text-[14px]" style={{ fontWeight: r.isMe ? 700 : 500 }}>
-                      {r.name}{r.isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
-                      style={{ background: 'var(--rule)' }}
-                    >
-                      <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${Math.round((r.filed / fileableCount) * 100)}%`,
-                          background: done ? 'var(--olive)' : 'var(--brick)',
-                        }}
-                      />
-                    </span>
-                    <span
-                      className="w-14 shrink-0 text-right text-[13px] font-semibold tabular-nums"
-                      style={{ color: done ? 'var(--olive)' : r.filed === 0 ? 'var(--ink-3)' : 'var(--ink-2)' }}
-                    >
-                      {r.filed}/{fileableCount}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Leaderboard + Your rounds */}
       <section className="tp-wrap uso-two-col px-5 pt-5 md:px-8">
         {/* Leaderboard */}
@@ -715,6 +666,55 @@ export default async function DashboardPage() {
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">cumulative · you in blue</span>
             </div>
             <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
+          </div>
+        </section>
+      )}
+
+      {/* Tips in */}
+      {roomProgress && (
+        <section className="tp-wrap px-5 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Tips in</h2>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+                {currentRoundLong} · {fileableCount} to file
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+              {roomProgress.map(r => {
+                const done = r.filed >= fileableCount
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-center gap-3 rounded-[8px] py-1.5"
+                    style={r.isMe ? { background: 'var(--you-bg)', paddingInline: 8, marginInline: -8 } : undefined}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[14px]" style={{ fontWeight: r.isMe ? 700 : 500 }}>
+                      {r.name}{r.isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
+                      style={{ background: 'var(--rule)' }}
+                    >
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: `${Math.round((r.filed / fileableCount) * 100)}%`,
+                          background: done ? 'var(--olive)' : 'var(--brick)',
+                        }}
+                      />
+                    </span>
+                    <span
+                      className="w-14 shrink-0 text-right text-[13px] font-semibold tabular-nums"
+                      style={{ color: done ? 'var(--olive)' : r.filed === 0 ? 'var(--ink-3)' : 'var(--ink-2)' }}
+                    >
+                      {r.filed}/{fileableCount}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </section>
       )}
