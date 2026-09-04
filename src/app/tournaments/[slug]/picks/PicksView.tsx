@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TabBar } from '@/components/TabBar'
+import LockCountdown from '@/components/LockCountdown'
 import { submitTip } from '../round/[name]/actions'
 import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
 
@@ -261,9 +262,12 @@ export default function PicksView({ tournament, rounds, matches, tipMap: initial
               Your picks · {tournament.name}
             </div>
             <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">{heroTitle}</h1>
-            {statusBits.length > 0 && (
-              <div className="mt-3 text-[14px]" style={{ color: '#DDE6FA' }}>
-                {statusBits.join(' · ')}
+            {(statusBits.length > 0 || firstUpcoming) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                {statusBits.length > 0 && (
+                  <span className="text-[14px]" style={{ color: '#DDE6FA' }}>{statusBits.join(' · ')}</span>
+                )}
+                {firstUpcoming && <LockCountdown target={firstUpcoming.scheduled_start} />}
               </div>
             )}
           </div>
@@ -485,7 +489,7 @@ function RoomSplit({ match, room, tip }: { match: PicksMatch; room: RoomCount; t
 function StatePill({ state, pts }: { state: MatchState; pts: number }) {
   const styles: Record<MatchState, { label: string; color: string; bg: string }> = {
     correct: { label: `+${pts}`, color: 'var(--olive)', bg: '#E7F3EC' },
-    wrong:   { label: '0', color: 'var(--ink-3)', bg: 'var(--paper-3)' },
+    wrong:   { label: '0', color: 'var(--down)', bg: '#FBE9E4' },
     void:    { label: 'no points', color: 'var(--ink-3)', bg: 'var(--paper-3)' },
     locked:  { label: 'Live', color: 'var(--spark-ink)', bg: 'var(--spark)' },
     'no-pick': { label: 'no pick', color: 'var(--down)', bg: 'var(--paper-3)' },

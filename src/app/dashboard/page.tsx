@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
+import LockCountdown from '@/components/LockCountdown'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
@@ -525,6 +526,12 @@ export default async function DashboardPage() {
         // while still putting anyone on zero where they can see themselves.
         .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
   const fileableCount = fileableMatchIds.size
+  const nextLockAt = filingRound
+    ? matches
+        .filter(m => fileableMatchIds.has(m.id))
+        .map(m => m.scheduled_start)
+        .sort()[0] ?? null
+    : null
   const roomOutstanding = roomProgress ? roomProgress.filter(r => r.filed < fileableCount).length : null
 
 
@@ -560,7 +567,10 @@ export default async function DashboardPage() {
                 {body.paragraphs[0].text}
               </p>
             )}
-            <div className="mt-3 text-[13px] font-medium tabular-nums" style={{ color: '#B9CBF2' }}>{heroStatus}</div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="text-[13px] font-medium tabular-nums" style={{ color: '#B9CBF2' }}>{heroStatus}</span>
+              {nextLockAt && <LockCountdown target={nextLockAt} />}
+            </div>
             {roomOutstanding !== null && (
               <div className="mt-1.5 text-[13px]" style={{ color: '#B9CBF2' }}>
                 {roomOutstanding === 0
@@ -599,28 +609,23 @@ export default async function DashboardPage() {
           {scores.length === 0 ? (
             <div className="py-6 text-[14px] text-[var(--ink-2)]">No tips judged yet. Standings appear once results land.</div>
           ) : (
-            scores.slice(0, 6).map((s, i) => (
-              <LeaderRow
-                key={s.id}
-                rank={i + 1}
-                name={s.display_name}
-                initials={initials(s.display_name)}
-                avatarUrl={avatarMap[s.id]}
-                color={userColor[s.id]}
-                points={hasAnyResults ? s.totalPoints : null}
-                move={currentRoundHasResults ? `+${crScoreMap[s.id] ?? 0} ${currentRound?.name ?? ''}` : null}
-                isMe={s.id === user.id}
-              />
-            ))
-          )}
-          {scores.length > 6 && (
-            <div className="pt-3 text-center">
-              <Link
-                href={`/tournaments/${tournament.slug}/leaderboard`}
-                className="text-[12px] font-semibold tracking-[0.06em] text-[var(--blue)]"
-              >
-                + {scores.length - 6} more tippers
-              </Link>
+            // Everyone is here — scroll rather than making people click through
+            // to the standings just to see where they sit.
+            <div className="tp-scroll max-h-[336px] overflow-y-auto">
+              {scores.map((s, i) => (
+                <LeaderRow
+                  key={s.id}
+                  rank={i + 1}
+                  name={s.display_name}
+                  href={`/tournaments/${tournament.slug}/tipper/${s.id}`}
+                  initials={initials(s.display_name)}
+                  avatarUrl={avatarMap[s.id]}
+                  color={userColor[s.id]}
+                  points={hasAnyResults ? s.totalPoints : null}
+                  move={currentRoundHasResults ? `+${crScoreMap[s.id] ?? 0} ${currentRound?.name ?? ''}` : null}
+                  isMe={s.id === user.id}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -803,10 +808,11 @@ function StatCard({ label, value, sub, caption, color }: StatCardData) {
 }
 
 function LeaderRow({
-  rank, name, initials, avatarUrl, color, points, move, isMe,
+  rank, name, href, initials, avatarUrl, color, points, move, isMe,
 }: {
   rank: number
   name: string
+  href: string
   initials: string
   avatarUrl: string | null | undefined
   color: string
@@ -815,8 +821,9 @@ function LeaderRow({
   isMe: boolean
 }) {
   return (
-    <div
-      className="mt-1 flex items-center gap-3 rounded-[12px] px-3 py-2.5"
+    <Link
+      href={href}
+      className="mt-1 flex items-center gap-3 rounded-[12px] px-3 py-2.5 hover:bg-[var(--paper-3)]"
       style={isMe ? { background: 'var(--you-bg)', boxShadow: 'inset 3px 0 0 var(--you-line)' } : undefined}
     >
       <span className="w-5 text-center font-serif text-[17px] font-semibold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink-3)' }}>
@@ -849,7 +856,7 @@ function LeaderRow({
       <span className="w-11 text-right font-serif text-[19px] font-bold tabular-nums text-[var(--ink)]">
         {points == null ? '—' : points}
       </span>
-    </div>
+    </Link>
   )
 }
 

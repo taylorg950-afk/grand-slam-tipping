@@ -156,6 +156,8 @@ interface RoundPointsRow {
   avatar_url: string | null
   total: number
   tipped: number
+  /** Tips on decided, non-void matches — the denominator for accuracy. */
+  judged: number
   correct: number
   perRound: Record<string, number>  // by round.id
   spark: number[]                   // cumulative points per ordered round
@@ -170,10 +172,12 @@ function computeRows(users: UserRow[], rounds: Round[], matches: Match[], tips: 
     const spark: number[] = [0]
     let running = 0
     let correct = 0
+    let judged = 0
 
     for (const round of orderedRounds) {
       const roundMatches = matches.filter(m => m.round_id === round.id && m.winner && !m.no_points)
       const myTips = userTips.filter(t => roundMatches.some(m => m.id === t.match_id))
+      judged += myTips.length
       const c = myTips.filter(t => {
         const match = roundMatches.find(m => m.id === t.match_id)!
         return match.winner === t.predicted_winner
@@ -190,6 +194,7 @@ function computeRows(users: UserRow[], rounds: Round[], matches: Match[], tips: 
       avatar_url: u.avatar_url ?? null,
       total: running,
       tipped: userTips.length,
+      judged,
       correct,
       perRound,
       spark,
@@ -521,7 +526,7 @@ export default async function LeaderboardPage({
 
                 {rows.map((row, i) => {
                   const isMe = row.userId === user.id
-                  const accuracy = row.tipped > 0 ? Math.round((row.correct / row.tipped) * 100) : 0
+                  const accuracy = row.judged > 0 ? Math.round((row.correct / row.judged) * 100) : 0
                   return (
                     <div
                       key={row.userId}
@@ -532,12 +537,12 @@ export default async function LeaderboardPage({
                         {i + 1}
                       </span>
                       <Avatar name={row.display_name} avatarUrl={row.avatar_url} color={avatarColor(row.userId)} size={26} />
-                      <span className="flex min-w-0 items-center gap-2">
+                      <Link href={`/tournaments/${slug}/tipper/${row.userId}`} className="flex min-w-0 items-center gap-2 hover:underline">
                         <span className="truncate text-[14px]" style={{ fontWeight: isMe ? 700 : 500, color: 'var(--ink)' }}>
                           {row.display_name}{isMe && <span className="font-medium text-[var(--ink-3)]"> · you</span>}
                         </span>
                         <MoveIndicator move={row.move} />
-                      </span>
+                      </Link>
                       {orderedRounds.map(r => {
                         const v = row.perRound[r.id] ?? 0
                         return (
@@ -550,7 +555,7 @@ export default async function LeaderboardPage({
                           </span>
                         )
                       })}
-                      <span className="text-right text-[13px] tabular-nums text-[var(--ink-2)]">{row.correct}/{row.tipped}</span>
+                      <span className="text-right text-[13px] tabular-nums text-[var(--ink-2)]">{row.correct}/{row.judged}</span>
                       <span className="text-right text-[13px] tabular-nums text-[var(--ink-3)]">{row.tipped > 0 ? `${accuracy}%` : '—'}</span>
                       <span className="text-right font-serif text-[20px] font-bold tabular-nums" style={{ color: isMe ? 'var(--brick)' : 'var(--ink)' }}>{row.total}</span>
                     </div>
@@ -593,7 +598,7 @@ export default async function LeaderboardPage({
                       })}
                     </div>
                     <div className="mt-3 flex justify-between text-[12px] tabular-nums text-[var(--ink-3)]">
-                      <span>{row.correct}/{row.tipped} hits</span>
+                      <span>{row.correct}/{row.judged} hits</span>
                       <span>{row.tipped > 0 ? `${accuracy}% accuracy` : '—'}</span>
                     </div>
                   </div>
