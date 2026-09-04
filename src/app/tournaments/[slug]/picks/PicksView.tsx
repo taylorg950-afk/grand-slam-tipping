@@ -543,7 +543,10 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
     border = 'var(--brick)'; bg = '#EEF2FC'; nameColor = 'var(--brick)'; nameWeight = 700
     tick = '✓ your call'; tickShort = '✓'
   } else if (isMine && resulted) {
-    border = 'rgba(192,73,46,0.35)'; nameColor = 'var(--ink-2)'; tick = 'your call'; tickShort = '✓'; tickColor = 'var(--down)'
+    // A miss should read as loudly as a hit: fill the cell, same as the winner's
+    // green, rather than a faint border you have to look for.
+    border = 'rgba(192,73,46,0.5)'; bg = '#FBE9E4'; nameColor = 'var(--down)'; nameWeight = 700
+    tick = 'your call'; tickShort = '✓'; tickColor = 'var(--down)'
   } else if (isLoser) {
     nameColor = 'var(--ink-3)'; opacity = 0.6
   }

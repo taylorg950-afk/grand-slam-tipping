@@ -678,7 +678,7 @@ function BracketRow({
 }) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
-  const nameColor = won ? 'var(--olive)' : picked && !resulted ? 'var(--brick)' : 'var(--ink)'
+  const nameColor = won ? 'var(--olive)' : picked && resulted ? 'var(--down)' : picked ? 'var(--brick)' : 'var(--ink)'
   const inner = (
     <>
       <span className="flex min-w-0 flex-1 items-baseline gap-1">
@@ -714,8 +714,16 @@ function BracketRow({
   const rowStyle: React.CSSProperties = {
     padding: `${big ? 7 : 5}px 10px`,
     borderBottom: isFirst ? '1px solid var(--rule)' : 'none',
-    opacity: lost ? 0.5 : 1,
-    background: won ? '#E7F3EC' : picked && !resulted ? '#EEF2FC' : 'transparent',
+    // Your own losing pick keeps full opacity and gets a red fill — dimming it
+    // like any other beaten player buries the one row you most want to see.
+    opacity: lost && !picked ? 0.5 : 1,
+    background: won
+      ? '#E7F3EC'
+      : picked && resulted
+        ? '#FBE9E4'
+        : picked
+          ? '#EEF2FC'
+          : 'transparent',
     // Pinned so the rendered card matches MH exactly (border-box, so the
     // divider border is included). The final card sizes to its content.
     ...(big ? { minHeight: 24 } : { height: ROW_H }),
@@ -788,9 +796,10 @@ function MobileStaticSide({
 }: { name: string; myPick: boolean; won: boolean; lost: boolean; resulted: boolean; score?: string | null }) {
   const display = stripSeed(name)
   const seed = parseSeed(name)
-  const border = won ? 'rgba(28,122,75,0.5)' : myPick ? 'var(--brick)' : '#D6DEF0'
-  const bg = won ? '#E7F3EC' : 'var(--paper-3)'
-  const nameColor = won ? 'var(--olive)' : lost ? 'var(--ink-3)' : myPick ? 'var(--brick)' : 'var(--ink)'
+  const missed = myPick && resulted && !won
+  const border = won ? 'rgba(28,122,75,0.5)' : missed ? 'rgba(192,73,46,0.5)' : myPick ? 'var(--brick)' : '#D6DEF0'
+  const bg = won ? '#E7F3EC' : missed ? '#FBE9E4' : 'var(--paper-3)'
+  const nameColor = won ? 'var(--olive)' : missed ? 'var(--down)' : lost ? 'var(--ink-3)' : myPick ? 'var(--brick)' : 'var(--ink)'
   return (
     <div
       className="pick-side flex items-center justify-between gap-2"
