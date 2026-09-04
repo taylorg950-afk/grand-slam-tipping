@@ -370,15 +370,15 @@ export default async function DashboardPage() {
     : null
 
   const leaderScore = scores[0]
-  const leaderAccuracy = leaderScore && leaderScore.totalTips > 0
-    ? Math.round((leaderScore.correctTips / leaderScore.totalTips) * 100)
+  const leaderAccuracy = leaderScore && leaderScore.judgedTips > 0
+    ? Math.round((leaderScore.correctTips / leaderScore.judgedTips) * 100)
     : null
   const secondScore = scores[1]
-  const secondAccuracy = secondScore && secondScore.totalTips > 0
-    ? Math.round((secondScore.correctTips / secondScore.totalTips) * 100)
+  const secondAccuracy = secondScore && secondScore.judgedTips > 0
+    ? Math.round((secondScore.correctTips / secondScore.judgedTips) * 100)
     : null
-  const myAccuracy = myScore && myScore.totalTips > 0
-    ? Math.round((myScore.correctTips / myScore.totalTips) * 100)
+  const myAccuracy = myScore && myScore.judgedTips > 0
+    ? Math.round((myScore.correctTips / myScore.judgedTips) * 100)
     : null
 
   const bodyState: BodyState = {
@@ -482,7 +482,9 @@ export default async function DashboardPage() {
       label: 'Accuracy',
       value: myAccuracy != null ? `${myAccuracy}%` : '—',
       sub: '',
-      caption: myScore ? `${myScore.correctTips} of ${myScore.totalTips} tips` : 'no tips yet',
+      caption: myScore && myScore.judgedTips > 0
+        ? `${myScore.correctTips} of ${myScore.judgedTips} judged`
+        : 'no results yet',
       color: 'var(--ink)',
     },
   ]

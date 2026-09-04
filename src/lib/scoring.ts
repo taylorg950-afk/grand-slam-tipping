@@ -4,6 +4,8 @@ export interface UserScore {
   totalPoints: number
   correctTips: number
   totalTips: number
+  /** Tips on matches that have actually been decided — the denominator for accuracy. */
+  judgedTips: number
 }
 
 export function computeScores(
@@ -22,18 +24,25 @@ export function computeScores(
     const userTips = tips.filter(t => t.user_id === user.id)
     let totalPoints = 0
     let correctTips = 0
+    let judgedTips = 0
 
     for (const tip of userTips) {
       const match = matchMap[tip.match_id]
-      if (match && tip.predicted_winner === match.winner) {
+      // matchMap only holds decided, non-void matches, so anything found here
+      // has been judged. A tip on a match still to be played isn't a miss.
+      if (!match) continue
+      judgedTips++
+      if (tip.predicted_winner === match.winner) {
         totalPoints += pointsMap[match.round_id] ?? 0
         correctTips++
       }
     }
 
-    return { ...user, totalPoints, correctTips, totalTips: userTips.length }
+    return { ...user, totalPoints, correctTips, totalTips: userTips.length, judgedTips }
   })
 
-  scores.sort((a, b) => b.totalPoints - a.totalPoints)
+  // Ties need a stable order or the dashboard and the standings disagree about
+  // who is 1st — the standings already break ties by name, so match it.
+  scores.sort((a, b) => b.totalPoints - a.totalPoints || a.display_name.localeCompare(b.display_name))
   return scores
 }
