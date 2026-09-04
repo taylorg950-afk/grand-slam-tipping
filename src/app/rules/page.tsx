@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TabBar } from '@/components/TabBar'
+import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
 
 const ROUND_LONG: Record<string, string> = {
   R128: 'Round of 128', R64: 'Round of 64', R32: 'Round of 32',
@@ -36,6 +37,11 @@ export default async function RulesPage() {
   // 0 points means the round is shown in the draw but not tipped — leave it
   // out of the scoring table.
   const tippedRounds = (rounds ?? []).filter(r => r.points_per_correct_tip > 0)
+  const { count: playerCount } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+  const pot = prizes(playerCount ?? 0)
+
   const pointsRows: [string, number][] = tippedRounds.length
     ? tippedRounds.map(r => [r.name, r.points_per_correct_tip])
     : DEFAULT_POINTS
@@ -130,7 +136,32 @@ export default async function RulesPage() {
             </p>
           </Rule>
 
-          <Rule heading="The umpire's chair" eyebrow="Rule VI">
+          <Rule heading="The money" eyebrow="Rule VI">
+            <p>
+              {money(BUY_IN)} a head. {pot.players} in so far, so the pool stands at{' '}
+              <b className="font-semibold text-[var(--ink)]">{money(pot.pool)}</b>. It splits
+              50/30/20 across the top three:
+            </p>
+            <div className="mt-3">
+              {pot.payouts.map((amount, i) => (
+                <div
+                  key={PLACE_LABELS[i]}
+                  className="flex items-baseline justify-between py-1.5"
+                  style={{ borderBottom: i === pot.payouts.length - 1 ? 'none' : '1px dotted var(--rule)' }}
+                >
+                  <span className="text-[14px] text-[var(--ink-2)]">{PLACE_LABELS[i]}</span>
+                  <span
+                    className="font-serif text-[18px] font-bold tabular-nums"
+                    style={{ color: i === 0 ? 'var(--brick)' : 'var(--ink)' }}
+                  >
+                    {money(amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Rule>
+
+          <Rule heading="The umpire's chair" eyebrow="Rule VII">
             <p>
               Anything these rules don&apos;t cover — rain, replaced seeds, scheduling
               quirks, acts of tennis gods — is settled from the umpire&apos;s chair by

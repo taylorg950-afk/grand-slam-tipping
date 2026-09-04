@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import LockCountdown from '@/components/LockCountdown'
+import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
@@ -526,6 +527,7 @@ export default async function DashboardPage() {
         // while still putting anyone on zero where they can see themselves.
         .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
   const fileableCount = fileableMatchIds.size
+  const pot = prizes(users.length)
   const nextLockAt = filingRound
     ? matches
         .filter(m => fileableMatchIds.has(m.id))
@@ -593,6 +595,41 @@ export default async function DashboardPage() {
       <section className="tp-wrap px-5 pt-6 md:px-8">
         <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
           {stats.map(s => <StatCard key={s.label} {...s} />)}
+        </div>
+      </section>
+
+      {/* Prize pool */}
+      <section className="tp-wrap px-5 pt-4 md:px-8">
+        <div className="tp-card flex flex-wrap items-center justify-between gap-x-6 gap-y-3 p-5 md:px-6">
+          <div>
+            <div className="tp-eyebrow">Prize pool</div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="font-serif text-[34px] font-bold leading-none tabular-nums md:text-[40px]">
+                {money(pot.pool)}
+              </span>
+              <span className="text-[13px] text-[var(--ink-3)]">
+                {pot.players} in at {money(BUY_IN)}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-7 gap-y-2">
+            {pot.payouts.map((amount, i) => (
+              <div key={PLACE_LABELS[i]}>
+                <div
+                  className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+                  style={{ color: i === 0 ? 'var(--brick)' : 'var(--ink-3)' }}
+                >
+                  {PLACE_LABELS[i]}
+                </div>
+                <div
+                  className="mt-0.5 font-serif font-bold leading-none tabular-nums"
+                  style={{ fontSize: i === 0 ? 28 : 21, color: i === 0 ? 'var(--brick)' : 'var(--ink-2)' }}
+                >
+                  {money(amount)}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
