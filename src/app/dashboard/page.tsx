@@ -4,6 +4,7 @@ import { computeScores } from '@/lib/scoring'
 import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
 import LockCountdown from '@/components/LockCountdown'
 import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
+import { buildFacts } from '@/lib/copy/dashboard-facts'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
@@ -528,6 +529,7 @@ export default async function DashboardPage() {
         .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
   const fileableCount = fileableMatchIds.size
   const pot = prizes(users.length)
+  const facts = buildFacts({ users, rounds, matches, tips, now })
   const nextLockAt = filingRound
     ? matches
         .filter(m => fileableMatchIds.has(m.id))
@@ -597,6 +599,30 @@ export default async function DashboardPage() {
           {stats.map(s => <StatCard key={s.label} {...s} />)}
         </div>
       </section>
+
+      {/* Worth knowing */}
+      {facts.length > 0 && (
+        <section className="tp-wrap px-5 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-3 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Worth knowing</h2>
+              <span aria-hidden className="size-[9px] rounded-full bg-[var(--spark)]" />
+            </div>
+            <ul className="m-0 list-none space-y-2.5 p-0">
+              {facts.map((f, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span
+                    aria-hidden
+                    className="mt-[7px] size-[6px] shrink-0 rounded-full"
+                    style={{ background: i === 0 ? 'var(--brick)' : 'var(--ink-3)' }}
+                  />
+                  <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* Prize pool */}
       <section className="tp-wrap px-5 pt-4 md:px-8">
