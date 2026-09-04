@@ -491,19 +491,26 @@ export default async function DashboardPage() {
 
   const heroStatus = `${tipsInRound}/${totalInRound} tips in${lockCountdown ? ` · locks in ${lockCountdown}` : ''}`
 
-  // How much of the room still has picks to file this round. Only counts
-  // matches you could actually file right now — not locked, and both players
-  // known — otherwise a round with TBD slots would leave everyone permanently
-  // "outstanding" and the number could never reach zero.
+  // How much of the room still has picks to file. This follows the round people
+  // can actually file for, which is not always the round being played: once a
+  // round locks it stays "current" until its last result lands, and keying off
+  // that hides this panel exactly when the next round needs filing.
+  //
+  // Only counts matches fileable right now — unlocked, undecided, and both
+  // players known — so a round with TBD slots can still reach zero outstanding.
+  const isFileable = (m: Match) =>
+    !m.winner &&
+    new Date(m.scheduled_start) > now &&
+    !isTbdName(m.player1_name) &&
+    !isTbdName(m.player2_name)
+
+  const filingRound =
+    orderedRounds.find(r => matches.some(m => m.round_id === r.id && isFileable(m))) ?? null
+  const filingRoundLong = filingRound
+    ? (ROUND_LONG[filingRound.name] ?? filingRound.name)
+    : currentRoundLong
   const fileableMatchIds = new Set(
-    currentRoundMatches
-      .filter(m =>
-        !m.winner &&
-        new Date(m.scheduled_start) > now &&
-        !isTbdName(m.player1_name) &&
-        !isTbdName(m.player2_name)
-      )
-      .map(m => m.id)
+    (filingRound ? matches.filter(m => m.round_id === filingRound.id && isFileable(m)) : []).map(m => m.id)
   )
   const roomProgress = fileableMatchIds.size === 0
     ? null
@@ -679,7 +686,7 @@ export default async function DashboardPage() {
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--rule)] pb-3">
               <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Tips in</h2>
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
-                {currentRoundLong} · {fileableCount} to file
+                {filingRoundLong} · {fileableCount} to file
               </span>
             </div>
             <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
