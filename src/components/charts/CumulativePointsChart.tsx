@@ -48,6 +48,30 @@ function buildSeriesConfig(data: CumulativePointsData[], currentUserName: string
   })
 }
 
+/**
+ * Y-axis range that frames the pack instead of the origin.
+ *
+ * Recharts defaults a numeric axis to [0, auto]. Once everyone is a long way
+ * from zero that spends most of the height on empty space and presses the
+ * lines together, which is the opposite of what this chart is for. So the axis
+ * is baselined just under the last-placed tipper and padded at both ends, on a
+ * round step so the ticks stay readable. The caption says the axis is cut.
+ */
+function niceDomain(data: CumulativePointsData[]): [number, number] | undefined {
+  const values = data.flatMap(row =>
+    Object.entries(row).filter(([k, v]) => k !== 'round' && typeof v === 'number').map(([, v]) => v as number))
+  if (values.length === 0) return undefined
+
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const span = hi - lo
+  if (span === 0) return undefined              // one flat line: let recharts decide
+
+  const step = span > 200 ? 25 : span > 80 ? 10 : 5
+  const pad = Math.max(step, Math.round(span * 0.12))
+  return [Math.max(0, Math.floor((lo - pad) / step) * step), Math.ceil((hi + pad) / step) * step]
+}
+
 function CustomTooltip({ active, payload, label }: {
   active?: boolean
   payload?: Array<{ name: string; value: number; stroke: string }>
@@ -87,6 +111,7 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
 
   const finalRound = data[data.length - 1] ?? {}
   const leader = series[0]?.name
+  const domain = niceDomain(data)
 
   return (
     <div>
@@ -117,7 +142,7 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
 
       {/* Chart */}
       <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
           <CartesianGrid vertical={false} stroke="rgba(11,20,55,0.08)" strokeOpacity={1} />
           <XAxis
             dataKey="round"
@@ -130,6 +155,8 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
+            domain={domain}
+            width={38}
           />
           <Tooltip content={<CustomTooltip />} />
           {series.map(s => (

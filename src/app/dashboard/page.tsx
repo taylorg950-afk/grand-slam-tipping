@@ -155,7 +155,7 @@ function buildChartData(
   const start: CumulativePointsData = { round: 'Start' }
   names.forEach(n => { start[n] = 0 })
 
-  const rows: CumulativePointsData[] = [start]
+  const rows: CumulativePointsData[] = []
   const running: Record<string, number> = {}
   names.forEach(n => { running[n] = 0 })
 
@@ -177,7 +177,11 @@ function buildChartData(
     rows.push(row)
   }
 
-  return rows.length > 1 ? rows : []
+  // Everyone sits on zero at the start, which drags the y-axis down to 0 and
+  // squashes the field into the top of the chart. Once there are two rounds to
+  // draw a line between, the zero row has done its job and is dropped.
+  if (rows.length > 1) return rows
+  return rows.length === 1 ? [start, ...rows] : []
 }
 
 function consensusOf(matchId: string, tips: Tip[]) {
@@ -740,7 +744,7 @@ export default async function DashboardPage() {
           <div className="tp-card p-5 md:px-6">
             <div className="mb-4 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
               <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Points by round</h2>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">cumulative · you in blue</span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">cumulative · you in blue · axis starts at the back marker</span>
             </div>
             <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
           </div>
