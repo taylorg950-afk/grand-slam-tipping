@@ -9,7 +9,7 @@ import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
 import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
-import { AEST_TZ, AEST_LABEL } from '@/lib/time'
+import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
 import { fetchTipsForMatches } from '@/lib/tips'
 
 interface Round {
@@ -205,6 +205,8 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const now = new Date()
+  // Copy that rotates daily keys off this, so it turns over at AEST midnight.
+  const dayKey = aestDayKey(now)
 
   const [{ data: profile }, { data: tournament }] = await Promise.all([
     supabase.from('users').select('display_name, is_admin').eq('id', user.id).single(),
@@ -225,6 +227,7 @@ export default async function DashboardPage() {
       yourName,
       city: '',
       round: '',
+      dayKey: aestDayKey(new Date()),
       roundResultedCount: 0,
       tournamentComplete: false,
     })
@@ -353,6 +356,7 @@ export default async function DashboardPage() {
     yourName,
     city: meta.city,
     round: currentRoundLong,
+    dayKey,
     roundResultedCount: currentRoundResultedCount,
     tournamentComplete,
     tiedAtTop: !!tiedAtTop,
@@ -411,6 +415,7 @@ export default async function DashboardPage() {
     tipped: myScore?.totalTips ?? 0,
     city: meta.city,
     surface: meta.surface,
+    dayKey,
     round: currentRoundLong,
     roundResultedCount: currentRoundResultedCount,
     currentRoundMatchCount: currentRoundMatches.length,
