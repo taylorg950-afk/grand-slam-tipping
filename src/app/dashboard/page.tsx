@@ -170,14 +170,13 @@ function buildRankData(
       running[user.display_name] += correct.length * round.points_per_correct_tip
     }
 
-    // Standard competition ranking: equal points share the better position, and
-    // the next tipper down takes the position their count implies (1, 2, 2, 4).
-    const ordered = [...names].sort((a, b) => running[b] - running[a])
+    // Ranked the same way the standings are — points, then name to break a tie
+    // — so a position on this chart is the position shown everywhere else.
+    // Sharing tied positions instead reads as a contradiction next to the
+    // leaderboard, and stacks tied tippers' lines exactly on top of each other.
+    const ordered = [...names].sort((a, b) => running[b] - running[a] || a.localeCompare(b))
     const rank: Record<string, number> = {}
-    ordered.forEach((n, i) => {
-      const prev = ordered[i - 1]
-      rank[n] = prev !== undefined && running[n] === running[prev] ? rank[prev] : i + 1
-    })
+    ordered.forEach((n, i) => { rank[n] = i + 1 })
 
     const row: RankSeriesData = { round: round.name }
     names.forEach(n => { row[n] = rank[n] })

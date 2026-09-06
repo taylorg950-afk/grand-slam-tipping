@@ -145,7 +145,7 @@ export default function RankChart({ data, pointsByRound, currentUserName, fieldS
 
       {/* Chart */}
       <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
+        <LineChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: -8 }}>
           <CartesianGrid vertical={false} stroke="rgba(11,20,55,0.08)" strokeOpacity={1} />
           <XAxis
             dataKey="round"
