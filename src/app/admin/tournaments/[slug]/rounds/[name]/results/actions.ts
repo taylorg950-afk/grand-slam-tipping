@@ -63,11 +63,16 @@ function revalidateResultPages(slug: string, roundName: string) {
   revalidatePath('/dashboard')
 }
 
-async function advanceBracket(
+/**
+ * Moves a winner into their slot in the next round. Returns a short
+ * description of what was filled, or null if there was nothing to do — the
+ * results sync reports these back to the admin.
+ */
+export async function advanceBracket(
   supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
   matchId: string,
   winner: 'player1' | 'player2' | null
-) {
+): Promise<string | null> {
   // Fetch the match and its round
   const { data: match } = await supabase
     .from('matches')
@@ -75,7 +80,7 @@ async function advanceBracket(
     .eq('id', matchId)
     .single()
 
-  if (!match || match.bracket_position === null) return
+  if (!match || match.bracket_position === null) return null
 
   const { data: round } = await supabase
     .from('rounds')
@@ -83,7 +88,7 @@ async function advanceBracket(
     .eq('id', match.round_id)
     .single()
 
-  if (!round) return
+  if (!round) return null
 
   // Find the next round by sort_order
   const { data: nextRound } = await supabase
@@ -93,7 +98,7 @@ async function advanceBracket(
     .eq('sort_order', round.sort_order + 1)
     .single()
 
-  if (!nextRound) return
+  if (!nextRound) return null
 
   // Calculate which match in the next round this feeds into
   const nextPosition = Math.floor(match.bracket_position / 2)
@@ -107,7 +112,7 @@ async function advanceBracket(
     .eq('draw', match.draw)
     .single()
 
-  if (!nextMatch) return
+  if (!nextMatch) return null
 
   const winnerName = winner === null
     ? 'TBD'
@@ -115,8 +120,11 @@ async function advanceBracket(
     ? match.player1_name
     : match.player2_name
 
-  await supabase
+  const { error } = await supabase
     .from('matches')
     .update({ [slot]: winnerName })
     .eq('id', nextMatch.id)
+  if (error) return null
+
+  return `${winnerName} into match ${nextPosition + 1} of the next round`
 }

@@ -2,6 +2,21 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import RoundPointsForm from './RoundPointsForm'
+import SyncResultsForm from '../sync-results/SyncResultsForm'
+
+/**
+ * A first guess at the draw page so the field is rarely typed from scratch.
+ * Wikipedia titles these consistently: "2026 US Open – Men's singles", with an
+ * en dash. It is only a default — the admin can paste any en.wikipedia.org URL.
+ */
+function wikiGuess(name: string): string | undefined {
+  // Tournaments here are named either way round: "US Open 2026" or "2026 US Open".
+  const m = name.match(/^\s*(\d{4})\s+(.+?)\s*$/) ?? name.match(/^\s*(.+?)\s+(\d{4})\s*$/)
+  if (!m) return undefined
+  const [year, event] = /^\d{4}$/.test(m[1]) ? [m[1], m[2]] : [m[2], m[1]]
+  const title = `${year} ${event.trim()} \u2013 Men's singles`
+  return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+}
 
 export default async function TournamentRoundsPage({
   params,
@@ -32,6 +47,8 @@ export default async function TournamentRoundsPage({
         <h1 className="mt-2 font-serif text-[22px] font-bold uppercase tracking-[0.04em]">{tournament.name}</h1>
         <p className="text-sm text-[var(--ink-3)]">Rounds</p>
       </div>
+
+      <SyncResultsForm slug={slug} defaultUrl={wikiGuess(tournament.name)} />
 
       <div className="flex justify-end">
         <Link
