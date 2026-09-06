@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
-import CumulativePointsChart, { CumulativePointsData } from '@/components/charts/CumulativePointsChart'
+import RankChart, { RankSeriesData } from '@/components/charts/RankChart'
 import LockCountdown from '@/components/LockCountdown'
 import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
 import { buildFacts } from '@/lib/copy/dashboard-facts'
@@ -145,17 +145,15 @@ function initials(name: string) {
 }
 
 // Cumulative points per tipper, round by round — the "progress over time" chart.
-function buildChartData(
+function buildRankData(
   users: Array<{ id: string; display_name: string }>,
   rounds: Round[],
   matches: Match[],
   tips: Tip[],
-): CumulativePointsData[] {
+): { rows: RankSeriesData[]; pointsByRound: Record<string, Record<string, number>> } {
   const names = users.map(u => u.display_name)
-  const start: CumulativePointsData = { round: 'Start' }
-  names.forEach(n => { start[n] = 0 })
-
-  const rows: CumulativePointsData[] = []
+  const rows: RankSeriesData[] = []
+  const pointsByRound: Record<string, Record<string, number>> = {}
   const running: Record<string, number> = {}
   names.forEach(n => { running[n] = 0 })
 
@@ -164,24 +162,32 @@ function buildChartData(
     if (roundMatches.length === 0) continue
 
     for (const user of users) {
-      const myTips = tips.filter(t => t.user_id === user.id && roundMatches.some(m => m.id === t.match_id))
-      const correct = myTips.filter(t => {
+      const correct = tips.filter(t => {
+        if (t.user_id !== user.id) return false
         const match = roundMatches.find(m => m.id === t.match_id)
         return match && t.predicted_winner === match.winner
       })
-      running[user.display_name] = (running[user.display_name] ?? 0) + correct.length * round.points_per_correct_tip
+      running[user.display_name] += correct.length * round.points_per_correct_tip
     }
 
-    const row: CumulativePointsData = { round: round.name }
-    names.forEach(n => { row[n] = running[n] })
+    // Standard competition ranking: equal points share the better position, and
+    // the next tipper down takes the position their count implies (1, 2, 2, 4).
+    const ordered = [...names].sort((a, b) => running[b] - running[a])
+    const rank: Record<string, number> = {}
+    ordered.forEach((n, i) => {
+      const prev = ordered[i - 1]
+      rank[n] = prev !== undefined && running[n] === running[prev] ? rank[prev] : i + 1
+    })
+
+    const row: RankSeriesData = { round: round.name }
+    names.forEach(n => { row[n] = rank[n] })
     rows.push(row)
+    pointsByRound[round.name] = { ...running }
   }
 
-  // Everyone sits on zero at the start, which drags the y-axis down to 0 and
-  // squashes the field into the top of the chart. Once there are two rounds to
-  // draw a line between, the zero row has done its job and is dropped.
-  if (rows.length > 1) return rows
-  return rows.length === 1 ? [start, ...rows] : []
+  // A position only means something next to another one, so the chart waits
+  // until there are two scored rounds to draw a line between.
+  return rows.length > 1 ? { rows, pointsByRound } : { rows: [], pointsByRound: {} }
 }
 
 function consensusOf(matchId: string, tips: Tip[]) {
@@ -276,7 +282,7 @@ export default async function DashboardPage() {
   const tippedRounds = rounds.filter(r => r.points_per_correct_tip > 0)
   const orderedRounds = [...tippedRounds].sort((a, b) => a.sort_order - b.sort_order)
   const roundBreakdown = computeRoundBreakdown(user.id, orderedRounds, matches, tips, now)
-  const chartData = buildChartData(users, tippedRounds, matches, tips)
+  const { rows: chartData, pointsByRound } = buildRankData(users, tippedRounds, matches, tips)
 
   // Current round = first round with matches that isn't fully resulted
   const currentRound =
@@ -738,15 +744,20 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* Points by round */}
+      {/* Position by round */}
       {chartData.length > 0 && (
         <section className="tp-wrap px-5 pt-5 md:px-8">
           <div className="tp-card p-5 md:px-6">
             <div className="mb-4 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
-              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Points by round</h2>
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">cumulative · you in blue · axis starts at the back marker</span>
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">Position by round</h2>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">you in blue · first at the top</span>
             </div>
-            <CumulativePointsChart data={chartData} currentUserName={profile?.display_name ?? ''} />
+            <RankChart
+              data={chartData}
+              pointsByRound={pointsByRound}
+              currentUserName={profile?.display_name ?? ''}
+              fieldSize={users.length}
+            />
           </div>
         </section>
       )}

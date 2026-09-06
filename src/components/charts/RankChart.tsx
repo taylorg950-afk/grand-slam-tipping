@@ -10,30 +10,42 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-export interface CumulativePointsData {
+/** One row per round: the position each tipper held once that round was scored. */
+export interface RankSeriesData {
   round: string
   [displayName: string]: string | number
 }
 
 interface Props {
-  data: CumulativePointsData[]
+  data: RankSeriesData[]
+  /** round name → tipper → points, so the tooltip can show what the position was worth. */
+  pointsByRound: Record<string, Record<string, number>>
   currentUserName: string
+  /** Size of the field, which fixes the bottom of the axis. */
+  fieldSize: number
 }
 
 // US Open series palette — validated (scripts/validate_palette.js, light mode):
-// electric blue is reserved for "you"; the top tippers take a colour each in
+// electric blue is reserved for "you"; the leaders take a colour each in
 // standing order; everyone beyond folds into a muted "+ N others".
 const USER_COLOUR = '#1B4DD8'
 const SERIES_COLOURS = ['#1C7A4B', '#6C5CE7', '#A9741F', '#1F9E8A', '#C24B2C']
 const OTHERS_COLOUR = 'rgba(11,20,55,0.22)'
 
-function buildSeriesConfig(data: CumulativePointsData[], currentUserName: string) {
+export function ordinal(n: number) {
+  const v = n % 100
+  if (v >= 11 && v <= 13) return `${n}th`
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
+}
+
+function buildSeriesConfig(data: RankSeriesData[], currentUserName: string) {
   if (data.length === 0) return []
 
   const names = Object.keys(data[data.length - 1]).filter(k => k !== 'round')
   const finalRound = data[data.length - 1]
 
-  const sorted = [...names].sort((a, b) => (finalRound[b] as number) - (finalRound[a] as number))
+  // First place is rank 1, so the standing order is ascending here.
+  const sorted = [...names].sort((a, b) => (finalRound[a] as number) - (finalRound[b] as number))
 
   let colourIdx = 0
   return sorted.map(name => {
@@ -48,38 +60,17 @@ function buildSeriesConfig(data: CumulativePointsData[], currentUserName: string
   })
 }
 
-/**
- * Y-axis range that frames the pack instead of the origin.
- *
- * Recharts defaults a numeric axis to [0, auto]. Once everyone is a long way
- * from zero that spends most of the height on empty space and presses the
- * lines together, which is the opposite of what this chart is for. So the axis
- * is baselined just under the last-placed tipper and padded at both ends, on a
- * round step so the ticks stay readable. The caption says the axis is cut.
- */
-function niceDomain(data: CumulativePointsData[]): [number, number] | undefined {
-  const values = data.flatMap(row =>
-    Object.entries(row).filter(([k, v]) => k !== 'round' && typeof v === 'number').map(([, v]) => v as number))
-  if (values.length === 0) return undefined
-
-  const lo = Math.min(...values)
-  const hi = Math.max(...values)
-  const span = hi - lo
-  if (span === 0) return undefined              // one flat line: let recharts decide
-
-  const step = span > 200 ? 25 : span > 80 ? 10 : 5
-  const pad = Math.max(step, Math.round(span * 0.12))
-  return [Math.max(0, Math.floor((lo - pad) / step) * step), Math.ceil((hi + pad) / step) * step]
-}
-
-function CustomTooltip({ active, payload, label }: {
+function CustomTooltip({ active, payload, label, pointsByRound }: {
   active?: boolean
   payload?: Array<{ name: string; value: number; stroke: string }>
   label?: string
+  pointsByRound: Record<string, Record<string, number>>
 }) {
   if (!active || !payload?.length) return null
 
-  const sorted = [...payload].sort((a, b) => b.value - a.value)
+  // Best position first, which is the lowest number.
+  const sorted = [...payload].sort((a, b) => a.value - b.value)
+  const points = (label && pointsByRound[label]) || {}
 
   return (
     <div style={{
@@ -89,14 +80,17 @@ function CustomTooltip({ active, payload, label }: {
       boxShadow: '0 14px 30px -20px rgba(0,48,143,0.4)',
       padding: '10px 14px',
       fontSize: 13,
-      minWidth: 160,
+      minWidth: 180,
     }}>
       <p style={{ color: 'var(--ink-2)', marginBottom: 6, fontSize: 12 }}>{label}</p>
       {sorted.map(entry => (
         <div key={entry.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
           <span style={{ color: 'var(--ink-2)' }}>{entry.name}</span>
           <span style={{ fontWeight: 500, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
-            {entry.value}
+            {ordinal(entry.value)}
+            {points[entry.name] !== undefined && (
+              <span style={{ color: 'var(--ink-3)', fontWeight: 400 }}> · {points[entry.name]}</span>
+            )}
           </span>
         </div>
       ))}
@@ -104,14 +98,23 @@ function CustomTooltip({ active, payload, label }: {
   )
 }
 
-export default function CumulativePointsChart({ data, currentUserName }: Props) {
+/** 1 and the field size always show; the rest are spaced to stay readable. */
+function axisTicks(fieldSize: number) {
+  if (fieldSize <= 8) return Array.from({ length: fieldSize }, (_, i) => i + 1)
+  const step = Math.ceil(fieldSize / 5)
+  const ticks: number[] = []
+  for (let n = 1; n < fieldSize; n += step) ticks.push(n)
+  ticks.push(fieldSize)
+  return ticks
+}
+
+export default function RankChart({ data, pointsByRound, currentUserName, fieldSize }: Props) {
   const series = buildSeriesConfig(data, currentUserName)
   const namedSeries = series.filter(s => s.inLegend)
   const otherCount = series.filter(s => !s.inLegend).length
 
   const finalRound = data[data.length - 1] ?? {}
   const leader = series[0]?.name
-  const domain = niceDomain(data)
 
   return (
     <div>
@@ -128,7 +131,7 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
               {s.name}
             </span>
             <span style={{ fontSize: 12, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>
-              {finalRound[s.name] ?? 0}
+              {finalRound[s.name] !== undefined ? ordinal(finalRound[s.name] as number) : '—'}
             </span>
           </div>
         ))}
@@ -150,19 +153,23 @@ export default function CumulativePointsChart({ data, currentUserName }: Props) 
             axisLine={false}
             tickLine={false}
           />
+          {/* Reversed so first place sits at the top, where people expect it. */}
           <YAxis
+            reversed
+            domain={[1, fieldSize]}
+            ticks={axisTicks(fieldSize)}
+            tickFormatter={(v: number) => ordinal(v)}
             tick={{ fontSize: 12, fill: 'var(--ink-2)' }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
-            domain={domain}
-            width={38}
+            width={42}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip pointsByRound={pointsByRound} />} />
           {series.map(s => (
             <Line
               key={s.name}
-              type="monotone"
+              type="linear"
               dataKey={s.name}
               stroke={s.colour}
               strokeWidth={s.strokeWidth}
