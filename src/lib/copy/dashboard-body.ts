@@ -9,6 +9,7 @@
 // first character of the lead line is a letter.
 
 import { pickForDay } from './rotate'
+import type { CopyTone } from './pins'
 
 export interface BodyState {
   hasActiveTournament: boolean
@@ -31,6 +32,8 @@ export interface BodyState {
   round: string
   /** AEST day key — the wording holds for the day and turns over at local midnight. */
   dayKey: string
+  /** Overrides which template this viewer sees. Numbers are unaffected. */
+  tone?: CopyTone
   roundResultedCount: number
   currentRoundMatchCount: number
   firstRoundName: string | null
@@ -166,8 +169,9 @@ export function dashboardBody(s: BodyState): Body {
     return FALLBACK(s.round)
   }
 
-  // Chaser — rank 2–4 with at least one resulted match
-  if (s.rank != null && s.rank >= 2 && s.rank <= 4 && s.roundResultedCount > 0) {
+  // Chaser — rank 2–4 with at least one resulted match, or pinned to it
+  if (s.rank != null && s.roundResultedCount > 0
+      && (s.tone === 'chaser' || (s.rank >= 2 && s.rank <= 4))) {
     // The leader is named but their points and strike rate are not aired.
     if (slotsPresent(s.leaderName, s.gap, s.points, s.nextRound, s.nextRoundPts)) {
       return {
