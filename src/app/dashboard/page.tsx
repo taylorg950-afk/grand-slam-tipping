@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
 import RankChart, { RankSeriesData } from '@/components/charts/RankChart'
@@ -10,7 +11,7 @@ import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
 import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
 import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
-import { fetchTipsForMatches } from '@/lib/tips'
+import { fetchTipsForMatches, fetchFiledCounts } from '@/lib/tips'
 
 interface Round {
   id: string
@@ -529,15 +530,21 @@ export default async function DashboardPage() {
   const fileableMatchIds = new Set(
     (filingRound ? matches.filter(m => m.round_id === filingRound.id && isFileable(m)) : []).map(m => m.id)
   )
+  // Counted with the service role on purpose — see fetchFiledCounts. Reading
+  // `tips` here would show every other member on zero, because their picks on
+  // an unlocked match are hidden from everyone but an admin.
+  const filedCounts = fileableMatchIds.size === 0
+    ? new Map<string, number>()
+    : await fetchFiledCounts(createAdminClient(), [...fileableMatchIds])
   const roomProgress = fileableMatchIds.size === 0
     ? null
     : users
-        .map(u => {
-          const filed = new Set(
-            tips.filter(t => t.user_id === u.id && fileableMatchIds.has(t.match_id)).map(t => t.match_id)
-          ).size
-          return { id: u.id, name: u.display_name, filed, isMe: u.id === user.id }
-        })
+        .map(u => ({
+          id: u.id,
+          name: u.display_name,
+          filed: filedCounts.get(u.id) ?? 0,
+          isMe: u.id === user.id,
+        }))
         // Most filed first: it reads as a race rather than a list of laggards,
         // while still putting anyone on zero where they can see themselves.
         .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
