@@ -8,7 +8,6 @@
 // changes how that is phrased.
 
 import { pickForDay } from './rotate'
-import type { CopyTone } from './pins'
 
 export interface HeadlineState {
   hasActiveTournament: boolean
@@ -22,8 +21,6 @@ export interface HeadlineState {
   round: string
   /** AEST day key — the wording holds for the day and turns over at local midnight. */
   dayKey: string
-  /** Overrides which wording set this viewer sees. Numbers are unaffected. */
-  tone?: CopyTone
   roundResultedCount: number
   tournamentComplete: boolean
   tiedAtTop?: boolean
@@ -153,7 +150,7 @@ export function dashboardHeadline(s: HeadlineState): Headline {
     }
   }
 
-  if (s.rank != null && (s.tone === 'chaser' || (s.rank >= 2 && s.rank <= 4))) {
+  if (s.rank != null && s.rank >= 2 && s.rank <= 4) {
     return {
       kicker: 'In the pack',
       line1: pickForDay(s.dayKey, 'pack1', [
