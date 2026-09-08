@@ -7,18 +7,22 @@
 //
 // The model, stated plainly, because a number like this is easy to over-trust:
 //
+//  · Only tips on matches that have already locked are read. A tip on a match
+//    still open is never looked at, so filing one cannot move anybody's number
+//    — not yours, and not the number of the person you are chasing. Nobody can
+//    sit and try picks against the percentage to see which one flatters them,
+//    and nobody can infer what someone else filed by watching the figure twitch.
 //  · Every undecided match between two known players is a coin flip. The comp
 //    does not hold odds, and guessing them from seedings would dress up an
 //    assumption as data. Fifty-fifty at least says what it is.
-//  · Where someone has filed a tip, that tip decides whether they score. So
-//    everyone who took Zverev rises and falls together, which is what actually
-//    happens in a room like this.
-//  · Where a match is still open and someone has not filed yet, they are
-//    assumed to file, and to be right as often as they have been all
-//    tournament. Where a match has already locked and they did not file, they
-//    score nothing — that door is shut.
-//  · Rounds that are not drawn yet have nobody's tips on them, so every player
-//    is scored on their own accuracy for those.
+//  · On a locked match, a filed tip decides whether that person scores, so
+//    everyone who took Zverev rises and falls together — which is what actually
+//    happens in a room like this. No tip on a locked match scores nothing; that
+//    door is shut.
+//  · Everywhere else — matches still open, and rounds not yet drawn — each
+//    person is scored on their own accuracy. That costs a little realism, since
+//    a room tipping the same favourites moves together, but it is the price of
+//    the figure being blind to open tips.
 //
 // The result is a fair reading of who is in front and by how much. It is not a
 // forecast of the tennis.
@@ -114,12 +118,17 @@ export function winOdds(input: {
       const pts = pointsOf.get(m.round_id) ?? 0
       const drawn = !isTbd(m.player1_name) && !isTbd(m.player2_name)
       const locked = new Date(m.scheduled_start) <= now
+      // Tips are only read once the match has locked. Reading an open match's
+      // tips would let someone watch their percentage react as they file.
+      const readsTips = drawn && locked
       const picks = new Int8Array(n).fill(-1)   // -1 = no tip, 0 = player1, 1 = player2
-      for (const t of byMatch.get(m.id) ?? []) {
-        const i = index.get(t.user_id)
-        if (i !== undefined) picks[i] = t.predicted_winner === 'player1' ? 0 : 1
+      if (readsTips) {
+        for (const t of byMatch.get(m.id) ?? []) {
+          const i = index.get(t.user_id)
+          if (i !== undefined) picks[i] = t.predicted_winner === 'player1' ? 0 : 1
+        }
       }
-      return { pts, drawn, locked, picks }
+      return { pts, locked, readsTips, picks }
     })
 
   // The most each person could still add: every remaining match they have
@@ -128,7 +137,7 @@ export function winOdds(input: {
   const leaderBase = Math.max(...base)
   const alive = users.map((_, i) => {
     let reachable = 0
-    for (const m of remaining) if (m.picks[i] !== -1 || !m.locked || !m.drawn) reachable += m.pts
+    for (const m of remaining) if (!m.readsTips || m.picks[i] !== -1) reachable += m.pts
     return base[i] + reachable >= leaderBase
   })
 
@@ -142,10 +151,12 @@ export function winOdds(input: {
     }))
   }
 
-  // Seeded on the state itself, so the figure only moves when the comp does —
-  // not every time somebody refreshes the page.
+  // Seeded on decided results alone. Counting open tips here would re-seed the
+  // simulation every time somebody filed one, and the small wobble that follows
+  // is itself a signal that a tip has landed. This way the figure moves when a
+  // match is decided or locks, and at no other time.
   const rand = mulberry32(hashSeed(
-    `${matches.filter(m => m.winner).length}|${tips.length}|${remaining.length}|${base.join(',')}`
+    `${matches.filter(m => m.winner).length}|${remaining.filter(m => m.readsTips).length}|${base.join(',')}`
   ))
 
   const wins = new Array(n).fill(0)
@@ -155,17 +166,13 @@ export function winOdds(input: {
     for (let i = 0; i < n; i++) total[i] = base[i]
 
     for (const m of remaining) {
-      if (m.drawn) {
+      if (m.readsTips) {
+        // Locked and drawn: the tips are in and they decide who scores.
         const winner = rand() < 0.5 ? 0 : 1
-        for (let i = 0; i < n; i++) {
-          const pick = m.picks[i]
-          if (pick === winner) total[i] += m.pts
-          // Not filed yet and the match is still open: they will file, and be
-          // right about as often as they have been.
-          else if (pick === -1 && !m.locked && rand() < accuracy[i]) total[i] += m.pts
-        }
+        for (let i = 0; i < n; i++) if (m.picks[i] === winner) total[i] += m.pts
       } else {
-        // Not drawn yet, so nobody has tipped it. Score everyone on their own form.
+        // Still open, or not drawn yet. Either way the tips are not read —
+        // everyone is scored on their own form instead.
         for (let i = 0; i < n; i++) if (rand() < accuracy[i]) total[i] += m.pts
       }
     }
