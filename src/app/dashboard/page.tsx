@@ -699,6 +699,7 @@ export default async function DashboardPage() {
           {hasAnyResults && (
             <div className="flex items-center gap-3 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
               <span className="min-w-0 flex-1" />
+              <span className="hidden w-12 shrink-0 text-right sm:inline" title="Share of judged tips called correctly">Acc</span>
               <span className="hidden w-12 shrink-0 text-right sm:inline" title="Chance of finishing first">Win</span>
               <span className="w-11 shrink-0 text-right">Pts</span>
             </div>
@@ -719,6 +720,7 @@ export default async function DashboardPage() {
                   avatarUrl={avatarMap[s.id]}
                   color={userColor[s.id]}
                   points={hasAnyResults ? s.totalPoints : null}
+                  accuracy={s.judgedTips > 0 ? s.correctTips / s.judgedTips : null}
                   chance={hasAnyResults ? (oddsById.get(s.id) ?? null) : null}
                   move={currentRoundHasResults ? `+${crScoreMap[s.id] ?? 0} ${currentRound?.name ?? ''}` : null}
                   isMe={s.id === user.id}
@@ -911,7 +913,7 @@ function StatCard({ label, value, sub, caption, color }: StatCardData) {
 }
 
 function LeaderRow({
-  rank, name, href, initials, avatarUrl, color, points, chance, move, isMe,
+  rank, name, href, initials, avatarUrl, color, points, accuracy, chance, move, isMe,
 }: {
   rank: number
   name: string
@@ -920,6 +922,8 @@ function LeaderRow({
   avatarUrl: string | null | undefined
   color: string
   points: number | null
+  /** Share of judged tips called correctly, 0..1. Null before anything is judged. */
+  accuracy: number | null
   chance: { chance: number; alive: boolean } | null
   move: string | null
   isMe: boolean
@@ -955,6 +959,14 @@ function LeaderRow({
       {move && (
         <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em]" style={{ color: 'var(--olive)', background: '#E7F3EC' }}>
           {move}
+        </span>
+      )}
+      {points != null && (
+        <span
+          className="hidden w-12 shrink-0 text-right text-[12px] tabular-nums text-[var(--ink-3)] sm:inline"
+          title="Share of judged tips called correctly"
+        >
+          {accuracy == null ? '—' : `${Math.round(accuracy * 100)}%`}
         </span>
       )}
       {chance && (
