@@ -5,6 +5,7 @@ import { computeScores } from '@/lib/scoring'
 import RankChart, { RankSeriesData } from '@/components/charts/RankChart'
 import LockCountdown from '@/components/LockCountdown'
 import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
+import { winOdds, formatChance } from '@/lib/win-odds'
 import { buildFacts } from '@/lib/copy/dashboard-facts'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
@@ -550,6 +551,11 @@ export default async function DashboardPage() {
         .sort((a, b) => b.filed - a.filed || a.name.localeCompare(b.name))
   const fileableCount = fileableMatchIds.size
   const pot = prizes(users.length)
+  // Chance of finishing first, simulated from where everyone stands and what
+  // they have already committed to. See src/lib/win-odds.ts for the model.
+  const oddsById = new Map(
+    winOdds({ users, rounds: tippedRounds, matches, tips, now }).map(o => [o.userId, o])
+  )
   const facts = buildFacts({ users, rounds, matches, tips, now })
   const nextLockAt = filingRound
     ? matches
@@ -690,6 +696,13 @@ export default async function DashboardPage() {
               <span aria-hidden className="size-[7px] rounded-full bg-[var(--olive)]" />Live
             </span>
           </div>
+          {hasAnyResults && (
+            <div className="flex items-center gap-3 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+              <span className="min-w-0 flex-1" />
+              <span className="hidden w-12 shrink-0 text-right sm:inline" title="Chance of finishing first">Win</span>
+              <span className="w-11 shrink-0 text-right">Pts</span>
+            </div>
+          )}
           {scores.length === 0 ? (
             <div className="py-6 text-[14px] text-[var(--ink-2)]">No tips judged yet. Standings appear once results land.</div>
           ) : (
@@ -706,6 +719,7 @@ export default async function DashboardPage() {
                   avatarUrl={avatarMap[s.id]}
                   color={userColor[s.id]}
                   points={hasAnyResults ? s.totalPoints : null}
+                  chance={hasAnyResults ? (oddsById.get(s.id) ?? null) : null}
                   move={currentRoundHasResults ? `+${crScoreMap[s.id] ?? 0} ${currentRound?.name ?? ''}` : null}
                   isMe={s.id === user.id}
                 />
@@ -897,7 +911,7 @@ function StatCard({ label, value, sub, caption, color }: StatCardData) {
 }
 
 function LeaderRow({
-  rank, name, href, initials, avatarUrl, color, points, move, isMe,
+  rank, name, href, initials, avatarUrl, color, points, chance, move, isMe,
 }: {
   rank: number
   name: string
@@ -906,6 +920,7 @@ function LeaderRow({
   avatarUrl: string | null | undefined
   color: string
   points: number | null
+  chance: { chance: number; alive: boolean } | null
   move: string | null
   isMe: boolean
 }) {
@@ -940,6 +955,15 @@ function LeaderRow({
       {move && (
         <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em]" style={{ color: 'var(--olive)', background: '#E7F3EC' }}>
           {move}
+        </span>
+      )}
+      {chance && (
+        <span
+          className="hidden w-12 shrink-0 text-right text-[12px] font-semibold tabular-nums sm:inline"
+          style={{ color: chance.alive && chance.chance >= 0.1 ? 'var(--brick)' : 'var(--ink-3)' }}
+          title="Chance of finishing first"
+        >
+          {formatChance(chance.chance, chance.alive)}
         </span>
       )}
       <span className="w-11 text-right font-serif text-[19px] font-bold tabular-nums text-[var(--ink)]">

@@ -62,12 +62,16 @@ export default async function TipperPage({
   const accuracy = me && me.judgedTips > 0 ? Math.round((me.correctTips / me.judgedTips) * 100) : null
 
   const isMe = userId === user.id
-  const now = new Date()
   const myTips = new Map(tips.filter(t => t.user_id === userId).map(t => [t.match_id, t.predicted_winner]))
 
-  // Rule II: a pick stays private until its match locks. Anyone can see their
-  // own at any time; another tipper's only once the tie has started.
-  const visible = (m: { scheduled_start: string }) => isMe || new Date(m.scheduled_start) <= now
+  // A pick stays private until its match is decided. Locking is not enough:
+  // watching a live match already knowing who someone needs is the suspense
+  // gone. Your own picks are always yours to see.
+  //
+  // The picks page is deliberately different — it shows how many went each way
+  // on a locked match, which is a count rather than a name, and no help to
+  // anyone watching.
+  const visible = (m: { winner: string | null }) => isMe || !!m.winner
 
   const byRound = rounds.map(r => {
     const rm = matches.filter(m => m.round_id === r.id)
@@ -154,7 +158,7 @@ export default async function TipperPage({
                   </h2>
                   <span className="text-[12px] text-[var(--ink-3)]">
                     {judged > 0 ? `${correct}/${judged} correct · +${points} pts` : 'no results yet'}
-                    {hidden > 0 && ` · ${hidden} hidden until lock`}
+                    {hidden > 0 && ` · ${hidden} hidden until decided`}
                   </span>
                 </div>
                 <div className="flex flex-col">
