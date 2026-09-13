@@ -105,6 +105,15 @@ function fmtLockTime(date: Date) {
   return `${weekday} ${time} ${AEST_LABEL}`
 }
 
+function RecapLine({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--ink-3)]" />
+      <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">{children}</span>
+    </li>
+  )
+}
+
 function ordinalOf(n: number): string {
   const v = n % 100
   if (v >= 11 && v <= 13) return `${n}th`
@@ -701,22 +710,7 @@ export default async function DashboardPage({
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-              {[
-                { k: tournamentComplete ? 'Finished' : 'Position', v: ordinalOf(recap.position), sub: `of ${recap.players}` },
-                { k: 'Points', v: String(recap.points), sub: `${recap.correct} from ${recap.judged}` },
-                { k: 'Accuracy', v: recap.accuracy == null ? '—' : `${Math.round(recap.accuracy * 100)}%`, sub: 'of judged tips' },
-                { k: 'Best run', v: String(recap.longestStreak), sub: recap.longestStreak === 1 ? 'correct in a row' : 'correct in a row' },
-              ].map(t => (
-                <div key={t.k} className="rounded-[12px] bg-[var(--paper-3)] px-4 py-3">
-                  <div className="tp-eyebrow">{t.k}</div>
-                  <div className="mt-1 font-serif text-[26px] font-bold leading-none tabular-nums">{t.v}</div>
-                  <div className="mt-1 text-[12px] text-[var(--ink-3)]">{t.sub}</div>
-                </div>
-              ))}
-            </div>
-
-            <ul className="m-0 mt-4 list-none space-y-2.5 p-0">
+            <ul className="m-0 list-none space-y-2.5 p-0">
               {recap.bestRound && recap.bestRound.points > 0 && (
                 <li className="flex items-start gap-3">
                   <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--brick)]" />
@@ -754,6 +748,30 @@ export default async function DashboardPage({
                     You got as high as {ordinalOf(recap.highestPosition)} and as low as {ordinalOf(recap.lowestPosition)}.
                   </span>
                 </li>
+              )}
+              {recap.closest && (
+                <RecapLine>
+                  {recap.closest.gap === 0
+                    ? <>You and {recap.closest.name} are dead level on {recap.points}.</>
+                    : <>Your closest rival is {recap.closest.name}, {recap.closest.gap} point{recap.closest.gap === 1 ? '' : 's'}{' '}
+                        {recap.closest.above ? 'ahead of you' : 'behind you'}.</>}
+                </RecapLine>
+              )}
+              {recap.talisman && (
+                <RecapLine>
+                  {recap.talisman.player} has been your best friend, winning {recap.talisman.times} matches you backed them in — more than anyone else.
+                </RecapLine>
+              )}
+              {recap.nemesis && (
+                <RecapLine>
+                  {recap.nemesis.player} has been your undoing, beating the player you picked {recap.nemesis.times} times.
+                </RecapLine>
+              )}
+              {recap.missed.count > 0 && (
+                <RecapLine>
+                  You let {recap.missed.count} judged {recap.missed.count === 1 ? 'match' : 'matches'} go by without a tip,
+                  {' '}leaving {recap.missed.points} points on the table.
+                </RecapLine>
               )}
             </ul>
           </div>

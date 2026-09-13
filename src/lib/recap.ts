@@ -35,6 +35,14 @@ export interface Recap {
   bestCall: { winner: string; loser: string; seed: number; alsoHadIt: number } | null
   /** Times they went against the majority and were proved right. */
   againstTheRoom: number
+  /** Nearest rival on points, and which side of them they sit. */
+  closest: { name: string; gap: number; above: boolean } | null
+  /** Judged matches they never filed a tip for, and what that cost. */
+  missed: { count: number; points: number }
+  /** The player who most often beat the person they had picked. */
+  nemesis: { player: string; times: number } | null
+  /** The player they backed most often and were right about. */
+  talisman: { player: string; times: number } | null
 }
 
 const strip = (n: string) => n.replace(/\s*\[.*?\]/, '').trim()
@@ -155,6 +163,48 @@ export function buildRecap(input: {
     }
   }
 
+  // Nearest rival on points. A tie counts as a gap of zero and reads as such.
+  let closest: Recap['closest'] = null
+  const myPoints = totals.get(userId) ?? 0
+  for (const u of users) {
+    if (u.id === userId) continue
+    const theirs = totals.get(u.id) ?? 0
+    const gap = Math.abs(theirs - myPoints)
+    if (!closest || gap < closest.gap) closest = { name: u.display_name, gap, above: theirs > myPoints }
+  }
+
+  // Matches that were scored while they had nothing filed.
+  let missedCount = 0
+  let missedPoints = 0
+  for (const m of matches) {
+    if (!judgedMatch(m)) continue
+    if (mineByMatch.has(m.id)) continue
+    missedCount++
+    missedPoints += pts(m)
+  }
+
+  // Who kept beating the player they had backed, and who kept delivering.
+  const beatMe = new Map<string, number>()
+  const cameGood = new Map<string, number>()
+  for (const m of matches) {
+    if (!judgedMatch(m)) continue
+    const pick = mineByMatch.get(m.id)
+    if (!pick) continue
+    const winnerName = strip(m.winner === 'player1' ? m.player1_name : m.player2_name)
+    if (pick === m.winner) cameGood.set(winnerName, (cameGood.get(winnerName) ?? 0) + 1)
+    else beatMe.set(winnerName, (beatMe.get(winnerName) ?? 0) + 1)
+  }
+  const top = (map: Map<string, number>) => {
+    let best: { player: string; times: number } | null = null
+    for (const [player, times] of map) {
+      if (!best || times > best.times || (times === best.times && player.localeCompare(best.player) < 0)) {
+        best = { player, times }
+      }
+    }
+    // One occurrence is a coincidence, not a pattern worth naming.
+    return best && best.times >= 2 ? best : null
+  }
+
   return {
     position,
     players: users.length,
@@ -168,5 +218,9 @@ export function buildRecap(input: {
     lowestPosition,
     bestCall,
     againstTheRoom,
+    closest,
+    missed: { count: missedCount, points: missedPoints },
+    nemesis: top(beatMe),
+    talisman: top(cameGood),
   }
 }

@@ -50,7 +50,15 @@ export default async function TournamentRoundsPage({
 
       <SyncResultsForm slug={slug} defaultUrl={wikiGuess(tournament.name)} />
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {/* The celebration only fires once a tournament ends, and only twice
+            per person, so this is the only way to see it before it matters. */}
+        <Link
+          href="/dashboard?celebrate=1"
+          className="tp-cta-outline"
+        >
+          Preview the winner celebration
+        </Link>
         <Link
           href={`/admin/tournaments/${slug}/import-draw`}
           className="tp-cta"
