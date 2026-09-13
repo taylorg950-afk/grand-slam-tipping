@@ -6,6 +6,8 @@ import RankChart, { RankSeriesData } from '@/components/charts/RankChart'
 import LockCountdown from '@/components/LockCountdown'
 import { prizes, money, PLACE_LABELS, BUY_IN } from '@/lib/prize'
 import { winOdds, formatChance } from '@/lib/win-odds'
+import { buildRecap } from '@/lib/recap'
+import WinnerCelebration from '@/components/WinnerCelebration'
 import { buildFacts } from '@/lib/copy/dashboard-facts'
 import { TabBar } from '@/components/TabBar'
 import Link from 'next/link'
@@ -101,6 +103,17 @@ function fmtLockTime(date: Date) {
   const weekday = date.toLocaleDateString('en-AU', { timeZone: AEST_TZ, weekday: 'short' })
   const time = date.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', hour12: true }).toLowerCase()
   return `${weekday} ${time} ${AEST_LABEL}`
+}
+
+function ordinalOf(n: number): string {
+  const v = n % 100
+  if (v >= 11 && v <= 13) return `${n}th`
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
+}
+
+const RECAP_ROUND: Record<string, string> = {
+  R128: 'round of 128', R64: 'round of 64', R32: 'round of 32',
+  R16: 'round of 16', QF: 'quarter-finals', SF: 'semi-finals', F: 'the final',
 }
 
 function computeRoundBreakdown(
@@ -201,7 +214,12 @@ function consensusOf(matchId: string, tips: Tip[]) {
   return { side, pct, total: ts.length, nonConsensus: Math.min(p1, p2) }
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ celebrate?: string }>
+}) {
+  const { celebrate } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -556,6 +574,12 @@ export default async function DashboardPage() {
   const oddsById = new Map(
     winOdds({ users, rounds: tippedRounds, matches, tips, now }).map(o => [o.userId, o])
   )
+  const recap = buildRecap({ userId: user.id, users, rounds: tippedRounds, matches, tips })
+  // ?celebrate=1 lets an admin see the end-of-tournament overlay before the
+  // tournament ends. Without it the thing is untestable until the moment it
+  // matters, and it only shows twice.
+  const celebratePreview = celebrate === '1' && !!profile?.is_admin
+  const myPrize = recap && recap.position <= pot.payouts.length ? pot.payouts[recap.position - 1] : null
   const facts = buildFacts({ users, rounds, matches, tips, now })
   const nextLockAt = filingRound
     ? matches
@@ -569,6 +593,19 @@ export default async function DashboardPage() {
   return (
     <main className="flex min-h-screen flex-col bg-[var(--paper)]">
       <Masthead tournamentName={tournament.name} isAdmin={profile?.is_admin ?? false} />
+
+      {(tournamentComplete || (celebratePreview && recap)) && recap && leader && (
+        <WinnerCelebration
+          tournamentId={tournament.id}
+          tournamentName={tournament.name}
+          position={recap.position}
+          players={recap.players}
+          points={recap.points}
+          winnerName={leader.display_name}
+          prize={myPrize}
+          preview={celebratePreview}
+        />
+      )}
 
       {/* Hero */}
       <section className="uso-hero relative overflow-hidden px-5 py-8 text-white md:px-8 md:py-11">
@@ -646,6 +683,78 @@ export default async function DashboardPage() {
                   <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">{f}</span>
                 </li>
               ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {/* Your tournament */}
+      {recap && recap.judged > 0 && (
+        <section className="tp-wrap px-5 pt-5 md:px-8">
+          <div className="tp-card p-5 md:px-6">
+            <div className="mb-4 flex items-baseline justify-between border-b border-[var(--rule)] pb-3">
+              <h2 className="m-0 font-serif text-[20px] font-bold uppercase tracking-[0.04em]">
+                {tournamentComplete ? 'Your tournament' : 'Your tournament so far'}
+              </h2>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-3)]">
+                {recap.judged} tips judged
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+              {[
+                { k: tournamentComplete ? 'Finished' : 'Position', v: ordinalOf(recap.position), sub: `of ${recap.players}` },
+                { k: 'Points', v: String(recap.points), sub: `${recap.correct} from ${recap.judged}` },
+                { k: 'Accuracy', v: recap.accuracy == null ? '—' : `${Math.round(recap.accuracy * 100)}%`, sub: 'of judged tips' },
+                { k: 'Best run', v: String(recap.longestStreak), sub: recap.longestStreak === 1 ? 'correct in a row' : 'correct in a row' },
+              ].map(t => (
+                <div key={t.k} className="rounded-[12px] bg-[var(--paper-3)] px-4 py-3">
+                  <div className="tp-eyebrow">{t.k}</div>
+                  <div className="mt-1 font-serif text-[26px] font-bold leading-none tabular-nums">{t.v}</div>
+                  <div className="mt-1 text-[12px] text-[var(--ink-3)]">{t.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            <ul className="m-0 mt-4 list-none space-y-2.5 p-0">
+              {recap.bestRound && recap.bestRound.points > 0 && (
+                <li className="flex items-start gap-3">
+                  <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--brick)]" />
+                  <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">
+                    Your best round was the {RECAP_ROUND[recap.bestRound.name] ?? recap.bestRound.name} —
+                    {' '}{recap.bestRound.correct} from {recap.bestRound.total}, worth {recap.bestRound.points} points.
+                  </span>
+                </li>
+              )}
+              {recap.bestCall && (
+                <li className="flex items-start gap-3">
+                  <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--ink-3)]" />
+                  <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">
+                    Your boldest call was {recap.bestCall.winner} over {recap.bestCall.loser} [{recap.bestCall.seed}]
+                    {recap.bestCall.alsoHadIt === 0
+                      ? ' — nobody else in the room had it.'
+                      : ` — ${recap.bestCall.alsoHadIt} ${recap.bestCall.alsoHadIt === 1 ? 'other' : 'others'} had it too.`}
+                  </span>
+                </li>
+              )}
+              {recap.againstTheRoom > 0 && (
+                <li className="flex items-start gap-3">
+                  <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--ink-3)]" />
+                  <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">
+                    You went against the majority and were proved right {recap.againstTheRoom}
+                    {' '}{recap.againstTheRoom === 1 ? 'time' : 'times'}.
+                  </span>
+                </li>
+              )}
+              {recap.highestPosition != null && recap.lowestPosition != null
+                && recap.highestPosition !== recap.lowestPosition && (
+                <li className="flex items-start gap-3">
+                  <span aria-hidden className="mt-[7px] size-[6px] shrink-0 rounded-full bg-[var(--ink-3)]" />
+                  <span className="text-[14px] leading-[1.5] text-[var(--ink-2)]">
+                    You got as high as {ordinalOf(recap.highestPosition)} and as low as {ordinalOf(recap.lowestPosition)}.
+                  </span>
+                </li>
+              )}
             </ul>
           </div>
         </section>
