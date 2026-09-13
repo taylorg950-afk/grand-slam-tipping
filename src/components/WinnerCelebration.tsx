@@ -34,7 +34,16 @@ const ordinal = (n: number) => {
 interface Particle {
   x: number; y: number; vx: number; vy: number
   size: number; colour: string; spin: number; angle: number
+  sway: number; phase: number
 }
+
+/** How long the confetti falls for, in milliseconds. */
+const DURATION = 9000
+/** Downward pull per frame. Low, so the pieces hang and flutter rather than
+ *  being fired off the bottom of the screen inside a second. */
+const GRAVITY = 0.055
+/** Fastest a piece may fall, so nothing outruns the eye. */
+const TERMINAL = 2.6
 
 export default function WinnerCelebration(props: Props) {
   const { tournamentId, tournamentName, position, players, points, winnerName, prize, preview } = props
@@ -91,24 +100,30 @@ export default function WinnerCelebration(props: Props) {
     const w = () => canvas.width / dpr
     const h = () => canvas.height / dpr
     const parts: Particle[] = []
-    const burst = (originX: number) => {
-      for (let i = 0; i < 90; i++) {
+    const burst = (originX: number, originY: number, count: number) => {
+      for (let i = 0; i < count; i++) {
         parts.push({
-          x: originX, y: h() * 0.32,
-          vx: (Math.random() - 0.5) * 9,
-          vy: Math.random() * -9 - 2,
-          size: 4 + Math.random() * 6,
+          x: originX, y: originY,
+          vx: (Math.random() - 0.5) * 7,
+          vy: Math.random() * -7 - 1,
+          size: 5 + Math.random() * 7,
           colour: COLOURS[(Math.random() * COLOURS.length) | 0],
-          spin: (Math.random() - 0.5) * 0.3,
+          spin: (Math.random() - 0.5) * 0.22,
           angle: Math.random() * Math.PI,
+          sway: 0.4 + Math.random() * 1.1,
+          phase: Math.random() * Math.PI * 2,
         })
       }
     }
 
-    burst(w() * 0.5)
+    // Two cannons from the lower corners, then a drift from above, so there is
+    // something on screen for the whole time rather than one quick flash.
+    burst(w() * 0.12, h() * 0.78, 70)
+    burst(w() * 0.88, h() * 0.78, 70)
     const timers = [
-      window.setTimeout(() => burst(w() * 0.25), 450),
-      window.setTimeout(() => burst(w() * 0.75), 900),
+      window.setTimeout(() => burst(w() * 0.5, h() * 0.1, 60), 500),
+      window.setTimeout(() => burst(w() * 0.3, h() * 0.05, 50), 1600),
+      window.setTimeout(() => burst(w() * 0.7, h() * 0.05, 50), 2600),
     ]
 
     let raf = 0
@@ -116,21 +131,26 @@ export default function WinnerCelebration(props: Props) {
     const tick = () => {
       const elapsed = performance.now() - started
       ctx.clearRect(0, 0, w(), h())
+      // Fade only over the last second and a half, so the pieces are solid for
+      // almost the whole fall instead of dimming from the moment they appear.
+      const fade = Math.min(1, Math.max(0, (DURATION - elapsed) / 1500))
       for (const p of parts) {
-        p.vy += 0.22               // gravity
-        p.vx *= 0.995
-        p.x += p.vx
+        p.vy = Math.min(p.vy + GRAVITY, TERMINAL)
+        p.vx *= 0.992
+        p.phase += 0.06
+        p.x += p.vx + Math.sin(p.phase) * p.sway
         p.y += p.vy
         p.angle += p.spin
+        if (p.y - p.size > h()) continue          // off the bottom, stop drawing
         ctx.save()
         ctx.translate(p.x, p.y)
         ctx.rotate(p.angle)
-        ctx.globalAlpha = Math.max(0, 1 - elapsed / 7000)
+        ctx.globalAlpha = fade
         ctx.fillStyle = p.colour
         ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6)
         ctx.restore()
       }
-      if (elapsed < 7000) raf = requestAnimationFrame(tick)
+      if (elapsed < DURATION) raf = requestAnimationFrame(tick)
       else ctx.clearRect(0, 0, w(), h())
     }
     raf = requestAnimationFrame(tick)
