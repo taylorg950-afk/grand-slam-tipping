@@ -1,4 +1,5 @@
-// TEMPORARY diagnostic. Times, from inside the deployed function, each step the
+// TEMPORARY diagnostic. (An _underscore folder is private in the App Router and
+// never routes, hence the plain name.) Times, from inside the deployed function, each step the
 // dashboard performs — so slowness can be attributed to a step instead of
 // guessed at from the outside. Admin only. Delete once the cause is found.
 
