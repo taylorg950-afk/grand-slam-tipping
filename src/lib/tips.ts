@@ -77,3 +77,40 @@ export async function fetchFiledCounts(
   }
   return counts
 }
+
+/**
+ * Every tip in a tournament, reached through the match/round relation.
+ *
+ * Fetching by match id means waiting for the matches to come back first, and
+ * on a distant database each round trip is expensive enough that the wait
+ * dominates the page. Filtering through the relation needs only the tournament
+ * id, so this can run alongside the matches query instead of after it.
+ *
+ * Row-level security is unaffected: `rounds` and `matches` are readable by any
+ * signed-in member, so the inner join drops nothing, and the tips policies
+ * still decide which tips come back.
+ */
+export async function fetchTipsForTournament(
+  supabase: SupabaseClient,
+  tournamentId: string,
+): Promise<TipRow[]> {
+  const all: TipRow[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('tips')
+      .select('user_id, match_id, predicted_winner, matches!inner(rounds!inner(tournament_id))')
+      .eq('matches.rounds.tournament_id', tournamentId)
+      .order('match_id')
+      .order('user_id')
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) throw error
+    if (!data || data.length === 0) break
+    // The joined columns are only there to filter on; drop them.
+    all.push(...(data as Array<TipRow & { matches?: unknown }>).map(
+      ({ user_id, match_id, predicted_winner }) => ({ user_id, match_id, predicted_winner })
+    ))
+    if (data.length < PAGE_SIZE) break
+  }
+  return all
+}

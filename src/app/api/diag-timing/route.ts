@@ -5,7 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/require-admin'
-import { fetchTipsForMatches } from '@/lib/tips'
+import { fetchTipsForTournament } from '@/lib/tips'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -28,28 +28,27 @@ export async function GET() {
   await time('auth.getUser', () => supabase.auth.getUser())
 
   const tournament = await time(
-    'tournaments (is_active)',
-    () => supabase.from('tournaments').select('id, name, slug, start_date').eq('is_active', true).maybeSingle(),
-    r => (r.data ? 1 : 0),
+    'tournaments + profile + users (parallel)',
+    () => Promise.all([
+      supabase.from('tournaments').select('id, name, slug, start_date').eq('is_active', true).maybeSingle(),
+      supabase.from('users').select('display_name, is_admin').limit(1),
+      supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
+    ]),
+    r => r[2].data?.length ?? 0,
   )
-  const tid = tournament.data?.id
+  const tid = tournament[0].data?.id as string
 
-  const rounds = await time(
-    'rounds',
-    () => supabase.from('rounds').select('id, name, points_per_correct_tip, sort_order').eq('tournament_id', tid!).order('sort_order'),
-    r => r.data?.length ?? 0,
+  await time(
+    'rounds+matches embedded AND tips (parallel)',
+    () => Promise.all([
+      supabase
+        .from('rounds')
+        .select('id, name, points_per_correct_tip, sort_order, matches(id, round_id, winner, no_points, scheduled_start, player1_name, player2_name)')
+        .eq('tournament_id', tid).order('sort_order'),
+      fetchTipsForTournament(supabase, tid),
+    ]),
+    r => (r[1] as unknown[]).length,
   )
-  const roundIds = (rounds.data ?? []).map(r => r.id)
-
-  const matches = await time(
-    'matches',
-    () => supabase.from('matches').select('id, round_id, winner, no_points, scheduled_start, player1_name, player2_name').in('round_id', roundIds),
-    r => r.data?.length ?? 0,
-  )
-  const matchIds = (matches.data ?? []).map(m => m.id)
-
-  await time('tips (all pages)', () => fetchTipsForMatches(supabase, matchIds), r => r.length)
-  await time('users', () => supabase.from('users').select('id, display_name, avatar_url').order('display_name'), r => r.data?.length ?? 0)
 
   return NextResponse.json({
     region: process.env.VERCEL_REGION ?? 'unknown',

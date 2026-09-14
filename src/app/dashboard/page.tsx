@@ -14,7 +14,7 @@ import Link from 'next/link'
 import { dashboardHeadline, HeadlineState } from '@/lib/copy/dashboard-headline'
 import { dashboardBody, BodyState } from '@/lib/copy/dashboard-body'
 import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
-import { fetchTipsForMatches, fetchFiledCounts } from '@/lib/tips'
+import { fetchTipsForTournament, fetchFiledCounts } from '@/lib/tips'
 
 interface Round {
   id: string
@@ -237,9 +237,13 @@ export default async function DashboardPage({
   // Copy that rotates daily keys off this, so it turns over at AEST midnight.
   const dayKey = aestDayKey(now)
 
-  const [{ data: profile }, { data: tournament }] = await Promise.all([
+  // The database sits a long way from where this runs, so every round trip is
+  // worth 300ms or more. Anything that does not depend on an earlier answer is
+  // fetched alongside it rather than after it.
+  const [{ data: profile }, { data: tournament }, { data: userRows }] = await Promise.all([
     supabase.from('users').select('display_name, is_admin').eq('id', user.id).single(),
     supabase.from('tournaments').select('id, name, slug, start_date').eq('is_active', true).maybeSingle(),
+    supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
   ])
 
   const yourName = profile?.display_name?.split(/[.\s@]/)[0] ?? 'mate'
@@ -277,26 +281,27 @@ export default async function DashboardPage({
   }
 
   // ─── Active tournament — pull data ──────────────────────────────────
-  const { data: roundData } = await supabase
-    .from('rounds')
-    .select('id, name, points_per_correct_tip, sort_order')
-    .eq('tournament_id', tournament.id)
-    .order('sort_order')
-  const rounds: Round[] = roundData ?? []
-
-  const roundIds = rounds.map(r => r.id)
-  const { data: matchData } = await supabase
-    .from('matches')
-    .select('id, round_id, winner, no_points, scheduled_start, player1_name, player2_name')
-    .in('round_id', roundIds)
-    .order('scheduled_start')
-  const matches: Match[] = matchData ?? []
-  const matchIds = matches.map(m => m.id)
-
-  const [tips, { data: userRows }] = await Promise.all([
-    fetchTipsForMatches(supabase, matchIds),
-    supabase.from('users').select('id, display_name, avatar_url').order('display_name'),
+  // Matches come back nested inside their round, which saves a round trip, and
+  // the tips are filtered through the relation so they need only the
+  // tournament id — meaning both of these go at once instead of in sequence.
+  const [{ data: roundData }, tips] = await Promise.all([
+    supabase
+      .from('rounds')
+      .select('id, name, points_per_correct_tip, sort_order, matches(id, round_id, winner, no_points, scheduled_start, player1_name, player2_name)')
+      .eq('tournament_id', tournament.id)
+      .order('sort_order'),
+    fetchTipsForTournament(supabase, tournament.id),
   ])
+
+  type RoundWithMatches = Round & { matches: Match[] }
+  const roundRows = (roundData ?? []) as RoundWithMatches[]
+  const rounds: Round[] = roundRows.map(r => ({
+    id: r.id, name: r.name,
+    points_per_correct_tip: r.points_per_correct_tip, sort_order: r.sort_order,
+  }))
+  const matches: Match[] = roundRows
+    .flatMap(r => r.matches ?? [])
+    .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
 
   const users = (userRows ?? []).map(u => ({ id: u.id, display_name: u.display_name }))
   const avatarMap: Record<string, string | null> = Object.fromEntries(
