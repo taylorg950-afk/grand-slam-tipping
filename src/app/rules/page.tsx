@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { currentUserId } from '@/lib/current-user'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TabBar } from '@/components/TabBar'
@@ -17,8 +18,8 @@ const DEFAULT_POINTS: [string, number][] = [
 export default async function RulesPage() {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await currentUserId()
+  if (!userId) redirect('/login')
 
   const { data: tournament } = await supabase
     .from('tournaments')

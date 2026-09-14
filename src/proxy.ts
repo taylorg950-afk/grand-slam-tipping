@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { VERIFIED_USER_HEADER } from '@/lib/current-user'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -24,6 +25,14 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Pass the verified id on so pages do not have to ask the auth server again.
+  // Set on every matched request, and stripped when there is nobody signed in,
+  // so a header supplied by the client is always overwritten before a page
+  // sees it and can never be used to impersonate anyone.
+  if (user) request.headers.set(VERIFIED_USER_HEADER, user.id)
+  else request.headers.delete(VERIFIED_USER_HEADER)
+  supabaseResponse = NextResponse.next({ request })
 
   const { pathname } = request.nextUrl
 

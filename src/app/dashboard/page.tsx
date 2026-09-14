@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { currentUserId } from '@/lib/current-user'
 import { redirect } from 'next/navigation'
 import { computeScores } from '@/lib/scoring'
 import RankChart, { RankSeriesData } from '@/components/charts/RankChart'
@@ -230,8 +231,11 @@ export default async function DashboardPage({
 }) {
   const { celebrate } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  // Taken from the proxy's already-verified check rather than asking the auth
+  // server a second time on the same request.
+  const userId = await currentUserId()
+  if (!userId) redirect('/login')
+  const user = { id: userId }
 
   const now = new Date()
   // Copy that rotates daily keys off this, so it turns over at AEST midnight.
