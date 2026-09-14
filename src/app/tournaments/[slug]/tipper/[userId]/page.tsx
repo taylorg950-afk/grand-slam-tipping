@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { currentUserId } from '@/lib/current-user'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TabBar } from '@/components/TabBar'
@@ -29,8 +30,9 @@ export default async function TipperPage({
   const { slug, userId } = await params
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const viewerId = await currentUserId()
+  if (!viewerId) redirect('/login')
+  const user = { id: viewerId }
 
   const { data: tournament } = await supabase
     .from('tournaments').select('id, name, slug').eq('slug', slug).single()

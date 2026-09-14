@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { currentUserId } from '@/lib/current-user'
 import { notFound, redirect } from 'next/navigation'
 import BracketView from './BracketView'
 
@@ -10,8 +11,9 @@ export default async function BracketPage({
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await currentUserId()
+  if (!userId) redirect('/login')
+  const user = { id: userId }
 
   const { data: tournament } = await supabase
     .from('tournaments')

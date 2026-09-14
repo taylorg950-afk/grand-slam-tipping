@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { currentUserId } from '@/lib/current-user'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import MatchCard from './MatchCard'
@@ -27,8 +28,9 @@ export default async function RoundPage({
   const { slug, name: roundName } = await params
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await currentUserId()
+  if (!userId) redirect('/login')
+  const user = { id: userId }
 
   const { data: tournament } = await supabase
     .from('tournaments')
