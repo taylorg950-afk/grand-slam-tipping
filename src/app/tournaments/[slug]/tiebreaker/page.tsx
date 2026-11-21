@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { TabBar } from '@/components/TabBar'
 import TiebreakerForm from './TiebreakerForm'
+import { getTiebreakerLock } from '@/lib/tiebreaker-lock'
 
 // Seeded history per tournament. Add entries as data becomes available;
 // tournaments without a key skip the strip. Numbers are total games in
@@ -57,24 +58,8 @@ export default async function TiebreakerPage({
     .single()
   if (!tournament) notFound()
 
-  // Lock state — locks once EITHER final (men's or women's) has started.
-  const { data: finalRound } = await supabase
-    .from('rounds')
-    .select('id')
-    .eq('tournament_id', tournament.id)
-    .eq('name', 'F')
-    .single()
-
-  let locked = false
-  if (finalRound) {
-    const { data: finals } = await supabase
-      .from('matches')
-      .select('scheduled_start')
-      .eq('round_id', finalRound.id)
-      .in('draw', ['mens', 'womens'])
-    const now = new Date()
-    locked = (finals ?? []).some(f => new Date(f.scheduled_start) <= now)
-  }
+  // Locks at the first serve of whichever final starts first, men's or women's.
+  const lock = await getTiebreakerLock(supabase, tournament.id)
 
   const { data: existing } = await supabase
     .from('tiebreakers')
@@ -117,7 +102,7 @@ export default async function TiebreakerPage({
           </div>
           <h1 className="mt-2 font-serif text-[30px] font-bold leading-[1] md:text-[40px]">Call the final.</h1>
           <div className="mt-3 max-w-xl text-[14px] leading-[1.5]" style={{ color: '#DDE6FA' }}>
-            Total games in the men&apos;s final breaks a dead heat — closest takes it, then earliest filed. Edit until the final starts.
+            Total games in the men&apos;s final breaks a dead heat — closest takes it, then earliest filed. Edit until the first final starts, men&apos;s or women&apos;s.
           </div>
         </div>
       </section>
@@ -131,7 +116,9 @@ export default async function TiebreakerPage({
           updatedAt: existing?.updated_at ?? null,
         }}
         averages={averages}
-        locked={locked}
+        locked={lock.locked}
+        lockAt={lock.lockAt}
+        lockDraw={lock.lockDraw}
       />
 
       {/* History strip */}

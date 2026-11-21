@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getTiebreakerLock, finalLabel } from '@/lib/tiebreaker-lock'
 
 export async function saveTiebreaker(
   _prevState: { error?: string; ok?: boolean } | null,
@@ -15,23 +16,12 @@ export async function saveTiebreaker(
   const slug = formData.get('slug') as string
   const mensRaw = formData.get('mens_final_total_games') as string
 
-  // Enforce the lock server-side — the form disables itself client-side, but
-  // nothing else stops a late submission once either final has started.
-  const { data: finalRound } = await supabase
-    .from('rounds')
-    .select('id')
-    .eq('tournament_id', tournament_id)
-    .eq('name', 'F')
-    .maybeSingle()
-  if (finalRound) {
-    const { data: finals } = await supabase
-      .from('matches')
-      .select('scheduled_start')
-      .eq('round_id', finalRound.id)
-    const now = new Date()
-    if ((finals ?? []).some(f => new Date(f.scheduled_start) <= now)) {
-      return { error: 'The tiebreaker is locked — a final has already started.' }
-    }
+  // Enforce the lock server-side — the form disables itself client-side, and
+  // the database refuses late writes too (migration 0005); this just turns
+  // that into a readable message.
+  const lock = await getTiebreakerLock(supabase, tournament_id)
+  if (lock.locked) {
+    return { error: `The tiebreaker is locked — the ${finalLabel(lock.lockDraw)} has started.` }
   }
 
   const mens = mensRaw !== '' ? parseInt(mensRaw, 10) : null
@@ -45,7 +35,12 @@ export async function saveTiebreaker(
     { onConflict: 'user_id,tournament_id' }
   )
 
-  if (error) return { error: error.message }
+  if (error) {
+    // 42501 = row-level security refused the write: a final went on court
+    // between the check above and the save.
+    if (error.code === '42501') return { error: 'The tiebreaker is locked — a final has started.' }
+    return { error: error.message }
+  }
 
   revalidatePath(`/tournaments/${slug}/tiebreaker`)
   return { ok: true }

@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition, useEffect } from 'react'
 import { saveTiebreaker } from './actions'
 import { AEST_TZ, AEST_LABEL, aestDayKey } from '@/lib/time'
+import { finalLabel } from '@/lib/tiebreaker-lock'
 
 interface Averages {
   mensAvg: number
@@ -16,13 +17,16 @@ interface Props {
   existing: { mens: number | null; updatedAt: string | null }
   averages: Averages | null
   locked: boolean
+  /** First serve of the earliest final on the books; null until one is entered. */
+  lockAt: string | null
+  lockDraw: 'mens' | 'womens' | null
 }
 
 const DEFAULT_MENS = 34
 const MENS_MIN = 18
 const MENS_MAX = 80
 
-export default function TiebreakerForm({ tournamentId, slug, existing, averages, locked }: Props) {
+export default function TiebreakerForm({ tournamentId, slug, existing, averages, locked, lockAt, lockDraw }: Props) {
   const [mens, setMens] = useState<number>(existing.mens ?? averages?.mensAvg ?? DEFAULT_MENS)
   const [savedAt, setSavedAt] = useState<string | null>(existing.updatedAt)
   const [state, action] = useActionState(saveTiebreaker, null)
@@ -49,6 +53,12 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
   const filedLabel = savedAt
     ? `Filed at ${new Date(savedAt).toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })} ${AEST_LABEL} ${dayLabel(savedAt)}.`
     : 'Not filed yet.'
+
+  const lockNote = locked
+    ? `The ${finalLabel(lockDraw)} has started — predictions are locked.`
+    : lockAt
+      ? `Locks at the ${finalLabel(lockDraw)}, ${fmtLock(lockAt)}.`
+      : "Locks when the first final starts, men's or women's."
 
   return (
     <>
@@ -97,14 +107,19 @@ export default function TiebreakerForm({ tournamentId, slug, existing, averages,
             {locked ? 'Locked' : pending ? 'Saving…' : 'Save tiebreaker →'}
           </button>
           <div className="mt-2 font-serif text-[12px] text-[var(--ink-3)] md:mt-2">
-            {locked
-              ? "Men's final has started — predictions are locked."
-              : "Edit any time before the men's final starts."}
+            {lockNote}
           </div>
         </div>
       </section>
     </>
   )
+}
+
+function fmtLock(iso: string): string {
+  const d = new Date(iso)
+  const day = d.toLocaleDateString('en-AU', { timeZone: AEST_TZ, weekday: 'short', day: 'numeric', month: 'short' })
+  const time = d.toLocaleTimeString('en-AU', { timeZone: AEST_TZ, hour: 'numeric', minute: '2-digit', hour12: false })
+  return `${day} ${time} ${AEST_LABEL}`
 }
 
 function dayLabel(iso: string): string {

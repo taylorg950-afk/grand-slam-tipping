@@ -130,8 +130,9 @@ export default async function RulesPage() {
 
           <Rule heading="The tiebreaker" eyebrow="Rule V">
             <p>
-              Before the final, predict the total games it will go &mdash;
-              a 6&ndash;4, 6&ndash;3, 6&ndash;2 final is 27 games. If the table is level
+              Predict the total games the men&apos;s final will go &mdash;
+              a 6&ndash;4, 6&ndash;3, 6&ndash;2 final is 27 games. Calls lock at first serve
+              of the first final, men&apos;s or women&apos;s. If the table is level
               when the last ball is struck, closest to that number takes it; if you&apos;re
               somehow still level, earliest filed wins.
             </p>
