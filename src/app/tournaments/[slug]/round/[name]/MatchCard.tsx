@@ -58,15 +58,16 @@ export default function MatchCard({
             onClick={() => pick(key)}
             disabled={locked || pending}
             aria-pressed={picked}
-            className={`relative flex w-full items-center gap-3 px-4 py-3 text-left
+            aria-label={locked ? undefined : `Pick ${name}`}
+            className={`relative flex min-h-[64px] w-full items-center gap-3 px-4 py-3.5 text-left
                        ${i === 1 ? 'border-t border-[var(--rule)]' : ''}
                        ${lost ? 'opacity-50' : ''}
-                       ${!locked ? 'cursor-pointer active:scale-[0.99]' : 'cursor-default'}
-                       disabled:cursor-default transition-all duration-75`}
-            style={{ background: won ? '#E7F3EC' : picked && !locked ? '#EEF2FC' : 'transparent' }}
+                       ${!locked ? 'pick-btn cursor-pointer' : 'cursor-default'}
+                       disabled:cursor-default`}
+            style={{ background: won ? '#E7F3EC' : picked && !locked ? 'var(--brick-surface)' : 'transparent' }}
           >
             {picked && (
-              <span aria-hidden className="absolute bottom-0 left-0 top-0 w-[3px]"
+              <span aria-hidden className="absolute bottom-0 left-0 top-0 w-[4px]"
                     style={{ background: locked ? (won ? 'var(--olive)' : 'var(--ink-3)') : 'var(--brick)' }} />
             )}
 
@@ -77,7 +78,7 @@ export default function MatchCard({
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[17px] leading-[1.15]" style={{ fontWeight: picked || won ? 700 : 500, color: won ? 'var(--olive)' : 'var(--ink)' }}>
+              <div className="line-clamp-2 break-words text-[17px] leading-[1.15]" style={{ fontWeight: picked || won ? 700 : 500, color: won ? 'var(--olive)' : 'var(--ink)' }}>
                 {name}
               </div>
               <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-[var(--ink-3)]">
@@ -102,14 +103,14 @@ export default function MatchCard({
             </div>
 
             {!locked && (
-              <span className="flex size-[24px] shrink-0 items-center justify-center rounded-full border-[1.5px] text-[12px] font-bold"
+              <span aria-hidden className="flex size-[28px] shrink-0 items-center justify-center rounded-full border-2 text-[14px] font-bold leading-none"
                     style={{
-                      background: picked && !isLoading ? 'var(--brick)' : 'transparent',
-                      borderColor: picked || isLoading ? 'var(--brick)' : '#D6DEF0',
+                      background: picked && !isLoading ? 'var(--brick)' : 'var(--paper-2)',
+                      borderColor: picked || isLoading ? 'var(--brick)' : 'var(--ink-4)',
                       color: '#fff',
                     }}>
                 {isLoading ? (
-                  <svg className="size-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
                     <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>

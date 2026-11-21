@@ -445,6 +445,25 @@ body {
   .pick-tick-short { display: inline; }
 }
 
+/* Player pick buttons (round + picks pages). Hover only where there's a real
+   pointer, so a phone doesn't keep a stale hover tint after a tap; a visible
+   focus ring for keyboards. The press feedback comes from the global
+   button:active rule above. */
+@media (hover: hover) {
+  .pick-btn:not(:disabled):not([aria-pressed="true"]):hover {
+    border-color: var(--blue) !important;
+    background: var(--paper-3) !important;
+  }
+}
+.pick-btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* A full-width row shrinking to 95% on press is a lurch, not feedback. */
+.pick-btn:not(:disabled):active {
+  transform: scale(0.985);
+}
+
 /* Loading placeholders. Static by default; the shimmer is opt-in so a slow
    page doesn't pulse at anyone who asked for reduced motion. */
 .tp-skeleton {

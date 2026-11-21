@@ -433,7 +433,9 @@ function MatchCard({ match, state, tip, pointsPerCorrect, onPick, pendingSide, n
         </span>
         <StatePill state={state} pts={pointsPerCorrect} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      {/* Stacked on phones so each name gets a full-width row to hit; side by
+          side from sm up, where there's room for both. */}
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
         <PlayerButton side="player1" match={match} tip={tip} pendingSide={pendingSide} interactive={interactive} resulted={resulted} onPick={onPick} />
         <PlayerButton side="player2" match={match} tip={tip} pendingSide={pendingSide} interactive={interactive} resulted={resulted} onPick={onPick} />
       </div>
@@ -527,8 +529,10 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
   const isLoser = resulted && !isWinner
   const pending = pendingSide === side
 
-  let border = '#D6DEF0'
-  let bg = 'var(--paper-3)'
+  // An open, untipped name is a button: white on the card's inset with a
+  // border firm enough to see at a glance. Locked/resulted cells stay flat.
+  let border = interactive ? 'var(--ink-4)' : '#D6DEF0'
+  let bg = interactive ? 'var(--paper-2)' : 'var(--paper-3)'
   let nameColor = 'var(--ink)'
   let nameWeight = 500
   let tick = ''
@@ -540,8 +544,8 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
     border = 'rgba(28,122,75,0.5)'; bg = '#E7F3EC'; nameColor = 'var(--olive)'; nameWeight = 700
     tick = match.score ? `WON · ${match.score}` : 'WON'; tickColor = 'var(--olive)'
   } else if (isMine && !resulted) {
-    border = 'var(--brick)'; bg = '#EEF2FC'; nameColor = 'var(--brick)'; nameWeight = 700
-    tick = '✓ your call'; tickShort = '✓'
+    border = 'var(--brick)'; bg = 'var(--brick-surface)'; nameColor = 'var(--brick)'; nameWeight = 700
+    tick = 'your call'
   } else if (isMine && resulted) {
     // A miss should read as loudly as a hit: fill the cell, same as the winner's
     // green, rather than a faint border you have to look for.
@@ -553,16 +557,14 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
 
   const inner = (
     <>
-      <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="break-words" style={{ fontSize: 18, fontWeight: nameWeight, color: nameColor }}>{display}</span>
-        {seed && <span className="shrink-0 text-[12px] text-[var(--ink-3)]">[{seed}]</span>}
+      {interactive && <PickRadio on={isMine} pending={pending} />}
+      {/* Seed runs inline after the name, so a name that wraps keeps its seed
+          beside the last word rather than stranded at the far edge. */}
+      <span className="min-w-0 flex-1 break-words" style={{ fontSize: 18, lineHeight: 1.2, fontWeight: nameWeight, color: nameColor }}>
+        {display}
+        {seed && <span className="ml-1.5 whitespace-nowrap text-[12px] font-normal text-[var(--ink-3)]">[{seed}]</span>}
       </span>
-      {pending ? (
-        <svg className="size-3.5 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
-          <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-      ) : tick ? (
+      {tick ? (
         <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: tickColor }}>
           {tickShort ? (
             <>
@@ -578,12 +580,12 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
   const commonStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
+    width: '100%',
     textAlign: 'left',
-    padding: '13px 15px',
+    padding: '14px 16px',
     borderRadius: 12,
-    border: `1.5px solid ${border}`,
+    border: `${interactive ? 2 : 1.5}px solid ${border}`,
     background: bg,
     opacity,
   }
@@ -597,10 +599,32 @@ function PlayerButton({ side, match, tip, pendingSide, interactive, resulted, on
       onClick={() => onPick(side)}
       aria-pressed={isMine}
       aria-label={`Pick ${display}`}
-      className="pick-side tp-tap min-h-[52px]"
+      className="pick-side pick-btn min-h-[60px]"
       style={commonStyle}
     >
       {inner}
     </button>
+  )
+}
+
+/** The choose-one marker on an open pick: empty ring, or a filled disc with a tick once it's yours. */
+function PickRadio({ on, pending }: { on: boolean; pending: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="flex size-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-bold leading-none"
+      style={{
+        background: on && !pending ? 'var(--brick)' : 'var(--paper-2)',
+        border: `2px solid ${on || pending ? 'var(--brick)' : 'var(--ink-4)'}`,
+        color: '#fff',
+      }}
+    >
+      {pending ? (
+        <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="var(--brick)" strokeWidth="3" />
+          <path className="opacity-75" fill="var(--brick)" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      ) : on ? '✓' : null}
+    </span>
   )
 }
